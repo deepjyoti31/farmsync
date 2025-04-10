@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Card, 
@@ -28,6 +29,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { crops, fields } from '@/data/mockData';
+
+// Define a type for the mock data which may have fieldId
+interface CropWithFieldId extends Crop {
+  fieldId?: string;
+}
 
 const Crops = () => {
   const formatDate = (dateString: string) => {
@@ -64,7 +70,8 @@ const Crops = () => {
     }
   };
 
-  const getFieldName = (fieldId: string) => {
+  const getFieldName = (fieldId: string | undefined) => {
+    if (!fieldId) return 'Not assigned';
     const field = fields.find(f => f.id === fieldId);
     return field ? field.name : 'Unknown Field';
   };
@@ -118,7 +125,7 @@ const Crops = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {crops.map((crop) => (
+              {(crops as CropWithFieldId[]).map((crop) => (
                 <TableRow key={crop.id}>
                   <TableCell className="font-medium">{crop.name}</TableCell>
                   <TableCell>{getFieldName(crop.fieldId)}</TableCell>
