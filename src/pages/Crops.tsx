@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Card, 
@@ -131,8 +130,8 @@ const Crops = () => {
                   <TableCell className="font-medium">{crop.name}</TableCell>
                   <TableCell>{getFieldName(crop.fieldId)}</TableCell>
                   <TableCell>{crop.variety}</TableCell>
-                  <TableCell>{formatDate(crop.plantingDate)}</TableCell>
-                  <TableCell>{formatDate(crop.harvestDate)}</TableCell>
+                  <TableCell>{format(new Date(crop.plantingDate), 'dd MMM yyyy')}</TableCell>
+                  <TableCell>{format(new Date(crop.harvestDate), 'dd MMM yyyy')}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {getStatusIcon(crop.status)}
