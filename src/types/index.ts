@@ -1,3 +1,4 @@
+
 // Farm Management data types
 
 export interface Field {

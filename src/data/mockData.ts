@@ -1,3 +1,4 @@
+
 import { 
   WeatherData, 
   Field, 
@@ -248,19 +249,33 @@ export const equipment: Equipment[] = [
   {
     id: '1',
     name: 'Mahindra Tractor',
-    type: 'Tractor',
-    purchaseDate: '2020-06-15',
-    lastMaintenance: '2024-01-20',
-    nextMaintenance: '2024-04-20',
-    status: 'operational'
+    equipment_type: 'Tractor',
+    manufacturer: 'Mahindra',
+    model: '575 DI XP Plus',
+    purchase_date: '2020-06-15',
+    purchase_price: 850000,
+    status: 'operational',
+    last_maintenance_date: '2024-01-20',
+    next_maintenance_date: '2024-04-20',
+    notes: '',
+    farm_id: 'demo-farm-01',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
   },
   {
     id: '2',
     name: 'Irrigation Pump',
-    type: 'Pump',
-    purchaseDate: '2021-03-10',
-    lastMaintenance: '2024-02-15',
-    nextMaintenance: '2024-05-15',
-    status: 'operational'
+    equipment_type: 'Pump',
+    manufacturer: 'Kirloskar',
+    model: 'KBS-10',
+    purchase_date: '2021-03-10',
+    purchase_price: 25000,
+    status: 'operational',
+    last_maintenance_date: '2024-02-15',
+    next_maintenance_date: '2024-05-15',
+    notes: '',
+    farm_id: 'demo-farm-01',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
   }
 ];
