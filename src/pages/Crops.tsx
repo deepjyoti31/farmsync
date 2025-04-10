@@ -29,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { crops, fields } from '@/data/mockData';
+import { Crop } from '@/types';
 
 // Define a type for the mock data which may have fieldId
 interface CropWithFieldId extends Crop {
