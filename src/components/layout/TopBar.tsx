@@ -75,7 +75,7 @@ const TopBar = () => {
   return (
     <div className="h-16 px-6 flex items-center justify-between border-b bg-background">
       <div>
-        <h2 className="text-xl font-semibold">Kisan-Sathi</h2>
+        <h2 className="text-xl font-semibold">FarmSync</h2>
       </div>
       
       <div className="flex items-center gap-4">

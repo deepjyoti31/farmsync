@@ -39,7 +39,7 @@ const AppSidebar = () => {
     <div className="bg-sidebar min-h-screen w-64 p-4 text-sidebar-foreground">
       <div className="flex items-center gap-2 mb-8">
         <Sprout className="h-8 w-8 text-farm-yellow" />
-        <h1 className="text-xl font-bold">Kisan-Sathi</h1>
+        <h1 className="text-xl font-bold">FarmSync</h1>
       </div>
       
       <nav>
