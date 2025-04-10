@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sprout, DollarSign, Tractor, Cloud, Map, Users } from 'lucide-react';
+import { Sprout, DollarSign, Package, Cloud, Map, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const QuickLinks = () => {
@@ -11,7 +11,7 @@ const QuickLinks = () => {
     { icon: Sprout, label: 'Crops', path: '/dashboard/crops' },
     { icon: Users, label: 'Livestock', path: '/dashboard/livestock' },
     { icon: DollarSign, label: 'Finances', path: '/dashboard/finances' },
-    { icon: Tractor, label: 'Equipment', path: '/dashboard/equipment' },
+    { icon: Package, label: 'Inventory', path: '/dashboard/inventory' },
     { icon: Cloud, label: 'Weather', path: '/dashboard/weather' },
   ];
 

@@ -25,19 +25,22 @@ import {
   Clock,
   Flower2,
   Scissors,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { fields } from '@/data/mockData';
-import { Crop } from '@/types';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
+import AddCropForm from '@/components/crops/AddCropForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const Crops = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch fields for the selected farm
   const { 
@@ -96,17 +99,6 @@ const Crops = () => {
     enabled: !!selectedFarmId,
   });
 
-  // Transform field crops data to match our Crop type
-  const crops = fieldCrops.map((fieldCrop: any): Crop => ({
-    id: fieldCrop.id,
-    name: fieldCrop.crop?.name || 'Unknown Crop',
-    variety: fieldCrop.crop?.variety || '',
-    plantingDate: fieldCrop.planting_date,
-    harvestDate: fieldCrop.expected_harvest_date || '',
-    status: fieldCrop.status || 'planned',
-    fieldId: fieldCrop.field_id
-  }));
-
   // Handle errors
   React.useEffect(() => {
     if (fieldsError) {
@@ -125,10 +117,6 @@ const Crops = () => {
       });
     }
   }, [fieldsError, cropsError]);
-
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd MMM yyyy');
-  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -166,6 +154,15 @@ const Crops = () => {
     return field ? field.name : 'Unknown Field';
   };
 
+  const handleAddCropSuccess = () => {
+    setDialogOpen(false);
+    queryClient.invalidateQueries({queryKey: ['field_crops']});
+    toast({
+      title: "Crop added successfully",
+      description: "Your crop has been added to the field.",
+    });
+  };
+
   const isLoading = isLoadingFields || isLoadingCrops;
 
   return (
@@ -189,10 +186,26 @@ const Crops = () => {
               <Filter className="h-4 w-4" />
               Filter
             </Button>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Crop
-            </Button>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2" disabled={!selectedFarmId}>
+                  <Plus className="h-4 w-4" />
+                  Add Crop
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Crop</DialogTitle>
+                </DialogHeader>
+                {selectedFarmId && (
+                  <AddCropForm 
+                    farmId={selectedFarmId} 
+                    onSuccess={handleAddCropSuccess}
+                    onCancel={() => setDialogOpen(false)}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
@@ -213,7 +226,7 @@ const Crops = () => {
             </div>
           </CardContent>
         </Card>
-      ) : crops.length === 0 ? (
+      ) : fieldCrops.length === 0 ? (
         <Card>
           <CardContent className="flex items-center justify-center p-12 text-center">
             <div className="max-w-sm">
@@ -222,7 +235,7 @@ const Crops = () => {
               <p className="text-muted-foreground mb-4">
                 Start adding crops to track and manage your farm's production.
               </p>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={() => setDialogOpen(true)}>
                 <Plus className="h-4 w-4" />
                 Add Your First Crop
               </Button>
@@ -257,17 +270,17 @@ const Crops = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {crops.map((crop) => (
-                  <TableRow key={crop.id}>
-                    <TableCell className="font-medium">{crop.name}</TableCell>
-                    <TableCell>{getFieldName(crop.fieldId)}</TableCell>
-                    <TableCell>{crop.variety}</TableCell>
-                    <TableCell>{format(new Date(crop.plantingDate), 'dd MMM yyyy')}</TableCell>
-                    <TableCell>{crop.harvestDate ? format(new Date(crop.harvestDate), 'dd MMM yyyy') : '-'}</TableCell>
+                {fieldCrops.map((fieldCrop: any) => (
+                  <TableRow key={fieldCrop.id}>
+                    <TableCell className="font-medium">{fieldCrop.crop?.name || 'Unknown Crop'}</TableCell>
+                    <TableCell>{getFieldName(fieldCrop.field_id)}</TableCell>
+                    <TableCell>{fieldCrop.crop?.variety || '-'}</TableCell>
+                    <TableCell>{format(new Date(fieldCrop.planting_date), 'dd MMM yyyy')}</TableCell>
+                    <TableCell>{fieldCrop.expected_harvest_date ? format(new Date(fieldCrop.expected_harvest_date), 'dd MMM yyyy') : '-'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {getStatusIcon(crop.status)}
-                        {getStatusBadge(crop.status)}
+                        {getStatusIcon(fieldCrop.status)}
+                        {getStatusBadge(fieldCrop.status)}
                       </div>
                     </TableCell>
                   </TableRow>

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -16,22 +16,75 @@ import {
   TableRow 
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Plus, Heart, ArrowUpDown } from 'lucide-react';
+import { Plus, Heart, ArrowUpDown, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { livestock } from '@/data/mockData';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import FarmSelector from '@/components/farms/FarmSelector';
+import AddLivestockForm from '@/components/livestock/AddLivestockForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const Livestock = () => {
+  const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Fetch livestock for the selected farm
+  const { 
+    data: livestock = [], 
+    isLoading,
+    error 
+  } = useQuery({
+    queryKey: ['livestock', selectedFarmId],
+    queryFn: async () => {
+      if (!selectedFarmId) return [];
+      
+      const { data, error } = await supabase
+        .from('livestock')
+        .select(`
+          *,
+          livestock_type:livestock_types(*)
+        `)
+        .eq('farm_id', selectedFarmId);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedFarmId,
+  });
+
+  // Handle errors
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Error loading livestock',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
+    }
+  }, [error]);
+
   const getHealthBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'good':
-        return <Badge className="bg-farm-green text-white">Good</Badge>;
-      case 'average':
-        return <Badge className="bg-farm-yellow text-black">Average</Badge>;
-      case 'poor':
-        return <Badge className="bg-destructive">Poor</Badge>;
+      case 'active':
+        return <Badge className="bg-farm-green text-white">Active</Badge>;
+      case 'sold':
+        return <Badge className="bg-farm-yellow text-black">Sold</Badge>;
+      case 'deceased':
+        return <Badge className="bg-destructive">Deceased</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const handleAddLivestockSuccess = () => {
+    setDialogOpen(false);
+    queryClient.invalidateQueries({queryKey: ['livestock']});
+    toast({
+      title: "Livestock added successfully",
+      description: "Your livestock record has been added.",
+    });
   };
 
   return (
@@ -44,56 +97,110 @@ const Livestock = () => {
           </p>
         </div>
         
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Livestock
-        </Button>
+        <div className="flex items-center gap-4">
+          <FarmSelector
+            selectedFarmId={selectedFarmId}
+            onFarmChange={setSelectedFarmId}
+          />
+          
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2" disabled={!selectedFarmId}>
+                <Plus className="h-4 w-4" />
+                Add Livestock
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add New Livestock</DialogTitle>
+              </DialogHeader>
+              {selectedFarmId && (
+                <AddLivestockForm 
+                  farmId={selectedFarmId} 
+                  onSuccess={handleAddLivestockSuccess}
+                  onCancel={() => setDialogOpen(false)}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Livestock</CardTitle>
-          <CardDescription>Overview of all animals on your farm</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>Breed</TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-1">
-                    <span>Count</span>
-                    <ArrowUpDown className="h-3 w-3" />
-                  </div>
-                </TableHead>
-                <TableHead>
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-4 w-4 mr-1" />
-                    <span>Health Status</span>
-                  </div>
-                </TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {livestock.map((animal) => (
-                <TableRow key={animal.id}>
-                  <TableCell className="font-medium">{animal.type}</TableCell>
-                  <TableCell>{animal.breed}</TableCell>
-                  <TableCell>{animal.count}</TableCell>
-                  <TableCell>
-                    {getHealthBadge(animal.healthStatus)}
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">Details</Button>
-                  </TableCell>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : !selectedFarmId ? (
+        <Card>
+          <CardContent className="flex items-center justify-center p-12 text-center">
+            <div className="max-w-sm">
+              <Heart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-medium mb-2">Select a Farm</h3>
+              <p className="text-muted-foreground mb-4">
+                Please select a farm to view and manage your livestock.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : livestock.length === 0 ? (
+        <Card>
+          <CardContent className="flex items-center justify-center p-12 text-center">
+            <div className="max-w-sm">
+              <Heart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-xl font-medium mb-2">No Livestock Added Yet</h3>
+              <p className="text-muted-foreground mb-4">
+                Start adding livestock to track and manage your farm's animals.
+              </p>
+              <Button className="gap-2" onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add Your First Livestock
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Livestock</CardTitle>
+            <CardDescription>Overview of all animals on your farm</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Breed</TableHead>
+                  <TableHead>Tag ID</TableHead>
+                  <TableHead>Gender</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Heart className="h-4 w-4 mr-1" />
+                      <span>Status</span>
+                    </div>
+                  </TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {livestock.map((animal: any) => (
+                  <TableRow key={animal.id}>
+                    <TableCell className="font-medium">{animal.livestock_type?.name || 'Unknown'}</TableCell>
+                    <TableCell>{animal.breed || '-'}</TableCell>
+                    <TableCell>{animal.tag_id || '-'}</TableCell>
+                    <TableCell className="capitalize">{animal.gender || 'Unknown'}</TableCell>
+                    <TableCell>
+                      {getHealthBadge(animal.status || 'active')}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm">Details</Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
