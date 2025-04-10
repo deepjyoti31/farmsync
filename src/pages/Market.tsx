@@ -55,7 +55,7 @@ import {
   TableRow, 
   TableCell, 
   TableCaption 
-} from '@/components/ui/table-import';
+} from '@/components/ui/table';
 
 interface MarketProduct {
   id: string;
@@ -375,24 +375,24 @@ const Market = () => {
             </div>
             
             <div className="flex gap-2">
-              <Select value={selectedCategory || ''} onValueChange={setSelectedCategory}>
+              <Select value={selectedCategory || undefined} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Commodity" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Commodities</SelectItem>
+                  <SelectItem value="all_commodities">All Commodities</SelectItem>
                   {commodities.map((commodity) => (
                     <SelectItem key={commodity} value={commodity}>{commodity}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               
-              <Select value={selectedState || ''} onValueChange={setSelectedState}>
+              <Select value={selectedState || undefined} onValueChange={setSelectedState}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All States</SelectItem>
+                  <SelectItem value="all_states">All States</SelectItem>
                   {states.map((state) => (
                     <SelectItem key={state} value={state}>{state}</SelectItem>
                   ))}
