@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -51,10 +52,12 @@ const Finances = () => {
     queryKey: ['financial_transactions', selectedFarmId],
     queryFn: async () => {
       // In a real app, this would fetch from Supabase
-      // For now, use mock data
+      console.log('Fetching financial transactions');
       return mockTransactions;
     },
   });
+  
+  console.log('Current transactions:', transactions);
 
   // Apply filters
   const filteredTransactions = transactions.filter(transaction => {

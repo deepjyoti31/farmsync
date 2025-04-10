@@ -93,6 +93,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
         paymentMethod: data.payment_method || 'Cash',
       };
       
+      // Add the new transaction to the mock data array
       mockTransactions.unshift(newTransaction);
       
       // Invalidate query cache to trigger refetch
