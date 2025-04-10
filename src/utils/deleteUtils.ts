@@ -18,9 +18,19 @@ interface DeleteOptions {
   onError?: (error: Error) => void;
 }
 
+// Define the exact table names as they appear in Supabase
+type TableName = 
+  | 'farms'
+  | 'fields'
+  | 'field_crops'
+  | 'financial_transactions'
+  | 'inventory'
+  | 'equipment'
+  | 'livestock';
+
 // Type-safe mapping of entity types to table names
 type TableNameMapping = {
-  [key in EntityType]: string;
+  [key in EntityType]: TableName;
 };
 
 /**
@@ -52,7 +62,7 @@ export const deleteEntity = async ({
 
     console.log(`Deleting ${entityType} with id: ${id} from table: ${tableName}`);
 
-    // Execute the delete operation
+    // Execute the delete operation with the properly typed table name
     const { error: deleteError } = await supabase
       .from(tableName)
       .delete()

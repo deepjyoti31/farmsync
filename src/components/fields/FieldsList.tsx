@@ -9,7 +9,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import FieldCard from './FieldCard';
 import AddFieldForm from './AddFieldForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DeleteButton } from '@/components/common/DeleteConfirmation';
+import { DeleteButton } from '@/components/common/DeleteButton';
 import { deleteEntity } from '@/utils/deleteUtils';
 
 interface FieldsListProps {
@@ -42,12 +42,9 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
         name: field.name,
         area: field.area,
         areaUnit: field.area_unit,
-        area_unit: field.area_unit,
         location: field.location || '',
         soilType: field.soil_type,
-        soil_type: field.soil_type,
         soilPH: field.soil_ph,
-        soil_ph: field.soil_ph,
         images: [],
         crops: field.field_crops?.map((fc: any) => fc.crop) || [],
         farm_id: field.farm_id,
