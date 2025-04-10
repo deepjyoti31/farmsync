@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { equipment as mockEquipment } from '@/data/mockData';
+import { useQueryClient } from '@tanstack/react-query';
 
 const equipmentSchema = z.object({
   name: z.string().min(2, { message: 'Equipment name is required' }),
@@ -37,6 +38,7 @@ interface AddEquipmentFormProps {
 
 const AddEquipmentForm: React.FC<AddEquipmentFormProps> = ({ farmId, onSuccess, onCancel }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const defaultValues: Partial<EquipmentFormValues> = {
     status: 'operational',
@@ -73,6 +75,9 @@ const AddEquipmentForm: React.FC<AddEquipmentFormProps> = ({ farmId, onSuccess, 
       };
 
       mockEquipment.push(newEquipment);
+      
+      // Invalidate equipment queries to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['equipment'] });
       
       toast({
         title: 'Equipment added successfully',

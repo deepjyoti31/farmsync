@@ -28,35 +28,49 @@ import { Equipment, EquipmentMaintenance } from '@/types';
 import { equipment as mockEquipment, maintenanceRecords as mockMaintenanceRecords } from '@/data/mockData';
 import { Dialog } from '@/components/ui/dialog';
 import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
+import { useQuery } from '@tanstack/react-query';
 
 const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'maintenance'>('all');
-  const [isLoading, setIsLoading] = useState(false);
   const [isAddEquipmentOpen, setIsAddEquipmentOpen] = useState(false);
   const [isScheduleMaintenanceOpen, setIsScheduleMaintenanceOpen] = useState(false);
 
-  // Filter equipment based on selected farm
-  const filteredEquipment = selectedFarmId 
-    ? mockEquipment.filter(item => item.farm_id === selectedFarmId)
-    : [];
+  // Use React Query to fetch equipment data (using mock data)
+  const { data: equipment = [], isLoading: isLoadingEquipment } = useQuery({
+    queryKey: ['equipment', selectedFarmId],
+    queryFn: async () => {
+      // Simulate API call with mock data
+      return selectedFarmId 
+        ? mockEquipment.filter(item => item.farm_id === selectedFarmId)
+        : [];
+    },
+  });
 
   // Filter maintenance records based on selected farm's equipment
-  const filteredMaintenanceRecords = selectedFarmId
-    ? mockMaintenanceRecords.filter(record => {
-        const equipmentIds = filteredEquipment.map(e => e.id);
-        return equipmentIds.includes(record.equipment_id);
-      })
-    : [];
+  const { data: maintenanceRecords = [], isLoading: isLoadingMaintenance } = useQuery({
+    queryKey: ['equipment_maintenance', selectedFarmId],
+    queryFn: async () => {
+      if (!selectedFarmId) return [];
+      
+      const equipmentIds = equipment.map(e => e.id);
+      return mockMaintenanceRecords.filter(record => 
+        equipmentIds.includes(record.equipment_id)
+      );
+    },
+    enabled: !!equipment.length,
+  });
+
+  const isLoading = isLoadingEquipment || isLoadingMaintenance;
 
   // Calculate statistics
   const stats = {
-    total: filteredEquipment.length,
-    operational: filteredEquipment.filter(e => e.status === 'operational').length,
-    maintenance: filteredEquipment.filter(e => e.status === 'needs maintenance').length,
-    repair: filteredEquipment.filter(e => e.status === 'in repair').length,
-    inactive: filteredEquipment.filter(e => e.status === 'inactive').length,
-    totalValue: filteredEquipment.reduce((sum, e) => sum + (e.purchase_price || 0), 0)
+    total: equipment.length,
+    operational: equipment.filter(e => e.status === 'operational').length,
+    maintenance: equipment.filter(e => e.status === 'needs maintenance').length,
+    repair: equipment.filter(e => e.status === 'in repair').length,
+    inactive: equipment.filter(e => e.status === 'inactive').length,
+    totalValue: equipment.reduce((sum, e) => sum + (e.purchase_price || 0), 0)
   };
 
   const getStatusIcon = (status: string) => {

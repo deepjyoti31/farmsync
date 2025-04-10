@@ -3,161 +3,103 @@ import {
   Card, 
   CardContent, 
   CardHeader, 
-  CardTitle,
+  CardTitle, 
   CardDescription,
   CardFooter 
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Plus, 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  BarChart, 
-  PieChart, 
-  Calendar, 
-  Download,
-  Filter,
-  Loader2
+  ArrowDownCircle, 
+  ArrowUpCircle, 
+  Calendar,
+  CreditCard,
+  Landmark,
+  PiggyBank,
+  DollarSign,
+  BarChart3,
+  Filter 
 } from 'lucide-react';
-import {
-  BarChart as RechartsBarChart,
-  Bar as RechartsBar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell
-} from 'recharts';
+import FarmSelector from '@/components/farms/FarmSelector';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import FarmSelector from '@/components/farms/FarmSelector';
+import { FinancialTransaction } from '@/types';
+import { financialTransactions as mockTransactions } from '@/data/mockData';
 import { Dialog } from '@/components/ui/dialog';
 import AddTransactionForm from '@/components/finances/AddTransactionForm';
 
-const INCOME_COLORS = ['#4CAF50', '#8BC34A', '#CDDC39', '#AFB42B'];
-const EXPENSE_COLORS = ['#F44336', '#FF5722', '#FF9800', '#FFC107', '#9E9D24'];
-
-interface FinancialSummary {
-  totalIncome: number;
-  totalExpenses: number;
-  netProfit: number;
-  incomeByCategory: { name: string; value: number; percent: number }[];
-  expensesByCategory: { name: string; value: number; percent: number }[];
-  monthlyData: { name: string; Income: number; Expenses: number }[];
-  recentTransactions: any[];
-}
+type TransactionFilterType = 'all' | 'income' | 'expense';
+type DateRangeType = 'all' | 'this-month' | 'last-month' | 'this-quarter' | 'this-year';
 
 const Finances = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
-  const [timeframe, setTimeframe] = useState('year'); // 'month', 'quarter', 'year'
+  const [transactionFilter, setTransactionFilter] = useState<TransactionFilterType>('all');
+  const [dateRange, setDateRange] = useState<DateRangeType>('all');
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
 
-  // Query to fetch financial transactions
-  const { data: financialData, isLoading, refetch } = useQuery({
-    queryKey: ['finances', selectedFarmId, timeframe],
-    queryFn: async (): Promise<FinancialSummary> => {
-      if (!selectedFarmId) {
-        throw new Error('No farm selected');
-      }
-
-      const { data: transactions, error } = await supabase
-        .from('financial_transactions')
-        .select(`
-          *,
-          category:financial_categories(*)
-        `)
-        .eq('farm_id', selectedFarmId)
-        .order('transaction_date', { ascending: false });
-      
-      if (error) {
-        throw error;
-      }
-
-      const defaultResponse: FinancialSummary = {
-        totalIncome: 0,
-        totalExpenses: 0,
-        netProfit: 0,
-        incomeByCategory: [],
-        expensesByCategory: [],
-        monthlyData: [],
-        recentTransactions: []
-      };
-
-      if (!transactions || transactions.length === 0) {
-        return defaultResponse;
-      }
-
-      const incomeTransactions = transactions.filter(t => t.category.type === 'income');
-      const expenseTransactions = transactions.filter(t => t.category.type === 'expense');
-      
-      const totalIncome = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
-      const totalExpenses = expenseTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
-      
-      const incomeByCategory = groupByCategory(incomeTransactions, totalIncome);
-      const expensesByCategory = groupByCategory(expenseTransactions, totalExpenses);
-      
-      const monthlyData = generateMonthlyData(transactions);
-      
-      return {
-        totalIncome,
-        totalExpenses,
-        netProfit: totalIncome - totalExpenses,
-        incomeByCategory,
-        expensesByCategory,
-        monthlyData,
-        recentTransactions: transactions.slice(0, 10)
-      };
+  // Fetch transactions
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: ['financial_transactions', selectedFarmId],
+    queryFn: async () => {
+      // In a real app, this would fetch from Supabase
+      // For now, use mock data
+      return mockTransactions;
     },
-    enabled: !!selectedFarmId,
   });
 
-  const groupByCategory = (transactions: any[], total: number) => {
-    const grouped = transactions.reduce((acc, t) => {
-      const categoryName = t.category.name;
-      if (!acc[categoryName]) {
-        acc[categoryName] = 0;
-      }
-      acc[categoryName] += Number(t.amount);
-      return acc;
-    }, {});
+  // Apply filters
+  const filteredTransactions = transactions.filter(transaction => {
+    // Filter by transaction type
+    if (transactionFilter !== 'all' && transaction.type !== transactionFilter) {
+      return false;
+    }
     
-    return Object.entries(grouped).map(([name, value]) => ({
-      name,
-      value: value as number,
-      percent: Math.round(((value as number) / total) * 100)
-    })).sort((a, b) => b.value - a.value);
-  };
-
-  const generateMonthlyData = (transactions: any[]) => {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    
-    const monthlyData = months.map(name => {
-      return { name, Income: 0, Expenses: 0 };
-    });
-    
-    transactions.forEach(t => {
-      const date = new Date(t.transaction_date);
-      const monthIndex = date.getMonth();
+    // Filter by date range
+    if (dateRange !== 'all') {
+      const transactionDate = new Date(transaction.date);
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
       
-      if (t.category.type === 'income') {
-        monthlyData[monthIndex].Income += Number(t.amount);
-      } else {
-        monthlyData[monthIndex].Expenses += Number(t.amount);
+      if (dateRange === 'this-month') {
+        return transactionDate.getMonth() === currentMonth && 
+               transactionDate.getFullYear() === currentYear;
+      } else if (dateRange === 'last-month') {
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        return transactionDate.getMonth() === lastMonth && 
+               transactionDate.getFullYear() === lastMonthYear;
+      } else if (dateRange === 'this-quarter') {
+        const currentQuarter = Math.floor(currentMonth / 3);
+        const transactionQuarter = Math.floor(transactionDate.getMonth() / 3);
+        return transactionQuarter === currentQuarter && 
+               transactionDate.getFullYear() === currentYear;
+      } else if (dateRange === 'this-year') {
+        return transactionDate.getFullYear() === currentYear;
       }
-    });
+    }
     
-    return monthlyData;
-  };
+    return true;
+  });
+
+  // Calculate summary stats
+  const incomeTotal = filteredTransactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+    
+  const expenseTotal = filteredTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+    
+  const balance = incomeTotal - expenseTotal;
 
   const handleAddTransaction = () => {
     setIsAddTransactionOpen(true);
@@ -165,28 +107,15 @@ const Finances = () => {
 
   const handleTransactionAdded = () => {
     setIsAddTransactionOpen(false);
-    refetch();
-    toast({
-      title: "Transaction Added",
-      description: "Your financial transaction has been recorded.",
-    });
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Financial Management</h1>
+          <h1 className="text-3xl font-bold">Financial Records</h1>
           <p className="text-muted-foreground mt-1">
-            Track income, expenses, and manage your farm's financial health.
+            Track income and expenses for your farm operations.
           </p>
         </div>
         
@@ -195,27 +124,23 @@ const Finances = () => {
             selectedFarmId={selectedFarmId}
             onFarmChange={setSelectedFarmId}
           />
-          <Button variant="outline" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            Select Period
-          </Button>
           <Button className="gap-2" onClick={handleAddTransaction}>
             <Plus className="h-4 w-4" />
             Add Transaction
           </Button>
         </div>
       </div>
-      
-      {!financialData ? (
+
+      {!selectedFarmId ? (
         <Card className="p-8 text-center">
           <CardTitle className="mb-4">Select a Farm</CardTitle>
           <CardDescription>
-            Please select a farm to view its financial data.
+            Please select a farm to view its financial records.
           </CardDescription>
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -224,12 +149,11 @@ const Finances = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-farm-green mr-2" />
-                  <span className="text-2xl font-bold">₹{financialData.totalIncome.toLocaleString()}</span>
+                  <ArrowUpCircle className="h-5 w-5 text-green-500 mr-2" />
+                  <span className="text-2xl font-bold">₹{incomeTotal.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center mt-2 text-farm-green text-sm">
-                  <TrendingUp className="h-4 w-4 mr-1" />
-                  <span>8% from last month</span>
+                <div className="flex items-center mt-2 text-muted-foreground text-sm">
+                  <span>From crop sales, subsidies, and other sources</span>
                 </div>
               </CardContent>
             </Card>
@@ -242,12 +166,11 @@ const Finances = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-destructive mr-2" />
-                  <span className="text-2xl font-bold">₹{financialData.totalExpenses.toLocaleString()}</span>
+                  <ArrowDownCircle className="h-5 w-5 text-red-500 mr-2" />
+                  <span className="text-2xl font-bold">₹{expenseTotal.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center mt-2 text-destructive text-sm">
-                  <TrendingDown className="h-4 w-4 mr-1" />
-                  <span>5% from last month</span>
+                <div className="flex items-center mt-2 text-muted-foreground text-sm">
+                  <span>For seeds, fertilizer, labor, and other costs</span>
                 </div>
               </CardContent>
             </Card>
@@ -255,138 +178,48 @@ const Finances = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Net Profit
+                  Net Balance
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center">
-                  <DollarSign className="h-5 w-5 text-farm-yellow mr-2" />
-                  <span className="text-2xl font-bold">₹{financialData.netProfit.toLocaleString()}</span>
+                  {balance >= 0 ? (
+                    <PiggyBank className="h-5 w-5 text-green-500 mr-2" />
+                  ) : (
+                    <Landmark className="h-5 w-5 text-red-500 mr-2" />
+                  )}
+                  <span className="text-2xl font-bold">₹{balance.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center mt-2 text-farm-yellow text-sm">
-                  <TrendingUp className="h-4 w-4 mr-1" />
-                  <span>12% from last month</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Income vs. Expenses (2023)</CardTitle>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsBarChart
-                    data={financialData.monthlyData}
-                    margin={{
-                      top: 20,
-                      right: 30,
-                      left: 20,
-                      bottom: 5,
-                    }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <RechartsTooltip />
-                    <Legend />
-                    <RechartsBar dataKey="Income" fill="rgba(75, 192, 192, 0.5)" />
-                    <RechartsBar dataKey="Expenses" fill="rgba(255, 99, 132, 0.5)" />
-                  </RechartsBarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart className="h-5 w-5" />
-                  Top Income Sources
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px] mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPieChart>
-                      <Pie
-                        data={financialData.incomeByCategory}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} (${percent}%)`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {financialData.incomeByCategory.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={INCOME_COLORS[index % INCOME_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip />
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-4">
-                  {financialData.incomeByCategory.map((category) => (
-                    <div className="flex justify-between items-center" key={category.name}>
-                      <span>{category.name}</span>
-                      <div className="flex items-center">
-                        <span className="font-medium">₹{category.value.toLocaleString()}</span>
-                        <span className="text-farm-green text-xs ml-2">({category.percent}%)</span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center mt-2 text-muted-foreground text-sm">
+                  <span>Overall financial health of your farm</span>
                 </div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChart className="h-5 w-5" />
-                  Top Expenses
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Key Metrics
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[200px] mb-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsPieChart>
-                      <Pie
-                        data={financialData.expensesByCategory}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} (${percent}%)`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {financialData.expensesByCategory.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={EXPENSE_COLORS[index % EXPENSE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip />
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-4">
-                  {financialData.expensesByCategory.map((category) => (
-                    <div className="flex justify-between items-center" key={category.name}>
-                      <span>{category.name}</span>
-                      <div className="flex items-center">
-                        <span className="font-medium">₹{category.value.toLocaleString()}</span>
-                        <span className="text-destructive text-xs ml-2">({category.percent}%)</span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center">
+                    <DollarSign className="h-4 w-4 text-blue-500 mr-1" />
+                    <span className="text-sm">ROI: N/A</span>
+                  </div>
+                  <div className="flex items-center">
+                    <CreditCard className="h-4 w-4 text-blue-500 mr-1" />
+                    <span className="text-sm">Profit Margin: N/A</span>
+                  </div>
+                  <div className="flex items-center">
+                    <BarChart3 className="h-4 w-4 text-blue-500 mr-1" />
+                    <span className="text-sm">Expense Ratio: N/A</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Calendar className="h-4 w-4 text-blue-500 mr-1" />
+                    <span className="text-sm">Tracking Since: N/A</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -394,8 +227,39 @@ const Finances = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>View your latest financial activities</CardDescription>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <CardTitle>Transaction History</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Select onValueChange={setTransactionFilter} defaultValue={transactionFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filter Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Transactions</SelectItem>
+                      <SelectItem value="income">Income</SelectItem>
+                      <SelectItem value="expense">Expenses</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select onValueChange={setDateRange} defaultValue={dateRange}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Select Date Range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="this-month">This Month</SelectItem>
+                      <SelectItem value="last-month">Last Month</SelectItem>
+                      <SelectItem value="this-quarter">This Quarter</SelectItem>
+                      <SelectItem value="this-year">This Year</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -404,32 +268,39 @@ const Finances = () => {
                     <TableHead>Date</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead>Payment Method</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {financialData.recentTransactions.map((transaction) => (
+                  {filteredTransactions.map((transaction) => (
                     <TableRow key={transaction.id}>
-                      <TableCell>{new Date(transaction.transaction_date).toLocaleDateString()}</TableCell>
-                      <TableCell>{transaction.category.name}</TableCell>
+                      <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{transaction.category}</TableCell>
                       <TableCell>{transaction.description}</TableCell>
-                      <TableCell>{transaction.payment_method}</TableCell>
-                      <TableCell className={`text-right ${transaction.category.type === 'income' ? 'text-farm-green' : 'text-destructive'}`}>
-                        {transaction.category.type === 'income' ? '+' : '-'}₹{Number(transaction.amount).toLocaleString()}
+                      <TableCell className="text-right">
+                        {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredTransactions.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                        No transactions found for the selected filters.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
-            <CardFooter className="flex justify-center">
-              <Button variant="outline">View All Transactions</Button>
+            <CardFooter className="flex justify-between">
+              <Button variant="outline">Generate Report</Button>
+              <Button>Export Data</Button>
             </CardFooter>
           </Card>
         </>
       )}
 
+      {/* Dialog for adding transaction */}
       <Dialog open={isAddTransactionOpen} onOpenChange={setIsAddTransactionOpen}>
         <AddTransactionForm 
           farmId={selectedFarmId} 

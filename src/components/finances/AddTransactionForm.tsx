@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { financialTransactions as mockTransactions } from '@/data/mockData';
 
 const transactionSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be greater than 0' }),
@@ -34,6 +35,7 @@ interface AddTransactionFormProps {
 const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSuccess, onCancel }) => {
   const { toast } = useToast();
   const [categoryType, setCategoryType] = useState<'income' | 'expense'>('expense');
+  const queryClient = useQueryClient();
   
   // Get financial categories
   const { data: categories = [] } = useQuery({
@@ -78,6 +80,23 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
     try {
       // In a real app, this would be a Supabase call
       console.log('Transaction data:', data);
+      
+      // Add transaction to mock data
+      const selectedCategory = categories.find(cat => cat.id === data.category_id);
+      const newTransaction = {
+        id: Math.random().toString(36).substring(2, 9),
+        date: data.transaction_date,
+        amount: data.amount,
+        type: categoryType,
+        category: selectedCategory?.name || 'Unknown',
+        description: data.description || '',
+        paymentMethod: data.payment_method || 'Cash',
+      };
+      
+      mockTransactions.unshift(newTransaction);
+      
+      // Invalidate query cache to trigger refetch
+      queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });
       
       toast({
         title: 'Transaction added successfully',

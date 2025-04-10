@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -7,8 +8,8 @@ const corsHeaders = {
 
 // Function to fetch data from OpenWeatherMap API
 async function fetchWeatherData(latitude: number, longitude: number) {
-  // OpenWeatherMap API key - you can use a free key from openweathermap.org
-  const apiKey = "9b32dd5b76d8fe5e38e10bbd4f8bb90a"; // This is a free API key for demo purposes
+  // OpenWeatherMap API key - using a test API key (replace with your own in production)
+  const apiKey = "0f03dbf2e69fb3e702faf8531a86b7e0"; // This is a test API key for demo purposes
   
   try {
     // Fetch current weather

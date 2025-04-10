@@ -75,6 +75,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
       }
     },
     enabled: !!farm || !!farmId, // Enable even if we don't have farm GPS data, we'll use defaults
+    refetchInterval: 1000 * 60 * 30, // Refetch every 30 minutes
   });
 
   const handleRefresh = async () => {
