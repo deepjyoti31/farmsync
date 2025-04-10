@@ -18,6 +18,11 @@ interface DeleteOptions {
   onError?: (error: Error) => void;
 }
 
+// Type-safe mapping of entity types to table names
+type TableNameMapping = {
+  [key in EntityType]: string;
+};
+
 /**
  * Deletes an entity from the database
  */
@@ -28,10 +33,8 @@ export const deleteEntity = async ({
   onError,
 }: DeleteOptions): Promise<void> => {
   try {
-    let error;
-
     // Map entity types to their table names in Supabase
-    const tableMapping: Record<EntityType, string> = {
+    const tableMapping: TableNameMapping = {
       farm: 'farms',
       field: 'fields',
       crop: 'field_crops',
@@ -47,9 +50,9 @@ export const deleteEntity = async ({
       throw new Error(`Unknown entity type: ${entityType}`);
     }
 
-    // Execute the delete operation
+    // Execute the delete operation with type assertion to ensure compatibility
     const { error: deleteError } = await supabase
-      .from(tableName)
+      .from(tableName as any)
       .delete()
       .eq('id', id);
 

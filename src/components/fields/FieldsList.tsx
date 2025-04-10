@@ -35,7 +35,25 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
         .eq('farm_id', farmId);
       
       if (error) throw error;
-      return data as Field[];
+      
+      // Transform the data to match the Field interface
+      return data.map((field: any) => ({
+        id: field.id,
+        name: field.name,
+        area: field.area,
+        areaUnit: field.area_unit,
+        area_unit: field.area_unit,
+        location: field.location || '',
+        soilType: field.soil_type,
+        soil_type: field.soil_type,
+        soilPH: field.soil_ph,
+        soil_ph: field.soil_ph,
+        images: [],
+        crops: field.field_crops?.map((fc: any) => fc.crop) || [],
+        farm_id: field.farm_id,
+        created_at: field.created_at,
+        updated_at: field.updated_at
+      })) as Field[];
     },
     enabled: !!farmId,
   });
@@ -98,7 +116,7 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
             <DialogHeader>
               <DialogTitle>Add New Field</DialogTitle>
             </DialogHeader>
-            <AddFieldForm farmId={farmId} onSuccess={handleAddSuccess} onCancel={() => setIsAddDialogOpen(false)} />
+            <AddFieldForm farmId={farmId} onSuccess={handleAddSuccess} onClose={() => setIsAddDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
@@ -136,7 +154,7 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
           <DialogHeader>
             <DialogTitle>Add New Field</DialogTitle>
           </DialogHeader>
-          <AddFieldForm farmId={farmId} onSuccess={handleAddSuccess} onCancel={() => setIsAddDialogOpen(false)} />
+          <AddFieldForm farmId={farmId} onSuccess={handleAddSuccess} onClose={() => setIsAddDialogOpen(false)} />
         </DialogContent>
       </Dialog>
     </div>
