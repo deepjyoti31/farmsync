@@ -12,6 +12,9 @@ import Crops from "./pages/Crops";
 import Livestock from "./pages/Livestock";
 import Finances from "./pages/Finances";
 import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 // Create a client outside of the component to avoid recreating it on each render
 const queryClient = new QueryClient();
@@ -25,6 +28,9 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/landing" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
               <Route path="/" element={<MainLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="fields" element={<Fields />} />
