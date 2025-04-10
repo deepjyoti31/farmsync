@@ -46,6 +46,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { format } from 'date-fns';
+import { 
+  Table, 
+  TableHeader, 
+  TableBody, 
+  TableFooter, 
+  TableHead, 
+  TableRow, 
+  TableCell, 
+  TableCaption 
+} from '@/components/ui/table-import';
 
 interface MarketProduct {
   id: string;
