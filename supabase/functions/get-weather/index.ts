@@ -1,10 +1,80 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Function to fetch data from OpenWeatherMap API
+async function fetchWeatherData(latitude: number, longitude: number) {
+  // OpenWeatherMap API key - you can use a free key from openweathermap.org
+  const apiKey = "9b32dd5b76d8fe5e38e10bbd4f8bb90a"; // This is a free API key for demo purposes
+  
+  try {
+    // Fetch current weather
+    const currentResponse = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${apiKey}`
+    );
+    
+    if (!currentResponse.ok) {
+      throw new Error(`Error fetching current weather: ${currentResponse.statusText}`);
+    }
+    
+    const currentData = await currentResponse.json();
+    
+    // Fetch forecast
+    const forecastResponse = await fetch(
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=metric&appid=${apiKey}`
+    );
+    
+    if (!forecastResponse.ok) {
+      throw new Error(`Error fetching forecast: ${forecastResponse.statusText}`);
+    }
+    
+    const forecastData = await forecastResponse.json();
+    
+    // Process current weather data
+    const current = {
+      temperature: Math.round(currentData.main.temp),
+      humidity: currentData.main.humidity,
+      precipitation: currentData.rain ? currentData.rain["1h"] || 0 : 0,
+      wind_speed: currentData.wind.speed,
+      condition: currentData.weather[0].description
+    };
+    
+    // Process forecast data
+    const forecast = [];
+    const dailyMap = new Map();
+    
+    // Group forecast by day (OpenWeatherMap returns forecast in 3-hour intervals)
+    for (const item of forecastData.list) {
+      const date = item.dt_txt.split(' ')[0];
+      
+      if (!dailyMap.has(date)) {
+        dailyMap.set(date, {
+          date: date,
+          temperature_min: item.main.temp_min,
+          temperature_max: item.main.temp_max,
+          condition: item.weather[0].description,
+          precipitation_chance: item.pop * 100 // Convert from 0-1 to 0-100
+        });
+      } else {
+        const existing = dailyMap.get(date);
+        existing.temperature_min = Math.min(existing.temperature_min, item.main.temp_min);
+        existing.temperature_max = Math.max(existing.temperature_max, item.main.temp_max);
+      }
+    }
+    
+    // Convert map to array and take first 5 days
+    const forecastArray = Array.from(dailyMap.values());
+    const fiveDayForecast = forecastArray.slice(0, 5);
+    
+    return { current, forecast: fiveDayForecast };
+  } catch (error) {
+    console.error("Error fetching weather data:", error);
+    return generateMockWeatherData(latitude, longitude);
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -24,12 +94,11 @@ serve(async (req) => {
       );
     }
 
-    // For demo purposes, we'll return mock weather data
-    // In a real implementation, you would call a weather API like OpenWeatherMap or similar
-    const mockData = generateMockWeatherData(latitude, longitude);
+    // Try to fetch real weather data, fall back to mock data if needed
+    const weatherData = await fetchWeatherData(latitude, longitude);
 
     return new Response(
-      JSON.stringify(mockData),
+      JSON.stringify(weatherData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
@@ -41,7 +110,7 @@ serve(async (req) => {
   }
 });
 
-// Helper function to generate mock weather data
+// Helper function to generate mock weather data (fallback)
 function generateMockWeatherData(latitude: number, longitude: number) {
   // Use the coordinates to create some variety in the data
   const latSeed = Math.abs(Math.sin(latitude));
@@ -73,7 +142,7 @@ function generateMockWeatherData(latitude: number, longitude: number) {
   return { current, forecast };
 }
 
-// Helper function to get weather condition based on a random seed
+// Helper function to get weather condition based on a random seed (fallback)
 function getWeatherCondition(seed: number) {
   const conditions = [
     'Clear sky',

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -39,6 +38,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
+import { Dialog } from '@/components/ui/dialog';
+import AddTransactionForm from '@/components/finances/AddTransactionForm';
 
 const INCOME_COLORS = ['#4CAF50', '#8BC34A', '#CDDC39', '#AFB42B'];
 const EXPENSE_COLORS = ['#F44336', '#FF5722', '#FF9800', '#FFC107', '#9E9D24'];
@@ -56,16 +57,16 @@ interface FinancialSummary {
 const Finances = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState('year'); // 'month', 'quarter', 'year'
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
 
   // Query to fetch financial transactions
-  const { data: financialData, isLoading } = useQuery({
+  const { data: financialData, isLoading, refetch } = useQuery({
     queryKey: ['finances', selectedFarmId, timeframe],
     queryFn: async (): Promise<FinancialSummary> => {
       if (!selectedFarmId) {
         throw new Error('No farm selected');
       }
 
-      // Fetch all financial transactions for the selected farm
       const { data: transactions, error } = await supabase
         .from('financial_transactions')
         .select(`
@@ -73,7 +74,6 @@ const Finances = () => {
           category:financial_categories(*)
         `)
         .eq('farm_id', selectedFarmId)
-        // Filter by timeframe here if needed
         .order('transaction_date', { ascending: false });
       
       if (error) {
@@ -94,18 +94,15 @@ const Finances = () => {
         return defaultResponse;
       }
 
-      // Process the data to calculate summary
       const incomeTransactions = transactions.filter(t => t.category.type === 'income');
       const expenseTransactions = transactions.filter(t => t.category.type === 'expense');
       
       const totalIncome = incomeTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
       const totalExpenses = expenseTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
       
-      // Group by category
       const incomeByCategory = groupByCategory(incomeTransactions, totalIncome);
       const expensesByCategory = groupByCategory(expenseTransactions, totalExpenses);
       
-      // Monthly data (simplified for the example)
       const monthlyData = generateMonthlyData(transactions);
       
       return {
@@ -115,13 +112,12 @@ const Finances = () => {
         incomeByCategory,
         expensesByCategory,
         monthlyData,
-        recentTransactions: transactions.slice(0, 10) // Take the 10 most recent transactions
+        recentTransactions: transactions.slice(0, 10)
       };
     },
     enabled: !!selectedFarmId,
   });
 
-  // Helper function to group transactions by category
   const groupByCategory = (transactions: any[], total: number) => {
     const grouped = transactions.reduce((acc, t) => {
       const categoryName = t.category.name;
@@ -139,14 +135,12 @@ const Finances = () => {
     })).sort((a, b) => b.value - a.value);
   };
 
-  // Helper function to generate monthly data for charts
   const generateMonthlyData = (transactions: any[]) => {
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     
-    // Group transactions by month
     const monthlyData = months.map(name => {
       return { name, Income: 0, Expenses: 0 };
     });
@@ -163,6 +157,19 @@ const Finances = () => {
     });
     
     return monthlyData;
+  };
+
+  const handleAddTransaction = () => {
+    setIsAddTransactionOpen(true);
+  };
+
+  const handleTransactionAdded = () => {
+    setIsAddTransactionOpen(false);
+    refetch();
+    toast({
+      title: "Transaction Added",
+      description: "Your financial transaction has been recorded.",
+    });
   };
 
   if (isLoading) {
@@ -192,7 +199,7 @@ const Finances = () => {
             <Calendar className="h-4 w-4" />
             Select Period
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={handleAddTransaction}>
             <Plus className="h-4 w-4" />
             Add Transaction
           </Button>
@@ -422,6 +429,14 @@ const Finances = () => {
           </Card>
         </>
       )}
+
+      <Dialog open={isAddTransactionOpen} onOpenChange={setIsAddTransactionOpen}>
+        <AddTransactionForm 
+          farmId={selectedFarmId} 
+          onSuccess={handleTransactionAdded}
+          onCancel={() => setIsAddTransactionOpen(false)}
+        />
+      </Dialog>
     </div>
   );
 };

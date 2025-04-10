@@ -25,38 +25,16 @@ import { toast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { Equipment, EquipmentMaintenance } from '@/types';
-import { equipment as mockEquipment } from '@/data/mockData';
-
-// Mock maintenance records
-const mockMaintenanceRecords: EquipmentMaintenance[] = [
-  {
-    id: '1',
-    equipment_id: '1',
-    maintenance_date: '2024-01-20',
-    maintenance_type: 'Regular service',
-    cost: 5000,
-    performed_by: 'Service Center',
-    notes: 'Oil change and filter replacement',
-    created_at: '2024-01-20T10:00:00Z',
-    equipment: { name: 'Mahindra Tractor' }
-  },
-  {
-    id: '2',
-    equipment_id: '2',
-    maintenance_date: '2024-02-15',
-    maintenance_type: 'Repair',
-    cost: 2000,
-    performed_by: 'Local Mechanic',
-    notes: 'Fixed motor issue',
-    created_at: '2024-02-15T14:30:00Z',
-    equipment: { name: 'Irrigation Pump' }
-  }
-];
+import { equipment as mockEquipment, maintenanceRecords as mockMaintenanceRecords } from '@/data/mockData';
+import { Dialog } from '@/components/ui/dialog';
+import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
 
 const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'maintenance'>('all');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddEquipmentOpen, setIsAddEquipmentOpen] = useState(false);
+  const [isScheduleMaintenanceOpen, setIsScheduleMaintenanceOpen] = useState(false);
 
   // Filter equipment based on selected farm
   const filteredEquipment = selectedFarmId 
@@ -96,6 +74,26 @@ const EquipmentPage = () => {
     }
   };
 
+  const handleAddEquipment = () => {
+    setIsAddEquipmentOpen(true);
+  };
+
+  const handleScheduleMaintenance = () => {
+    setIsScheduleMaintenanceOpen(true);
+    toast({
+      title: "Feature Coming Soon",
+      description: "Maintenance scheduling will be available in a future update.",
+    });
+  };
+
+  const handleEquipmentAdded = () => {
+    setIsAddEquipmentOpen(false);
+    toast({
+      title: "Equipment Added",
+      description: "New equipment has been added to your inventory.",
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[50vh]">
@@ -119,7 +117,7 @@ const EquipmentPage = () => {
             selectedFarmId={selectedFarmId}
             onFarmChange={setSelectedFarmId}
           />
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={handleAddEquipment}>
             <Plus className="h-4 w-4" />
             Add Equipment
           </Button>
@@ -306,7 +304,7 @@ const EquipmentPage = () => {
             </CardContent>
             {filteredEquipment.length > 0 && (
               <CardFooter className="flex justify-between">
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleScheduleMaintenance}>
                   <Calendar className="h-4 w-4 mr-2" />
                   Schedule Maintenance
                 </Button>
@@ -316,6 +314,15 @@ const EquipmentPage = () => {
           </Card>
         </>
       )}
+
+      {/* Dialog for adding equipment */}
+      <Dialog open={isAddEquipmentOpen} onOpenChange={setIsAddEquipmentOpen}>
+        <AddEquipmentForm 
+          farmId={selectedFarmId} 
+          onSuccess={handleEquipmentAdded}
+          onCancel={() => setIsAddEquipmentOpen(false)}
+        />
+      </Dialog>
     </div>
   );
 };
