@@ -12,10 +12,9 @@ import { Button } from '@/components/ui/button';
 import {
   Plus,
   Tractor,
-  Tool,
+  Wrench,
   Calendar,
   AlertTriangle,
-  Wrench,
   Check,
   Clock,
   Loader2,
@@ -27,22 +26,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import FarmSelector from '@/components/farms/FarmSelector';
+import { Equipment, EquipmentMaintenance } from '@/types';
 
-interface Equipment {
-  id: string;
-  name: string;
-  equipment_type: string;
-  manufacturer: string;
-  model: string;
-  purchase_date: string;
-  purchase_price: number;
-  status: string;
-  last_maintenance_date: string;
-  next_maintenance_date: string;
-  notes: string;
-}
-
-const Equipment = () => {
+const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'maintenance'>('all');
 
@@ -52,13 +38,23 @@ const Equipment = () => {
     queryFn: async () => {
       if (!selectedFarmId) return [];
 
-      const { data, error } = await supabase
-        .from('equipment')
-        .select('*')
-        .eq('farm_id', selectedFarmId);
+      try {
+        const { data, error } = await supabase
+          .from('equipment')
+          .select('*')
+          .eq('farm_id', selectedFarmId);
 
-      if (error) throw error;
-      return data as Equipment[];
+        if (error) throw error;
+        return data as Equipment[];
+      } catch (error) {
+        console.error('Error fetching equipment:', error);
+        toast({
+          title: "Failed to fetch equipment",
+          description: "Could not retrieve equipment data.",
+          variant: "destructive",
+        });
+        return [];
+      }
     },
     enabled: !!selectedFarmId,
   });
@@ -69,28 +65,38 @@ const Equipment = () => {
     queryFn: async () => {
       if (!selectedFarmId) return [];
 
-      // First get equipment IDs for this farm
-      const { data: equipmentData } = await supabase
-        .from('equipment')
-        .select('id')
-        .eq('farm_id', selectedFarmId);
+      try {
+        // First get equipment IDs for this farm
+        const { data: equipmentData } = await supabase
+          .from('equipment')
+          .select('id')
+          .eq('farm_id', selectedFarmId);
 
-      if (!equipmentData || equipmentData.length === 0) return [];
+        if (!equipmentData || equipmentData.length === 0) return [];
 
-      const equipmentIds = equipmentData.map(item => item.id);
+        const equipmentIds = equipmentData.map(item => item.id);
 
-      // Then get maintenance records for these equipment
-      const { data, error } = await supabase
-        .from('equipment_maintenance')
-        .select(`
-          *,
-          equipment:equipment(name)
-        `)
-        .in('equipment_id', equipmentIds)
-        .order('maintenance_date', { ascending: false });
+        // Then get maintenance records for these equipment
+        const { data, error } = await supabase
+          .from('equipment_maintenance')
+          .select(`
+            *,
+            equipment:equipment_id(name)
+          `)
+          .in('equipment_id', equipmentIds)
+          .order('maintenance_date', { ascending: false });
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data as EquipmentMaintenance[];
+      } catch (error) {
+        console.error('Error fetching maintenance records:', error);
+        toast({
+          title: "Failed to fetch maintenance records",
+          description: "Could not retrieve maintenance data.",
+          variant: "destructive",
+        });
+        return [];
+      }
     },
     enabled: !!selectedFarmId,
   });
@@ -314,7 +320,7 @@ const Equipment = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      maintenanceRecords.map((record: any) => (
+                      maintenanceRecords.map((record) => (
                         <TableRow key={record.id}>
                           <TableCell className="font-medium">{record.equipment?.name || 'Unknown'}</TableCell>
                           <TableCell>{new Date(record.maintenance_date).toLocaleDateString()}</TableCell>
@@ -344,4 +350,4 @@ const Equipment = () => {
   );
 };
 
-export default Equipment;
+export default EquipmentPage;

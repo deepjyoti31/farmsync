@@ -12,6 +12,8 @@ import Crops from "./pages/Crops";
 import Livestock from "./pages/Livestock";
 import Finances from "./pages/Finances";
 import Inventory from "./pages/Inventory";
+import Equipment from "./pages/Equipment";
+import Weather from "./pages/Weather";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
@@ -49,8 +51,8 @@ const App = () => {
                 <Route path="livestock" element={<Livestock />} />
                 <Route path="finances" element={<Finances />} />
                 <Route path="inventory" element={<Inventory />} />
-                <Route path="equipment" element={<NotFound />} />
-                <Route path="weather" element={<NotFound />} />
+                <Route path="equipment" element={<Equipment />} />
+                <Route path="weather" element={<Weather />} />
                 <Route path="market" element={<NotFound />} />
                 <Route path="reports" element={<NotFound />} />
                 <Route path="notifications" element={<NotFound />} />

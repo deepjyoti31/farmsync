@@ -1,4 +1,3 @@
-
 // Farm Management data types
 
 export interface Field {
@@ -134,9 +133,28 @@ export interface FinancialTransaction {
 export interface Equipment {
   id: string;
   name: string;
-  type: string;
-  purchaseDate: string;
-  lastMaintenance: string;
-  nextMaintenance: string;
+  equipment_type: string;
+  manufacturer: string;
+  model: string;
+  purchase_date: string;
+  purchase_price: number;
   status: string;
+  last_maintenance_date: string;
+  next_maintenance_date: string;
+  notes: string;
+  farm_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EquipmentMaintenance {
+  id: string;
+  equipment_id: string;
+  maintenance_date: string;
+  maintenance_type: string;
+  cost: number;
+  performed_by: string;
+  notes: string;
+  created_at: string;
+  equipment?: { name: string };
 }
