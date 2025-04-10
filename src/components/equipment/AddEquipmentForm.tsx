@@ -58,6 +58,18 @@ const AddEquipmentForm: React.FC<AddEquipmentFormProps> = ({ farmId, onSuccess, 
         id: Math.random().toString(36).substring(2, 9),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        // Ensure all required properties are set with non-optional values
+        name: data.name,
+        equipment_type: data.equipment_type,
+        manufacturer: data.manufacturer || '',
+        model: data.model || '',
+        purchase_date: data.purchase_date || '',
+        purchase_price: data.purchase_price || 0,
+        status: data.status,
+        last_maintenance_date: data.last_maintenance_date || '',
+        next_maintenance_date: data.next_maintenance_date || '',
+        notes: data.notes || '',
+        farm_id: data.farm_id,
       };
 
       mockEquipment.push(newEquipment);

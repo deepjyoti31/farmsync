@@ -7,7 +7,8 @@ import {
   Livestock, 
   FinancialTransaction, 
   Notification,
-  Equipment 
+  Equipment,
+  EquipmentMaintenance 
 } from '../types';
 
 // Mock Weather Data
@@ -277,5 +278,31 @@ export const equipment: Equipment[] = [
     farm_id: 'demo-farm-01',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z'
+  }
+];
+
+// Adding mock maintenance records
+export const maintenanceRecords: EquipmentMaintenance[] = [
+  {
+    id: '1',
+    equipment_id: '1',
+    maintenance_date: '2024-01-20',
+    maintenance_type: 'Regular Service',
+    cost: 5000,
+    performed_by: 'Local Mechanic',
+    notes: 'Changed oil and filters',
+    created_at: '2024-01-20T00:00:00Z',
+    equipment: { name: 'Mahindra Tractor' }
+  },
+  {
+    id: '2',
+    equipment_id: '2',
+    maintenance_date: '2024-02-15',
+    maintenance_type: 'Repair',
+    cost: 1500,
+    performed_by: 'Service Center',
+    notes: 'Fixed leakage issue',
+    created_at: '2024-02-15T00:00:00Z',
+    equipment: { name: 'Irrigation Pump' }
   }
 ];
