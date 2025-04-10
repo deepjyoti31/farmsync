@@ -19,51 +19,49 @@ import Signup from "./pages/Signup";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
-// Create a client outside of the component to avoid recreating it on each render
+// Create a client
 const queryClient = new QueryClient();
 
 const App = () => {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-              <Routes>
-                <Route path="/" element={<Navigate to="/landing" replace />} />
-                <Route path="/landing" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route 
-                  path="/dashboard" 
-                  element={
-                    <ProtectedRoute>
-                      <MainLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<Dashboard />} />
-                  <Route path="fields" element={<Fields />} />
-                  <Route path="crops" element={<Crops />} />
-                  <Route path="livestock" element={<Livestock />} />
-                  <Route path="finances" element={<Finances />} />
-                  <Route path="inventory" element={<Inventory />} />
-                  <Route path="equipment" element={<NotFound />} />
-                  <Route path="weather" element={<NotFound />} />
-                  <Route path="market" element={<NotFound />} />
-                  <Route path="reports" element={<NotFound />} />
-                  <Route path="notifications" element={<NotFound />} />
-                  <Route path="community" element={<NotFound />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Navigate to="/landing" replace />} />
+              <Route path="/landing" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <MainLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="fields" element={<Fields />} />
+                <Route path="crops" element={<Crops />} />
+                <Route path="livestock" element={<Livestock />} />
+                <Route path="finances" element={<Finances />} />
+                <Route path="inventory" element={<Inventory />} />
+                <Route path="equipment" element={<NotFound />} />
+                <Route path="weather" element={<NotFound />} />
+                <Route path="market" element={<NotFound />} />
+                <Route path="reports" element={<NotFound />} />
+                <Route path="notifications" element={<NotFound />} />
+                <Route path="community" element={<NotFound />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
