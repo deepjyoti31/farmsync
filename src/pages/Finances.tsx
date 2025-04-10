@@ -32,8 +32,6 @@ import {
 } from '@/components/ui/select';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FinancialTransaction } from '@/types';
-import { financialTransactions as mockTransactions } from '@/data/mockData';
 import { Dialog } from '@/components/ui/dialog';
 import AddTransactionForm from '@/components/finances/AddTransactionForm';
 
@@ -47,14 +45,43 @@ const Finances = () => {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Fetch transactions
+  // Fetch transactions from Supabase
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['financial_transactions', selectedFarmId],
     queryFn: async () => {
-      // In a real app, this would fetch from Supabase
-      console.log('Fetching financial transactions');
-      return mockTransactions;
+      if (!selectedFarmId) return [];
+      
+      console.log('Fetching financial transactions for farm:', selectedFarmId);
+      
+      // Fetch transactions from Supabase
+      let query = supabase
+        .from('financial_transactions')
+        .select(`
+          *,
+          financial_categories(name, type)
+        `)
+        .eq('farm_id', selectedFarmId)
+        .order('transaction_date', { ascending: false });
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+      }
+      
+      // Transform data to match the expected format
+      return data.map(transaction => ({
+        id: transaction.id,
+        date: transaction.transaction_date,
+        amount: Number(transaction.amount),
+        type: transaction.financial_categories?.type || '',
+        category: transaction.financial_categories?.name || '',
+        description: transaction.description || '',
+        paymentMethod: transaction.payment_method || '',
+      }));
     },
+    enabled: !!selectedFarmId,
   });
   
   console.log('Current transactions:', transactions);

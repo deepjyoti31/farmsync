@@ -12,7 +12,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { financialTransactions as mockTransactions } from '@/data/mockData';
 
 const transactionSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be greater than 0' }),
@@ -37,22 +36,21 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
   const [categoryType, setCategoryType] = useState<'income' | 'expense'>('expense');
   const queryClient = useQueryClient();
   
-  // Get financial categories
+  // Get financial categories from Supabase
   const { data: categories = [] } = useQuery({
     queryKey: ['financial_categories'],
     queryFn: async () => {
-      const mockCategories = [
-        { id: '1', name: 'Seeds', type: 'expense' },
-        { id: '2', name: 'Fertilizer', type: 'expense' },
-        { id: '3', name: 'Equipment', type: 'expense' },
-        { id: '4', name: 'Labor', type: 'expense' },
-        { id: '5', name: 'Rent', type: 'expense' },
-        { id: '6', name: 'Fuel', type: 'expense' },
-        { id: '7', name: 'Crop Sales', type: 'income' },
-        { id: '8', name: 'Subsidies', type: 'income' },
-        { id: '9', name: 'Other Income', type: 'income' },
-      ];
-      return mockCategories;
+      const { data, error } = await supabase
+        .from('financial_categories')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+      }
+      
+      return data || [];
     },
   });
   
@@ -78,23 +76,24 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
 
   const onSubmit = async (data: TransactionFormValues) => {
     try {
-      // In a real app, this would be a Supabase call
-      console.log('Transaction data:', data);
+      // Insert transaction into Supabase
+      const { data: newTransaction, error } = await supabase
+        .from('financial_transactions')
+        .insert({
+          amount: data.amount,
+          transaction_date: data.transaction_date,
+          category_id: data.category_id,
+          payment_method: data.payment_method || 'Cash',
+          description: data.description || '',
+          reference_number: data.reference_number || null,
+          farm_id: data.farm_id,
+        })
+        .select()
+        .single();
       
-      // Add transaction to mock data
-      const selectedCategory = categories.find(cat => cat.id === data.category_id);
-      const newTransaction = {
-        id: Math.random().toString(36).substring(2, 9),
-        date: data.transaction_date,
-        amount: data.amount,
-        type: categoryType,
-        category: selectedCategory?.name || 'Unknown',
-        description: data.description || '',
-        paymentMethod: data.payment_method || 'Cash',
-      };
-      
-      // Add the new transaction to the mock data array
-      mockTransactions.unshift(newTransaction);
+      if (error) {
+        throw error;
+      }
       
       // Invalidate query cache to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });

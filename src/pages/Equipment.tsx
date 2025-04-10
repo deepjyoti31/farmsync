@@ -21,44 +21,56 @@ import {
   Settings,
   FileText
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import FarmSelector from '@/components/farms/FarmSelector';
-import { Equipment, EquipmentMaintenance } from '@/types';
-import { equipment as mockEquipment, maintenanceRecords as mockMaintenanceRecords } from '@/data/mockData';
 import { Dialog } from '@/components/ui/dialog';
 import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'maintenance'>('all');
   const [isAddEquipmentOpen, setIsAddEquipmentOpen] = useState(false);
   const [isScheduleMaintenanceOpen, setIsScheduleMaintenanceOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Use React Query to fetch equipment data (using mock data)
+  // Use React Query to fetch equipment data from Supabase
   const { data: equipment = [], isLoading: isLoadingEquipment } = useQuery({
     queryKey: ['equipment', selectedFarmId],
     queryFn: async () => {
-      // Simulate API call with mock data
-      return selectedFarmId 
-        ? mockEquipment.filter(item => item.farm_id === selectedFarmId)
-        : [];
+      if (!selectedFarmId) return [];
+      
+      const { data, error } = await supabase
+        .from('equipment')
+        .select('*')
+        .eq('farm_id', selectedFarmId)
+        .order('name');
+      
+      if (error) {
+        console.error('Error fetching equipment:', error);
+        throw error;
+      }
+      
+      return data || [];
     },
+    enabled: !!selectedFarmId,
   });
 
-  // Filter maintenance records based on selected farm's equipment
+  // For maintenance records, in a real application, this would fetch from a maintenance_records table
+  // For now, let's use a simplified approach
   const { data: maintenanceRecords = [], isLoading: isLoadingMaintenance } = useQuery({
     queryKey: ['equipment_maintenance', selectedFarmId],
     queryFn: async () => {
       if (!selectedFarmId) return [];
       
-      const equipmentIds = equipment.map(e => e.id);
-      return mockMaintenanceRecords.filter(record => 
-        equipmentIds.includes(record.equipment_id)
-      );
+      // In a real app, this would fetch from a maintenance_records table
+      // For now, we'll return an empty array
+      return [];
     },
-    enabled: !!equipment.length,
+    enabled: !!selectedFarmId,
   });
 
   const isLoading = isLoadingEquipment || isLoadingMaintenance;
@@ -74,7 +86,7 @@ const EquipmentPage = () => {
     maintenance: equipment.filter(e => e.status === 'needs maintenance').length,
     repair: equipment.filter(e => e.status === 'in repair').length,
     inactive: equipment.filter(e => e.status === 'inactive').length,
-    totalValue: equipment.reduce((sum, e) => sum + (e.purchase_price || 0), 0)
+    totalValue: equipment.reduce((sum, e) => sum + (Number(e.purchase_price) || 0), 0)
   };
 
   const getStatusIcon = (status: string) => {
@@ -106,6 +118,7 @@ const EquipmentPage = () => {
 
   const handleEquipmentAdded = () => {
     setIsAddEquipmentOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['equipment'] });
     toast({
       title: "Equipment Added",
       description: "New equipment has been added to your inventory.",

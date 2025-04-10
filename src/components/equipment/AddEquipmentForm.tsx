@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -11,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { equipment as mockEquipment } from '@/data/mockData';
 import { useQueryClient } from '@tanstack/react-query';
 
 const equipmentSchema = z.object({
@@ -53,28 +51,28 @@ const AddEquipmentForm: React.FC<AddEquipmentFormProps> = ({ farmId, onSuccess, 
 
   const onSubmit = async (data: EquipmentFormValues) => {
     try {
-      // In a real app, this would be a Supabase call
-      // For now, we'll add to mock data
-      const newEquipment = {
-        ...data,
-        id: Math.random().toString(36).substring(2, 9),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        // Ensure all required properties are set with non-optional values
-        name: data.name,
-        equipment_type: data.equipment_type,
-        manufacturer: data.manufacturer || '',
-        model: data.model || '',
-        purchase_date: data.purchase_date || '',
-        purchase_price: data.purchase_price || 0,
-        status: data.status,
-        last_maintenance_date: data.last_maintenance_date || '',
-        next_maintenance_date: data.next_maintenance_date || '',
-        notes: data.notes || '',
-        farm_id: data.farm_id,
-      };
+      // Insert equipment into Supabase
+      const { data: newEquipment, error } = await supabase
+        .from('equipment')
+        .insert({
+          name: data.name,
+          equipment_type: data.equipment_type,
+          manufacturer: data.manufacturer || '',
+          model: data.model || '',
+          purchase_date: data.purchase_date || null,
+          purchase_price: data.purchase_price || null,
+          status: data.status,
+          last_maintenance_date: data.last_maintenance_date || null,
+          next_maintenance_date: data.next_maintenance_date || null,
+          notes: data.notes || '',
+          farm_id: data.farm_id,
+        })
+        .select()
+        .single();
 
-      mockEquipment.push(newEquipment);
+      if (error) {
+        throw error;
+      }
       
       // Invalidate equipment queries to trigger a refetch
       queryClient.invalidateQueries({ queryKey: ['equipment'] });

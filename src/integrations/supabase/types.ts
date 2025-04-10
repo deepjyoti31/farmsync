@@ -83,6 +83,57 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment: {
+        Row: {
+          created_at: string
+          equipment_type: string
+          farm_id: string
+          id: string
+          last_maintenance_date: string | null
+          manufacturer: string | null
+          model: string | null
+          name: string
+          next_maintenance_date: string | null
+          notes: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          equipment_type: string
+          farm_id: string
+          id?: string
+          last_maintenance_date?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name: string
+          next_maintenance_date?: string | null
+          notes?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          equipment_type?: string
+          farm_id?: string
+          id?: string
+          last_maintenance_date?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name?: string
+          next_maintenance_date?: string | null
+          notes?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expert_tips: {
         Row: {
           category: string | null
