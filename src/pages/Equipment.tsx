@@ -21,94 +21,64 @@ import {
   Settings,
   FileText
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { Equipment, EquipmentMaintenance } from '@/types';
+import { equipment as mockEquipment } from '@/data/mockData';
+
+// Mock maintenance records
+const mockMaintenanceRecords: EquipmentMaintenance[] = [
+  {
+    id: '1',
+    equipment_id: '1',
+    maintenance_date: '2024-01-20',
+    maintenance_type: 'Regular service',
+    cost: 5000,
+    performed_by: 'Service Center',
+    notes: 'Oil change and filter replacement',
+    created_at: '2024-01-20T10:00:00Z',
+    equipment: { name: 'Mahindra Tractor' }
+  },
+  {
+    id: '2',
+    equipment_id: '2',
+    maintenance_date: '2024-02-15',
+    maintenance_type: 'Repair',
+    cost: 2000,
+    performed_by: 'Local Mechanic',
+    notes: 'Fixed motor issue',
+    created_at: '2024-02-15T14:30:00Z',
+    equipment: { name: 'Irrigation Pump' }
+  }
+];
 
 const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'maintenance'>('all');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch equipment data
-  const { data: equipment = [], isLoading } = useQuery({
-    queryKey: ['equipment', selectedFarmId],
-    queryFn: async () => {
-      if (!selectedFarmId) return [];
+  // Filter equipment based on selected farm
+  const filteredEquipment = selectedFarmId 
+    ? mockEquipment.filter(item => item.farm_id === selectedFarmId)
+    : [];
 
-      try {
-        const { data, error } = await supabase
-          .from('equipment')
-          .select('*')
-          .eq('farm_id', selectedFarmId);
-
-        if (error) throw error;
-        return data as Equipment[];
-      } catch (error) {
-        console.error('Error fetching equipment:', error);
-        toast({
-          title: "Failed to fetch equipment",
-          description: "Could not retrieve equipment data.",
-          variant: "destructive",
-        });
-        return [];
-      }
-    },
-    enabled: !!selectedFarmId,
-  });
-
-  // Fetch maintenance records
-  const { data: maintenanceRecords = [] } = useQuery({
-    queryKey: ['equipment_maintenance', selectedFarmId],
-    queryFn: async () => {
-      if (!selectedFarmId) return [];
-
-      try {
-        // First get equipment IDs for this farm
-        const { data: equipmentData } = await supabase
-          .from('equipment')
-          .select('id')
-          .eq('farm_id', selectedFarmId);
-
-        if (!equipmentData || equipmentData.length === 0) return [];
-
-        const equipmentIds = equipmentData.map(item => item.id);
-
-        // Then get maintenance records for these equipment
-        const { data, error } = await supabase
-          .from('equipment_maintenance')
-          .select(`
-            *,
-            equipment:equipment_id(name)
-          `)
-          .in('equipment_id', equipmentIds)
-          .order('maintenance_date', { ascending: false });
-
-        if (error) throw error;
-        return data as EquipmentMaintenance[];
-      } catch (error) {
-        console.error('Error fetching maintenance records:', error);
-        toast({
-          title: "Failed to fetch maintenance records",
-          description: "Could not retrieve maintenance data.",
-          variant: "destructive",
-        });
-        return [];
-      }
-    },
-    enabled: !!selectedFarmId,
-  });
+  // Filter maintenance records based on selected farm's equipment
+  const filteredMaintenanceRecords = selectedFarmId
+    ? mockMaintenanceRecords.filter(record => {
+        const equipmentIds = filteredEquipment.map(e => e.id);
+        return equipmentIds.includes(record.equipment_id);
+      })
+    : [];
 
   // Calculate statistics
   const stats = {
-    total: equipment.length,
-    operational: equipment.filter(e => e.status === 'operational').length,
-    maintenance: equipment.filter(e => e.status === 'needs maintenance').length,
-    repair: equipment.filter(e => e.status === 'in repair').length,
-    inactive: equipment.filter(e => e.status === 'inactive').length,
-    totalValue: equipment.reduce((sum, e) => sum + (e.purchase_price || 0), 0)
+    total: filteredEquipment.length,
+    operational: filteredEquipment.filter(e => e.status === 'operational').length,
+    maintenance: filteredEquipment.filter(e => e.status === 'needs maintenance').length,
+    repair: filteredEquipment.filter(e => e.status === 'in repair').length,
+    inactive: filteredEquipment.filter(e => e.status === 'inactive').length,
+    totalValue: filteredEquipment.reduce((sum, e) => sum + (e.purchase_price || 0), 0)
   };
 
   const getStatusIcon = (status: string) => {
@@ -271,14 +241,14 @@ const EquipmentPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {equipment.length === 0 ? (
+                    {filteredEquipment.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
                           No equipment found. Add your first equipment to get started.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      equipment.map((item) => (
+                      filteredEquipment.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">{item.name}</TableCell>
                           <TableCell>{item.equipment_type}</TableCell>
@@ -313,14 +283,14 @@ const EquipmentPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {maintenanceRecords.length === 0 ? (
+                    {filteredMaintenanceRecords.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                           No maintenance records found.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      maintenanceRecords.map((record) => (
+                      filteredMaintenanceRecords.map((record) => (
                         <TableRow key={record.id}>
                           <TableCell className="font-medium">{record.equipment?.name || 'Unknown'}</TableCell>
                           <TableCell>{new Date(record.maintenance_date).toLocaleDateString()}</TableCell>
@@ -334,7 +304,7 @@ const EquipmentPage = () => {
                 </Table>
               )}
             </CardContent>
-            {equipment.length > 0 && (
+            {filteredEquipment.length > 0 && (
               <CardFooter className="flex justify-between">
                 <Button variant="outline">
                   <Calendar className="h-4 w-4 mr-2" />

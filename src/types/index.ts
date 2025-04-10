@@ -1,4 +1,5 @@
 
+
 // Farm Management data types
 
 export interface Field {
@@ -159,3 +160,4 @@ export interface EquipmentMaintenance {
   created_at: string;
   equipment?: { name: string };
 }
+
