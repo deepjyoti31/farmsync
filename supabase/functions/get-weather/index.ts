@@ -6,75 +6,68 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Function to fetch data from OpenWeatherMap API
+// Function to fetch data from Open-Meteo API
 async function fetchWeatherData(latitude: number, longitude: number) {
-  // OpenWeatherMap API key - using a test API key (replace with your own in production)
-  const apiKey = "0f03dbf2e69fb3e702faf8531a86b7e0"; // This is a test API key for demo purposes
-  
   try {
-    // Fetch current weather
-    const currentResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${apiKey}`
+    // Fetch current weather from Open-Meteo
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code&timezone=auto&forecast_days=5`
     );
     
-    if (!currentResponse.ok) {
-      throw new Error(`Error fetching current weather: ${currentResponse.statusText}`);
+    if (!response.ok) {
+      throw new Error(`Error fetching weather: ${response.statusText}`);
     }
     
-    const currentData = await currentResponse.json();
-    
-    // Fetch forecast
-    const forecastResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=metric&appid=${apiKey}`
-    );
-    
-    if (!forecastResponse.ok) {
-      throw new Error(`Error fetching forecast: ${forecastResponse.statusText}`);
-    }
-    
-    const forecastData = await forecastResponse.json();
+    const data = await response.json();
     
     // Process current weather data
+    const weatherCode = data.current.weather_code;
     const current = {
-      temperature: Math.round(currentData.main.temp),
-      humidity: currentData.main.humidity,
-      precipitation: currentData.rain ? currentData.rain["1h"] || 0 : 0,
-      wind_speed: currentData.wind.speed,
-      condition: currentData.weather[0].description
+      temperature: Math.round(data.current.temperature_2m),
+      humidity: data.current.relative_humidity_2m,
+      precipitation: data.current.precipitation,
+      wind_speed: data.current.wind_speed_10m,
+      condition: getWeatherCondition(weatherCode)
     };
     
     // Process forecast data
     const forecast = [];
-    const dailyMap = new Map();
     
-    // Group forecast by day (OpenWeatherMap returns forecast in 3-hour intervals)
-    for (const item of forecastData.list) {
-      const date = item.dt_txt.split(' ')[0];
-      
-      if (!dailyMap.has(date)) {
-        dailyMap.set(date, {
-          date: date,
-          temperature_min: item.main.temp_min,
-          temperature_max: item.main.temp_max,
-          condition: item.weather[0].description,
-          precipitation_chance: item.pop * 100 // Convert from 0-1 to 0-100
-        });
-      } else {
-        const existing = dailyMap.get(date);
-        existing.temperature_min = Math.min(existing.temperature_min, item.main.temp_min);
-        existing.temperature_max = Math.max(existing.temperature_max, item.main.temp_max);
-      }
+    for (let i = 0; i < data.daily.time.length; i++) {
+      forecast.push({
+        date: data.daily.time[i],
+        temperature_min: Math.round(data.daily.temperature_2m_min[i]),
+        temperature_max: Math.round(data.daily.temperature_2m_max[i]),
+        condition: getWeatherCondition(data.daily.weather_code[i]),
+        precipitation_chance: data.daily.precipitation_sum[i] > 0 ? 80 : 20 // Approximation
+      });
     }
     
-    // Convert map to array and take first 5 days
-    const forecastArray = Array.from(dailyMap.values());
-    const fiveDayForecast = forecastArray.slice(0, 5);
-    
-    return { current, forecast: fiveDayForecast };
+    return { current, forecast };
   } catch (error) {
     console.error("Error fetching weather data:", error);
     return generateMockWeatherData(latitude, longitude);
   }
+}
+
+// Map WMO weather codes to conditions
+function getWeatherCondition(code: number): string {
+  // WMO Weather interpretation codes (WW)
+  // https://open-meteo.com/en/docs
+  if (code === 0) return "Clear sky";
+  if (code === 1) return "Mainly clear";
+  if (code >= 2 && code <= 3) return "Partly cloudy";
+  if (code === 45 || code === 48) return "Fog";
+  if (code >= 51 && code <= 55) return "Drizzle";
+  if (code >= 56 && code <= 57) return "Freezing Drizzle";
+  if (code >= 61 && code <= 65) return "Rain";
+  if (code >= 66 && code <= 67) return "Freezing Rain";
+  if (code >= 71 && code <= 77) return "Snow";
+  if (code >= 80 && code <= 82) return "Rain showers";
+  if (code >= 85 && code <= 86) return "Snow showers";
+  if (code === 95) return "Thunderstorm";
+  if (code >= 96 && code <= 99) return "Thunderstorm with hail";
+  return "Unknown";
 }
 
 serve(async (req) => {
@@ -95,7 +88,7 @@ serve(async (req) => {
       );
     }
 
-    // Try to fetch real weather data, fall back to mock data if needed
+    // Fetch weather data from Open-Meteo
     const weatherData = await fetchWeatherData(latitude, longitude);
 
     return new Response(
@@ -124,7 +117,7 @@ function generateMockWeatherData(latitude: number, longitude: number) {
     humidity: Math.round(60 + (randomSeed * 30 - 15)), // 45-75%
     precipitation: Math.round(randomSeed * 10) / 10, // 0-1.0 mm
     wind_speed: Math.round(5 + (randomSeed * 10)), // 5-15 km/h
-    condition: getWeatherCondition(randomSeed)
+    condition: randomSeed > 0.7 ? "Partly cloudy" : "Clear sky"
   };
 
   // Generate 5-day forecast
@@ -135,23 +128,10 @@ function generateMockWeatherData(latitude: number, longitude: number) {
       date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       temperature_min: Math.round(20 + (daySeed * 10 - 5)),
       temperature_max: Math.round(30 + (daySeed * 10 - 5)),
-      condition: getWeatherCondition(daySeed),
+      condition: daySeed > 0.7 ? "Partly cloudy" : "Clear sky",
       precipitation_chance: Math.round(daySeed * 100)
     });
   }
 
   return { current, forecast };
-}
-
-// Helper function to get weather condition based on a random seed (fallback)
-function getWeatherCondition(seed: number) {
-  const conditions = [
-    'Clear sky',
-    'Partly cloudy',
-    'Cloudy',
-    'Light rain',
-    'Thunderstorm',
-    'Sunny'
-  ];
-  return conditions[Math.floor(seed * conditions.length)];
 }

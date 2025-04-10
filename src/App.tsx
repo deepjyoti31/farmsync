@@ -14,6 +14,8 @@ import Finances from "./pages/Finances";
 import Inventory from "./pages/Inventory";
 import Equipment from "./pages/Equipment";
 import Weather from "./pages/Weather";
+import Market from "./pages/Market";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
@@ -53,8 +55,8 @@ const App = () => {
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="equipment" element={<Equipment />} />
                 <Route path="weather" element={<Weather />} />
-                <Route path="market" element={<NotFound />} />
-                <Route path="reports" element={<NotFound />} />
+                <Route path="market" element={<Market />} />
+                <Route path="reports" element={<Reports />} />
                 <Route path="notifications" element={<NotFound />} />
                 <Route path="community" element={<NotFound />} />
               </Route>

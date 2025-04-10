@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { FinancialCategory } from '@/types';
 
 const transactionSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be greater than 0' }),
@@ -37,7 +38,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
   const queryClient = useQueryClient();
   
   // Get financial categories from Supabase
-  const { data: categories = [] } = useQuery({
+  const { data: categoriesData = [] } = useQuery({
     queryKey: ['financial_categories'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -50,15 +51,16 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
         throw error;
       }
       
-      return data || [];
+      return data as FinancialCategory[] || [];
     },
   });
   
-  const filteredCategories = categories.filter(cat => cat.type === categoryType);
+  const filteredCategories = categoriesData.filter(cat => cat.type === categoryType);
   
   const defaultValues: Partial<TransactionFormValues> = {
     transaction_date: new Date().toISOString().split('T')[0],
     farm_id: farmId || '',
+    payment_method: 'cash',
   };
 
   const form = useForm<TransactionFormValues>({
@@ -74,7 +76,15 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
     }
   }, [categoryType, filteredCategories, form]);
 
+  // Update form when farmId changes
+  useEffect(() => {
+    if (farmId) {
+      form.setValue('farm_id', farmId);
+    }
+  }, [farmId, form]);
+
   const onSubmit = async (data: TransactionFormValues) => {
+    console.log('Submitting transaction:', data);
     try {
       // Insert transaction into Supabase
       const { data: newTransaction, error } = await supabase
@@ -92,8 +102,11 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
         .single();
       
       if (error) {
+        console.error('Error inserting transaction:', error);
         throw error;
       }
+      
+      console.log('Transaction added successfully:', newTransaction);
       
       // Invalidate query cache to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });
@@ -205,7 +218,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Payment Method</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} defaultValue={field.value || 'cash'}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select payment method" />
@@ -232,7 +245,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
               <FormItem>
                 <FormLabel>Reference/Receipt Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="Optional" {...field} />
+                  <Input placeholder="Optional" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -246,7 +259,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
               <FormItem>
                 <FormLabel>Description</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Details about this transaction" {...field} />
+                  <Textarea placeholder="Details about this transaction" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
