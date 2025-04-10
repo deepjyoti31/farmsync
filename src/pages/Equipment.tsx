@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -28,6 +27,7 @@ import { Dialog } from '@/components/ui/dialog';
 import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Equipment, EquipmentMaintenance } from '@/types';
 
 const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -54,13 +54,12 @@ const EquipmentPage = () => {
         throw error;
       }
       
-      return data || [];
+      return data as Equipment[];
     },
     enabled: !!selectedFarmId,
   });
 
   // For maintenance records, in a real application, this would fetch from a maintenance_records table
-  // For now, let's use a simplified approach
   const { data: maintenanceRecords = [], isLoading: isLoadingMaintenance } = useQuery({
     queryKey: ['equipment_maintenance', selectedFarmId],
     queryFn: async () => {
@@ -68,7 +67,7 @@ const EquipmentPage = () => {
       
       // In a real app, this would fetch from a maintenance_records table
       // For now, we'll return an empty array
-      return [];
+      return [] as EquipmentMaintenance[];
     },
     enabled: !!selectedFarmId,
   });

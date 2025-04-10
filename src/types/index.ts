@@ -1,5 +1,4 @@
 
-
 // Farm Management data types
 
 export interface Field {
@@ -132,6 +131,27 @@ export interface FinancialTransaction {
   paymentMethod: string;
 }
 
+export interface FinancialCategory {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseFinancialTransaction {
+  id: string;
+  amount: number;
+  transaction_date: string;
+  description?: string;
+  payment_method?: string;
+  reference_number?: string;
+  category_id: string;
+  farm_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Equipment {
   id: string;
   name: string;
@@ -160,4 +180,3 @@ export interface EquipmentMaintenance {
   created_at: string;
   equipment?: { name: string };
 }
-
