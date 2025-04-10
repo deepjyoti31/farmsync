@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -36,13 +35,14 @@ import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddCropForm from '@/components/crops/AddCropForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DeleteButton } from '@/components/common/DeleteConfirmation';
+import { deleteEntity } from '@/utils/deleteUtils';
 
 const Crops = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Fetch fields for the selected farm
   const { 
     data: farmFields = [], 
     isLoading: isLoadingFields,
@@ -63,7 +63,6 @@ const Crops = () => {
     enabled: !!selectedFarmId,
   });
 
-  // Fetch field_crops data
   const {
     data: fieldCrops = [],
     isLoading: isLoadingCrops,
@@ -73,7 +72,6 @@ const Crops = () => {
     queryFn: async () => {
       if (!selectedFarmId) return [];
       
-      // First get all fields for this farm
       const { data: fieldData, error: fieldError } = await supabase
         .from('fields')
         .select('id')
@@ -84,7 +82,6 @@ const Crops = () => {
       
       const fieldIds = fieldData.map(field => field.id);
       
-      // Then get all field_crops that link to these fields
       const { data: fieldCropsData, error: cropError } = await supabase
         .from('field_crops')
         .select(`
@@ -99,7 +96,6 @@ const Crops = () => {
     enabled: !!selectedFarmId,
   });
 
-  // Handle errors
   React.useEffect(() => {
     if (fieldsError) {
       toast({
@@ -160,6 +156,16 @@ const Crops = () => {
     toast({
       title: "Crop added successfully",
       description: "Your crop has been added to the field.",
+    });
+  };
+
+  const handleDeleteCrop = async (cropId: string) => {
+    await deleteEntity({
+      id: cropId,
+      entityType: 'crop',
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['field_crops'] });
+      }
     });
   };
 
@@ -267,6 +273,7 @@ const Crops = () => {
                     </div>
                   </TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -281,6 +288,18 @@ const Crops = () => {
                       <div className="flex items-center gap-2">
                         {getStatusIcon(fieldCrop.status)}
                         {getStatusBadge(fieldCrop.status)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="ghost" size="sm">View</Button>
+                        <DeleteButton 
+                          onDelete={() => handleDeleteCrop(fieldCrop.id)}
+                          itemName={fieldCrop.crop?.name}
+                          entityType="Crop"
+                          buttonSize="sm"
+                          buttonVariant="ghost"
+                        />
                       </div>
                     </TableCell>
                   </TableRow>

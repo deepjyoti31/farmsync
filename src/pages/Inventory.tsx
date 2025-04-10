@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,6 +13,8 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddInventoryForm from '@/components/inventory/AddInventoryForm';
+import { DeleteButton } from '@/components/common/DeleteConfirmation';
+import { deleteEntity } from '@/utils/deleteUtils';
 
 const Inventory = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -22,7 +23,6 @@ const Inventory = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const queryClient = useQueryClient();
 
-  // Fetch inventory categories
   const { 
     data: categories = [],
     isLoading: isCategoriesLoading
@@ -39,7 +39,6 @@ const Inventory = () => {
     }
   });
 
-  // Fetch inventory items for the selected farm
   const { 
     data: inventory = [],
     isLoading: isInventoryLoading,
@@ -58,12 +57,10 @@ const Inventory = () => {
         `)
         .eq('farm_id', selectedFarmId);
       
-      // Apply search filter if provided
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
       }
       
-      // Apply category filter if selected
       if (categoryFilter && categoryFilter !== 'all') {
         query = query.eq('category_id', categoryFilter);
       }
@@ -76,7 +73,6 @@ const Inventory = () => {
     enabled: !!selectedFarmId,
   });
 
-  // Handle errors
   React.useEffect(() => {
     if (inventoryError) {
       toast({
@@ -129,6 +125,16 @@ const Inventory = () => {
     toast({
       title: "Item added successfully",
       description: "Your inventory item has been added.",
+    });
+  };
+
+  const handleDeleteInventory = async (inventoryId: string) => {
+    await deleteEntity({
+      id: inventoryId,
+      entityType: 'inventory',
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      }
     });
   };
 
@@ -258,7 +264,7 @@ const Inventory = () => {
                         <TableHead>Quantity</TableHead>
                         <TableHead>Location</TableHead>
                         <TableHead>Expiry Date</TableHead>
-                        <TableHead></TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -282,7 +288,16 @@ const Inventory = () => {
                             {item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : '-'}
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="sm">Details</Button>
+                            <div className="flex items-center space-x-2">
+                              <Button variant="ghost" size="sm">Details</Button>
+                              <DeleteButton 
+                                onDelete={() => handleDeleteInventory(item.id)}
+                                itemName={item.name}
+                                entityType="Inventory item"
+                                buttonSize="sm"
+                                buttonVariant="ghost"
+                              />
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

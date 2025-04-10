@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -24,13 +23,14 @@ import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddLivestockForm from '@/components/livestock/AddLivestockForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DeleteButton } from '@/components/common/DeleteConfirmation';
+import { deleteEntity } from '@/utils/deleteUtils';
 
 const Livestock = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Fetch livestock for the selected farm
   const { 
     data: livestock = [], 
     isLoading,
@@ -54,7 +54,6 @@ const Livestock = () => {
     enabled: !!selectedFarmId,
   });
 
-  // Handle errors
   React.useEffect(() => {
     if (error) {
       toast({
@@ -84,6 +83,16 @@ const Livestock = () => {
     toast({
       title: "Livestock added successfully",
       description: "Your livestock record has been added.",
+    });
+  };
+
+  const handleDeleteLivestock = async (livestockId: string) => {
+    await deleteEntity({
+      id: livestockId,
+      entityType: 'livestock',
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['livestock'] });
+      }
     });
   };
 
@@ -178,7 +187,7 @@ const Livestock = () => {
                       <span>Status</span>
                     </div>
                   </TableHead>
-                  <TableHead></TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -192,7 +201,16 @@ const Livestock = () => {
                       {getHealthBadge(animal.status || 'active')}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm">Details</Button>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="ghost" size="sm">Details</Button>
+                        <DeleteButton 
+                          onDelete={() => handleDeleteLivestock(animal.id)}
+                          itemName={animal.tag_id || animal.livestock_type?.name}
+                          entityType="Livestock"
+                          buttonSize="sm"
+                          buttonVariant="ghost"
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
