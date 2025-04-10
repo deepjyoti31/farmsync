@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -18,21 +19,28 @@ import {
   Clock,
   Loader2,
   Settings,
-  FileText
+  FileText,
+  Edit,
+  Trash
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { Dialog } from '@/components/ui/dialog';
 import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
+import EditEquipmentForm from '@/components/equipment/EditEquipmentForm';
+import DeleteConfirmation from '@/components/common/DeleteConfirmation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Equipment, EquipmentMaintenance } from '@/types';
+import { Equipment } from '@/types';
 
 const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'maintenance'>('all');
   const [isAddEquipmentOpen, setIsAddEquipmentOpen] = useState(false);
+  const [isEditEquipmentOpen, setIsEditEquipmentOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [isScheduleMaintenanceOpen, setIsScheduleMaintenanceOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,7 +75,7 @@ const EquipmentPage = () => {
       
       // In a real app, this would fetch from a maintenance_records table
       // For now, we'll return an empty array
-      return [] as EquipmentMaintenance[];
+      return [] as any[];
     },
     enabled: !!selectedFarmId,
   });
@@ -107,6 +115,46 @@ const EquipmentPage = () => {
     setIsAddEquipmentOpen(true);
   };
 
+  const handleEditEquipment = (item: Equipment) => {
+    setSelectedEquipment(item);
+    setIsEditEquipmentOpen(true);
+  };
+
+  const handleDeleteEquipment = (item: Equipment) => {
+    setSelectedEquipment(item);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteEquipment = async () => {
+    if (!selectedEquipment) return;
+    
+    try {
+      const { error } = await supabase
+        .from('equipment')
+        .delete()
+        .eq('id', selectedEquipment.id);
+        
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['equipment'] });
+      
+      toast({
+        title: "Equipment Deleted",
+        description: `${selectedEquipment.name} has been deleted.`,
+      });
+      
+      setIsDeleteConfirmOpen(false);
+      setSelectedEquipment(null);
+    } catch (error) {
+      console.error('Error deleting equipment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete equipment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleScheduleMaintenance = () => {
     setIsScheduleMaintenanceOpen(true);
     toast({
@@ -121,6 +169,16 @@ const EquipmentPage = () => {
     toast({
       title: "Equipment Added",
       description: "New equipment has been added to your inventory.",
+    });
+  };
+
+  const handleEquipmentUpdated = () => {
+    setIsEditEquipmentOpen(false);
+    setSelectedEquipment(null);
+    queryClient.invalidateQueries({ queryKey: ['equipment'] });
+    toast({
+      title: "Equipment Updated",
+      description: "Equipment has been updated successfully.",
     });
   };
 
@@ -289,10 +347,20 @@ const EquipmentPage = () => {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">
-                              <FileText className="h-4 w-4" />
-                              <span className="sr-only">View Details</span>
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleEditEquipment(item)}>
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Edit</span>
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleDeleteEquipment(item)}>
+                                <Trash className="h-4 w-4" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <FileText className="h-4 w-4" />
+                                <span className="sr-only">View Details</span>
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -353,6 +421,26 @@ const EquipmentPage = () => {
           onCancel={() => setIsAddEquipmentOpen(false)}
         />
       </Dialog>
+
+      {/* Dialog for editing equipment */}
+      {selectedEquipment && (
+        <Dialog open={isEditEquipmentOpen} onOpenChange={setIsEditEquipmentOpen}>
+          <EditEquipmentForm 
+            equipment={selectedEquipment}
+            onSuccess={handleEquipmentUpdated}
+            onCancel={() => setIsEditEquipmentOpen(false)}
+          />
+        </Dialog>
+      )}
+
+      {/* Confirmation dialog for deleting equipment */}
+      <DeleteConfirmation 
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={confirmDeleteEquipment}
+        title="Delete Equipment"
+        itemName={selectedEquipment?.name}
+      />
     </div>
   );
 };

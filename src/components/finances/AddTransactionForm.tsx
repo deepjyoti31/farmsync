@@ -1,30 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
-import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { z } from 'zod';
+import { DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FinancialCategory } from '@/types';
-
-const transactionSchema = z.object({
-  amount: z.coerce.number().positive({ message: 'Amount must be greater than 0' }),
-  transaction_date: z.string().min(1, { message: 'Transaction date is required' }),
-  category_id: z.string().min(1, { message: 'Category is required' }),
-  payment_method: z.string().optional(),
-  description: z.string().optional(),
-  reference_number: z.string().optional(),
-  farm_id: z.string().min(1, { message: 'Farm is required' }),
-});
-
-type TransactionFormValues = z.infer<typeof transactionSchema>;
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 
 interface AddTransactionFormProps {
   farmId: string | null;
@@ -32,248 +23,240 @@ interface AddTransactionFormProps {
   onCancel: () => void;
 }
 
+const transactionSchema = z.object({
+  category_id: z.string().min(1, "Category is required"),
+  transaction_date: z.date(),
+  amount: z.number().positive("Amount must be greater than 0"),
+  description: z.string().optional(),
+  payment_method: z.string().optional(),
+  reference_number: z.string().optional(),
+});
+
+type TransactionFormValues = z.infer<typeof transactionSchema>;
+
 const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSuccess, onCancel }) => {
   const { toast } = useToast();
-  const [categoryType, setCategoryType] = useState<'income' | 'expense'>('expense');
-  const queryClient = useQueryClient();
+  const [transactionDate, setTransactionDate] = useState<Date>(new Date());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryType, setSelectedCategoryType] = useState<'income' | 'expense'>('expense');
   
-  // Get financial categories from Supabase
-  const { data: categoriesData = [] } = useQuery({
-    queryKey: ['financial_categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('financial_categories')
-        .select('*')
-        .order('name');
-      
-      if (error) {
+  // Financial categories from the database
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('financial_categories')
+          .select('*')
+          .order('name');
+        
+        if (error) throw error;
+        
+        setCategories(data || []);
+      } catch (error) {
         console.error('Error fetching categories:', error);
-        throw error;
       }
-      
-      return data as FinancialCategory[] || [];
-    },
-  });
-  
-  const filteredCategories = categoriesData.filter(cat => cat.type === categoryType);
-  
-  const defaultValues: Partial<TransactionFormValues> = {
-    transaction_date: new Date().toISOString().split('T')[0],
-    farm_id: farmId || '',
-    payment_method: 'cash',
-  };
+    };
+    
+    fetchCategories();
+  }, []);
 
-  const form = useForm<TransactionFormValues>({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionSchema),
-    defaultValues,
+    defaultValues: {
+      transaction_date: new Date(),
+      amount: undefined,
+    }
   });
 
-  // Update form when category type changes
+  const selectedCategoryId = watch('category_id');
+  
   useEffect(() => {
-    const firstCategoryOfType = filteredCategories[0]?.id;
-    if (firstCategoryOfType) {
-      form.setValue('category_id', firstCategoryOfType);
+    if (selectedCategoryId) {
+      const category = categories.find(cat => cat.id === selectedCategoryId);
+      if (category) {
+        setSelectedCategoryType(category.type);
+      }
     }
-  }, [categoryType, filteredCategories, form]);
-
-  // Update form when farmId changes
-  useEffect(() => {
-    if (farmId) {
-      form.setValue('farm_id', farmId);
-    }
-  }, [farmId, form]);
+  }, [selectedCategoryId, categories]);
 
   const onSubmit = async (data: TransactionFormValues) => {
-    console.log('Submitting transaction:', data);
+    if (!farmId) return;
+    
+    setIsSubmitting(true);
+    
     try {
-      // Insert transaction into Supabase
-      const { data: newTransaction, error } = await supabase
+      const { error } = await supabase
         .from('financial_transactions')
         .insert({
-          amount: data.amount,
-          transaction_date: data.transaction_date,
+          farm_id: farmId,
           category_id: data.category_id,
-          payment_method: data.payment_method || 'Cash',
-          description: data.description || '',
+          transaction_date: data.transaction_date.toISOString().split('T')[0],
+          amount: data.amount,
+          description: data.description || null,
+          payment_method: data.payment_method || null,
           reference_number: data.reference_number || null,
-          farm_id: data.farm_id,
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error inserting transaction:', error);
-        throw error;
-      }
-      
-      console.log('Transaction added successfully:', newTransaction);
-      
-      // Invalidate query cache to trigger refetch
-      queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });
-      
-      toast({
-        title: 'Transaction added successfully',
-        description: `${categoryType === 'income' ? 'Income' : 'Expense'} of ₹${data.amount} has been recorded.`,
-      });
+        });
 
+      if (error) throw error;
+
+      toast({
+        title: "Transaction Added",
+        description: "The transaction has been recorded successfully.",
+      });
+      
       onSuccess();
     } catch (error) {
       console.error('Error adding transaction:', error);
       toast({
-        title: 'Failed to add transaction',
-        description: 'There was an error adding your transaction. Please try again.',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to add transaction. Please try again.",
+        variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <DialogContent className="sm:max-w-[525px]">
+    <DialogContent className="sm:max-w-[550px]">
       <DialogHeader>
         <DialogTitle>Add New Transaction</DialogTitle>
-        <DialogDescription>
-          Record a new financial transaction for your farm.
-        </DialogDescription>
       </DialogHeader>
-
-      <div className="flex space-x-2 mb-4">
-        <Button 
-          variant={categoryType === 'expense' ? 'default' : 'outline'} 
-          onClick={() => setCategoryType('expense')}
-          type="button"
-          className="w-full"
-        >
-          Expense
-        </Button>
-        <Button 
-          variant={categoryType === 'income' ? 'default' : 'outline'} 
-          onClick={() => setCategoryType('income')}
-          type="button"
-          className="w-full"
-        >
-          Income
-        </Button>
-      </div>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount (₹)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="0.00" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="transaction_date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="transaction_type">Transaction Type</Label>
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant={selectedCategoryType === 'expense' ? 'default' : 'outline'}
+              onClick={() => setSelectedCategoryType('expense')}
+              className="flex-1"
+            >
+              Expense
+            </Button>
+            <Button
+              type="button"
+              variant={selectedCategoryType === 'income' ? 'default' : 'outline'}
+              onClick={() => setSelectedCategoryType('income')}
+              className="flex-1"
+            >
+              Income
+            </Button>
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="category">Category*</Label>
+          <Select onValueChange={(value) => setValue('category_id', value)} required>
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories
+                .filter(category => category.type === selectedCategoryType)
+                .map((category) => (
+                  <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                ))
+              }
+            </SelectContent>
+          </Select>
+          {errors.category_id && (
+            <p className="text-sm text-red-500">{errors.category_id.message}</p>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="transaction_date">Date*</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !transactionDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {transactionDate ? format(transactionDate, "PPP") : "Select date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={transactionDate}
+                onSelect={(date) => {
+                  setTransactionDate(date as Date);
+                  setValue("transaction_date", date as Date);
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="amount">Amount (₹)*</Label>
+          <Input
+            id="amount"
+            placeholder="0.00"
+            type="number"
+            step="0.01"
+            onChange={(e) => setValue('amount', parseFloat(e.target.value))}
+            required
+          />
+          {errors.amount && (
+            <p className="text-sm text-red-500">{errors.amount.message}</p>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            placeholder="What is this transaction for?"
+            {...register("description")}
+          />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="payment_method">Payment Method</Label>
+            <Select onValueChange={(value) => setValue('payment_method', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                <SelectItem value="upi">UPI</SelectItem>
+                <SelectItem value="cheque">Cheque</SelectItem>
+                <SelectItem value="credit_card">Credit Card</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="reference_number">Reference Number</Label>
+            <Input
+              id="reference_number"
+              placeholder="Receipt or invoice number"
+              {...register("reference_number")}
             />
           </div>
-
-          <FormField
-            control={form.control}
-            name="category_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {filteredCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="payment_method"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Payment Method</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value || 'cash'}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                    <SelectItem value="credit_card">Credit Card</SelectItem>
-                    <SelectItem value="check">Check</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="reference_number"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Reference/Receipt Number</FormLabel>
-                <FormControl>
-                  <Input placeholder="Optional" {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Details about this transaction" {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button type="submit">Save Transaction</Button>
-          </DialogFooter>
-        </form>
-      </Form>
+        </div>
+        
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Transaction"}
+          </Button>
+        </DialogFooter>
+      </form>
     </DialogContent>
   );
 };
