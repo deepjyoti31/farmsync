@@ -7,12 +7,12 @@ import { Link } from 'react-router-dom';
 
 const QuickLinks = () => {
   const links = [
-    { icon: Map, label: 'Fields', path: '/fields' },
-    { icon: Sprout, label: 'Crops', path: '/crops' },
-    { icon: Users, label: 'Livestock', path: '/livestock' },
-    { icon: DollarSign, label: 'Finances', path: '/finances' },
-    { icon: Tractor, label: 'Equipment', path: '/equipment' },
-    { icon: Cloud, label: 'Weather', path: '/weather' },
+    { icon: Map, label: 'Fields', path: '/dashboard/fields' },
+    { icon: Sprout, label: 'Crops', path: '/dashboard/crops' },
+    { icon: Users, label: 'Livestock', path: '/dashboard/livestock' },
+    { icon: DollarSign, label: 'Finances', path: '/dashboard/finances' },
+    { icon: Tractor, label: 'Equipment', path: '/dashboard/equipment' },
+    { icon: Cloud, label: 'Weather', path: '/dashboard/weather' },
   ];
 
   return (

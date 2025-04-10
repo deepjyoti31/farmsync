@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, MessageSquare, User, ChevronDown } from 'lucide-react';
 import { 
@@ -13,22 +13,63 @@ import {
 import { Button } from '@/components/ui/button';
 import { notifications } from '@/data/mockData';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const TopBar = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [userName, setUserName] = useState('User');
   const unreadNotifications = notifications.filter(n => !n.read).length;
   
-  const handleLogout = () => {
-    // In a real app, you would clear authentication state here
-    toast({
-      title: "Logged out successfully",
-      description: "Redirecting to login page...",
-    });
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (data && !error) {
+          const fullName = [data.first_name, data.last_name].filter(Boolean).join(' ');
+          setUserName(fullName || user.email?.split('@')[0] || 'User');
+        } else {
+          // Fallback to email or user metadata if profile not found
+          const firstName = user.user_metadata?.first_name;
+          const lastName = user.user_metadata?.last_name;
+          
+          if (firstName || lastName) {
+            setUserName([firstName, lastName].filter(Boolean).join(' '));
+          } else if (user.email) {
+            setUserName(user.email.split('@')[0]);
+          }
+        }
+      }
+    };
     
-    // Redirect to login page after a short delay
-    setTimeout(() => {
-      navigate('/landing');
-    }, 1500);
+    fetchUserProfile();
+  }, [user]);
+  
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logged out successfully",
+        description: "Redirecting to login page...",
+      });
+      
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        navigate('/landing');
+      }, 1500);
+    } catch (error) {
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
@@ -57,7 +98,7 @@ const TopBar = () => {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              <span>Ramesh Singh</span>
+              <span>{userName}</span>
               <ChevronDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>

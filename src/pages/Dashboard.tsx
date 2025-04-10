@@ -194,6 +194,9 @@ const Dashboard = () => {
     );
   }
 
+  // Calculate active crops count
+  const activeCropsCount = cropsList.filter(c => c.status === 'growing' || c.status === 'planted').length;
+
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -225,7 +228,7 @@ const Dashboard = () => {
               />
               <StatsCard 
                 title="Crops" 
-                value={cropsList.filter(c => c.status === 'growing' || c.status === 'planted').length.toString()} 
+                value={activeCropsCount.toString()} 
                 description="Currently growing" 
                 trend={cropsList.length > 0 ? "up" : "neutral"} 
                 trendValue={cropsList.length.toString()}

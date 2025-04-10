@@ -25,7 +25,10 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications }) =>
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-lg">Notifications</CardTitle>
+        <CardTitle className="text-lg flex items-center justify-between">
+          Notifications
+          <span className="text-xs text-muted-foreground">(Demo Data)</span>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

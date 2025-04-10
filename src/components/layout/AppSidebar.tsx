@@ -18,18 +18,18 @@ import {
 import { cn } from '@/lib/utils';
 
 const menuItems = [
-  { icon: Home, label: 'Dashboard', path: '/' },
-  { icon: Map, label: 'Fields', path: '/fields' },
-  { icon: Sprout, label: 'Crops', path: '/crops' },
-  { icon: Users, label: 'Livestock', path: '/livestock' },
-  { icon: Warehouse, label: 'Inventory', path: '/inventory' },
-  { icon: DollarSign, label: 'Finances', path: '/finances' },
-  { icon: Tractor, label: 'Equipment', path: '/equipment' },
-  { icon: Cloud, label: 'Weather', path: '/weather' },
-  { icon: Store, label: 'Market', path: '/market' },
-  { icon: LineChart, label: 'Reports', path: '/reports' },
-  { icon: Bell, label: 'Notifications', path: '/notifications' },
-  { icon: MessageSquare, label: 'Community', path: '/community' },
+  { icon: Home, label: 'Dashboard', path: '/dashboard' },
+  { icon: Map, label: 'Fields', path: '/dashboard/fields' },
+  { icon: Sprout, label: 'Crops', path: '/dashboard/crops' },
+  { icon: Users, label: 'Livestock', path: '/dashboard/livestock' },
+  { icon: Warehouse, label: 'Inventory', path: '/dashboard/inventory' },
+  { icon: DollarSign, label: 'Finances', path: '/dashboard/finances' },
+  { icon: Tractor, label: 'Equipment', path: '/dashboard/equipment' },
+  { icon: Cloud, label: 'Weather', path: '/dashboard/weather' },
+  { icon: Store, label: 'Market', path: '/dashboard/market' },
+  { icon: LineChart, label: 'Reports', path: '/dashboard/reports' },
+  { icon: Bell, label: 'Notifications', path: '/dashboard/notifications' },
+  { icon: MessageSquare, label: 'Community', path: '/dashboard/community' },
 ];
 
 const AppSidebar = () => {
