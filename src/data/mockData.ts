@@ -60,50 +60,37 @@ export const fields: Field[] = [
 export const crops: Crop[] = [
   {
     id: '1',
-    fieldId: '1',
     name: 'Wheat',
     variety: 'HD-2967',
     plantingDate: '2024-11-15',
     harvestDate: '2025-04-20',
-    status: 'planted',
-    tasks: []
+    status: 'planned'
   },
   {
     id: '2',
-    fieldId: '2',
     name: 'Rice',
     variety: 'Basmati-370',
     plantingDate: '2024-06-15',
     harvestDate: '2024-11-10',
-    status: 'planned',
-    tasks: []
+    status: 'planned'
   },
   {
     id: '3',
-    fieldId: '3',
     name: 'Tomatoes',
     variety: 'Pusa Ruby',
     plantingDate: '2024-03-10',
     harvestDate: '2024-06-15',
-    status: 'growing',
-    tasks: []
+    status: 'active'
   },
   {
     id: '4',
-    fieldId: '3',
     name: 'Okra',
     variety: 'Parbhani Kranti',
     plantingDate: '2024-04-01',
     harvestDate: '2024-06-30',
-    status: 'growing',
-    tasks: []
+    status: 'active'
   }
 ];
-
-// Connect crops to fields
-fields.forEach(field => {
-  field.crops = crops.filter(crop => crop.fieldId === field.id);
-});
 
 // Mock Tasks
 export const tasks: Task[] = [
@@ -152,11 +139,6 @@ export const tasks: Task[] = [
     }
   }
 ];
-
-// Connect tasks to crops
-crops.forEach(crop => {
-  crop.tasks = tasks.filter(task => task.relatedTo?.type === 'crop' && task.relatedTo.id === crop.id);
-});
 
 // Mock Livestock
 export const livestock: Livestock[] = [

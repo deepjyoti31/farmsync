@@ -14,8 +14,9 @@ import {
   MapPin,
   Sprout, 
   PiggyBank,
-  Cow
+  Bird
 } from "lucide-react";
+import { crops, tasks, notifications } from '@/data/mockData';
 
 const Dashboard = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -55,7 +56,7 @@ const Dashboard = () => {
               description="Total animals" 
               trend="up" 
               trendValue="3"
-              icon={Cow}
+              icon={Bird}
             />
             <StatsCard 
               title="Revenue" 
@@ -88,7 +89,7 @@ const Dashboard = () => {
                   <CardDescription>Current status of your crops</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CropStatus />
+                  <CropStatus crops={crops} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -100,7 +101,7 @@ const Dashboard = () => {
                   <CardDescription>Tasks scheduled for the next 7 days</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <TaskList />
+                  <TaskList tasks={tasks} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -114,7 +115,7 @@ const Dashboard = () => {
               <CardDescription>Latest updates from your farm</CardDescription>
             </CardHeader>
             <CardContent>
-              <NotificationList />
+              <NotificationList notifications={notifications} />
             </CardContent>
           </Card>
           
@@ -124,7 +125,7 @@ const Dashboard = () => {
               <CardDescription>Tasks scheduled for the next 7 days</CardDescription>
             </CardHeader>
             <CardContent>
-              <TaskList />
+              <TaskList tasks={tasks} />
             </CardContent>
           </Card>
         </div>
