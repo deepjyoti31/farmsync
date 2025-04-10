@@ -63,6 +63,10 @@ const EquipmentPage = () => {
 
   const isLoading = isLoadingEquipment || isLoadingMaintenance;
 
+  // Define filtered equipment and maintenance records based on the tab
+  const filteredEquipment = equipment;
+  const filteredMaintenanceRecords = maintenanceRecords;
+
   // Calculate statistics
   const stats = {
     total: equipment.length,

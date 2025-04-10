@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { FinancialTransaction } from '@/types';
 import { financialTransactions as mockTransactions } from '@/data/mockData';
@@ -44,6 +44,7 @@ const Finances = () => {
   const [transactionFilter, setTransactionFilter] = useState<TransactionFilterType>('all');
   const [dateRange, setDateRange] = useState<DateRangeType>('all');
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch transactions
   const { data: transactions = [], isLoading } = useQuery({
@@ -107,6 +108,17 @@ const Finances = () => {
 
   const handleTransactionAdded = () => {
     setIsAddTransactionOpen(false);
+    // Invalidate and refetch transactions data
+    queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });
+  };
+
+  // Type-safe handlers for Select components
+  const handleTransactionFilterChange = (value: string) => {
+    setTransactionFilter(value as TransactionFilterType);
+  };
+
+  const handleDateRangeChange = (value: string) => {
+    setDateRange(value as DateRangeType);
   };
 
   return (
@@ -230,7 +242,7 @@ const Finances = () => {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <CardTitle>Transaction History</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <Select onValueChange={setTransactionFilter} defaultValue={transactionFilter}>
+                  <Select onValueChange={handleTransactionFilterChange} defaultValue={transactionFilter}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Filter Type" />
                     </SelectTrigger>
@@ -241,7 +253,7 @@ const Finances = () => {
                     </SelectContent>
                   </Select>
                   
-                  <Select onValueChange={setDateRange} defaultValue={dateRange}>
+                  <Select onValueChange={handleDateRangeChange} defaultValue={dateRange}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Select Date Range" />
                     </SelectTrigger>
@@ -300,7 +312,6 @@ const Finances = () => {
         </>
       )}
 
-      {/* Dialog for adding transaction */}
       <Dialog open={isAddTransactionOpen} onOpenChange={setIsAddTransactionOpen}>
         <AddTransactionForm 
           farmId={selectedFarmId} 
