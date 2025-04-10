@@ -39,7 +39,26 @@ const Dashboard = () => {
         .select('*');
       
       if (error) throw error;
-      return userFarms as Farm[];
+      
+      // Transform the data to match our Farm type
+      return (userFarms || []).map((farm: any): Farm => ({
+        id: farm.id,
+        name: farm.name,
+        location: farm.address || '',
+        village: farm.village,
+        district: farm.district,
+        state: farm.state,
+        totalArea: farm.total_area,
+        total_area: farm.total_area,
+        areaUnit: farm.area_unit,
+        area_unit: farm.area_unit,
+        fields: [], // We'll fetch fields separately
+        user_id: farm.user_id,
+        gps_latitude: farm.gps_latitude,
+        gps_longitude: farm.gps_longitude,
+        created_at: farm.created_at,
+        updated_at: farm.updated_at
+      }));
     },
   });
 
@@ -66,7 +85,25 @@ const Dashboard = () => {
         .eq('farm_id', selectedFarmId);
       
       if (error) throw error;
-      return data as Field[];
+      
+      // Transform the data to match our Field type
+      return (data || []).map((field: any): Field => ({
+        id: field.id,
+        name: field.name,
+        area: field.area,
+        areaUnit: field.area_unit,
+        area_unit: field.area_unit,
+        location: '',
+        soilType: field.soil_type || '',
+        soil_type: field.soil_type || '',
+        soilPH: field.soil_ph || 0,
+        soil_ph: field.soil_ph || 0,
+        images: [],
+        crops: [], // We'll fetch crops separately
+        farm_id: field.farm_id,
+        created_at: field.created_at,
+        updated_at: field.updated_at
+      }));
     },
     enabled: !!selectedFarmId,
   });

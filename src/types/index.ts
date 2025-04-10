@@ -6,9 +6,12 @@ export interface Field {
   name: string;
   area: number;
   areaUnit: string;
+  area_unit?: string; // Database field name
   location?: string;
   soilType?: string;
+  soil_type?: string; // Database field name
   soilPH?: number;
+  soil_ph?: number; // Database field name
   images?: string[];
   crops: Crop[];
   farm_id: string;
@@ -53,8 +56,10 @@ export interface Farm {
   district?: string;
   state?: string;
   totalArea?: number;
+  total_area?: number; // Database field name
   areaUnit?: string;
-  fields: Field[];
+  area_unit?: string; // Database field name
+  fields?: Field[]; // Make this optional since it's not always returned from DB
   user_id: string;
   gps_latitude?: number;
   gps_longitude?: number;

@@ -60,9 +60,12 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
         name: field.name,
         area: field.area,
         areaUnit: field.area_unit,
-        location: field.location || '',
+        area_unit: field.area_unit,
+        location: '',
         soilType: field.soil_type || '',
+        soil_type: field.soil_type || '',
         soilPH: field.soil_ph || 0,
+        soil_ph: field.soil_ph || 0,
         images: field.field_images?.map((img: any) => img.image_url) || [],
         crops: field.field_crops?.map((fieldCrop: any) => ({
           id: fieldCrop.id,
@@ -71,6 +74,9 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
           harvestDate: fieldCrop.expected_harvest_date,
           status: fieldCrop.status as any || 'planned',
         })) || [],
+        farm_id: farmId as string,
+        created_at: field.created_at || new Date().toISOString(),
+        updated_at: field.updated_at || new Date().toISOString(),
       }));
     },
     enabled: !!farmId,
