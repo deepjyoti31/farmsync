@@ -258,8 +258,9 @@ const Market = () => {
     },
   });
   
-  const states = Array.from(new Set(marketData.map(item => item.state))).sort();
-  const commodities = Array.from(new Set(marketData.map(item => item.commodity))).sort();
+  // Fix for TypeScript errors - ensure we're working with string arrays
+  const states = Array.from(new Set(marketData.map(item => item.state))).sort() as string[];
+  const commodities = Array.from(new Set(marketData.map(item => item.commodity))).sort() as string[];
   
   const filteredMarketData = marketData.filter(item => {
     if (searchQuery && !item.commodity.toLowerCase().includes(searchQuery.toLowerCase()) && 
