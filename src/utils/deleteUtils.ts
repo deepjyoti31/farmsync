@@ -50,13 +50,16 @@ export const deleteEntity = async ({
       throw new Error(`Unknown entity type: ${entityType}`);
     }
 
-    // Execute the delete operation with type assertion to ensure compatibility
+    console.log(`Deleting ${entityType} with id: ${id} from table: ${tableName}`);
+
+    // Execute the delete operation
     const { error: deleteError } = await supabase
-      .from(tableName as any)
+      .from(tableName)
       .delete()
       .eq('id', id);
 
     if (deleteError) {
+      console.error(`Error during delete operation:`, deleteError);
       throw deleteError;
     }
 

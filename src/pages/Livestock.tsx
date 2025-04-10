@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -6,25 +7,16 @@ import {
   CardTitle, 
   CardDescription 
 } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Plus, Heart, ArrowUpDown, Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddLivestockForm from '@/components/livestock/AddLivestockForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DeleteButton } from '@/components/common/DeleteConfirmation';
 import { deleteEntity } from '@/utils/deleteUtils';
+import LivestockTable from '@/components/livestock/LivestockTable';
 
 const Livestock = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -63,19 +55,6 @@ const Livestock = () => {
       });
     }
   }, [error]);
-
-  const getHealthBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return <Badge className="bg-farm-green text-white">Active</Badge>;
-      case 'sold':
-        return <Badge className="bg-farm-yellow text-black">Sold</Badge>;
-      case 'deceased':
-        return <Badge className="bg-destructive">Deceased</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
 
   const handleAddLivestockSuccess = () => {
     setDialogOpen(false);
@@ -174,48 +153,10 @@ const Livestock = () => {
             <CardDescription>Overview of all animals on your farm</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Breed</TableHead>
-                  <TableHead>Tag ID</TableHead>
-                  <TableHead>Gender</TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Heart className="h-4 w-4 mr-1" />
-                      <span>Status</span>
-                    </div>
-                  </TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {livestock.map((animal: any) => (
-                  <TableRow key={animal.id}>
-                    <TableCell className="font-medium">{animal.livestock_type?.name || 'Unknown'}</TableCell>
-                    <TableCell>{animal.breed || '-'}</TableCell>
-                    <TableCell>{animal.tag_id || '-'}</TableCell>
-                    <TableCell className="capitalize">{animal.gender || 'Unknown'}</TableCell>
-                    <TableCell>
-                      {getHealthBadge(animal.status || 'active')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">Details</Button>
-                        <DeleteButton 
-                          onDelete={() => handleDeleteLivestock(animal.id)}
-                          itemName={animal.tag_id || animal.livestock_type?.name}
-                          entityType="Livestock"
-                          buttonSize="sm"
-                          buttonVariant="ghost"
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <LivestockTable 
+              livestock={livestock}
+              onDelete={handleDeleteLivestock}
+            />
           </CardContent>
         </Card>
       )}

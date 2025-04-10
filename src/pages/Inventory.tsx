@@ -13,7 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddInventoryForm from '@/components/inventory/AddInventoryForm';
-import { DeleteButton } from '@/components/common/DeleteConfirmation';
+import { DeleteButton } from '@/components/common/DeleteButton';
 import { deleteEntity } from '@/utils/deleteUtils';
 
 const Inventory = () => {

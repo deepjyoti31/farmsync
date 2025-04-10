@@ -35,7 +35,7 @@ import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddCropForm from '@/components/crops/AddCropForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DeleteButton } from '@/components/common/DeleteConfirmation';
+import { DeleteButton } from '@/components/common/DeleteButton';
 import { deleteEntity } from '@/utils/deleteUtils';
 
 const Crops = () => {

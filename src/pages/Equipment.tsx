@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -33,6 +32,7 @@ import DeleteConfirmation from '@/components/common/DeleteConfirmation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Equipment } from '@/types';
+import { DeleteButton } from '@/components/common/DeleteButton';
 
 const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -352,10 +352,17 @@ const EquipmentPage = () => {
                                 <Edit className="h-4 w-4" />
                                 <span className="sr-only">Edit</span>
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleDeleteEquipment(item)}>
-                                <Trash className="h-4 w-4" />
-                                <span className="sr-only">Delete</span>
-                              </Button>
+                              <DeleteButton 
+                                onDelete={() => {
+                                  if (selectedEquipment) {
+                                    return confirmDeleteEquipment();
+                                  }
+                                }}
+                                itemName={item.name}
+                                entityType="Equipment"
+                                buttonSize="sm"
+                                buttonVariant="ghost"
+                              />
                               <Button variant="ghost" size="sm">
                                 <FileText className="h-4 w-4" />
                                 <span className="sr-only">View Details</span>
