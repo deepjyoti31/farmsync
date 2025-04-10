@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, MessageSquare, User, ChevronDown } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -11,9 +12,24 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { notifications } from '@/data/mockData';
+import { toast } from '@/hooks/use-toast';
 
 const TopBar = () => {
+  const navigate = useNavigate();
   const unreadNotifications = notifications.filter(n => !n.read).length;
+  
+  const handleLogout = () => {
+    // In a real app, you would clear authentication state here
+    toast({
+      title: "Logged out successfully",
+      description: "Redirecting to login page...",
+    });
+    
+    // Redirect to login page after a short delay
+    setTimeout(() => {
+      navigate('/landing');
+    }, 1500);
+  };
   
   return (
     <div className="h-16 px-6 flex items-center justify-between border-b bg-background">
@@ -51,7 +67,7 @@ const TopBar = () => {
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
