@@ -31,7 +31,7 @@ const FieldCard: React.FC<FieldCardProps> = ({ field }) => {
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span>{field.location}</span>
+            <span>{field.location || 'No location specified'}</span>
           </div>
           
           <div className="flex items-center gap-2">
@@ -43,17 +43,17 @@ const FieldCard: React.FC<FieldCardProps> = ({ field }) => {
           
           <div className="flex items-center gap-2">
             <Sprout className="h-4 w-4 text-muted-foreground" />
-            <span>{field.crops.length} crops planted</span>
+            <span>{field.crops && field.crops.length > 0 ? `${field.crops.length} crops planted` : 'No crops planted'}</span>
           </div>
         </div>
       </CardContent>
       
       <CardFooter className="p-4 pt-0 flex gap-2 flex-wrap">
         <Badge variant="outline" className="bg-muted/50">
-          {field.soilType}
+          {field.soilType || 'Unknown soil type'}
         </Badge>
         <Badge variant="outline" className="bg-muted/50">
-          pH {field.soilPH}
+          pH {field.soilPH || 'N/A'}
         </Badge>
       </CardFooter>
     </Card>
