@@ -17,56 +17,25 @@ import {
   Calendar, 
   Download 
 } from 'lucide-react';
-import { 
-  Chart, 
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  Title, 
-  Tooltip, 
-  Legend 
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
-
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
+import {
+  BarChart as RechartsBarChart,
+  Bar as RechartsBar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend
-);
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 
-const options = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'top' as const,
-    },
-    title: {
-      display: false,
-    },
-  },
-};
-
-const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-
-const data = {
-  labels,
-  datasets: [
-    {
-      label: 'Income',
-      data: [20000, 32000, 28000, 42000, 35000, 48000],
-      backgroundColor: 'rgba(75, 192, 192, 0.5)',
-    },
-    {
-      label: 'Expenses',
-      data: [15000, 21000, 18000, 25000, 22000, 30000],
-      backgroundColor: 'rgba(255, 99, 132, 0.5)',
-    },
-  ],
-};
+const data = [
+  { name: 'Jan', Income: 20000, Expenses: 15000 },
+  { name: 'Feb', Income: 32000, Expenses: 21000 },
+  { name: 'Mar', Income: 28000, Expenses: 18000 },
+  { name: 'Apr', Income: 42000, Expenses: 25000 },
+  { name: 'May', Income: 35000, Expenses: 22000 },
+  { name: 'Jun', Income: 48000, Expenses: 30000 },
+];
 
 const Finances = () => {
   return (
@@ -157,7 +126,25 @@ const Finances = () => {
         </CardHeader>
         <CardContent>
           <div className="h-[300px]">
-            <Bar options={options} data={data} />
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsBarChart
+                data={data}
+                margin={{
+                  top: 20,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <RechartsBar dataKey="Income" fill="rgba(75, 192, 192, 0.5)" />
+                <RechartsBar dataKey="Expenses" fill="rgba(255, 99, 132, 0.5)" />
+              </RechartsBarChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>

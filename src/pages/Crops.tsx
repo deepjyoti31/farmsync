@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Card, 
@@ -23,7 +22,7 @@ import {
   Sprout,
   CheckCircle2,
   Clock,
-  Plant,
+  Flower2,
   Scissors
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +39,7 @@ const Crops = () => {
       case 'planned':
         return <Clock className="h-4 w-4 text-farm-yellow" />;
       case 'planted':
-        return <Plant className="h-4 w-4 text-farm-green" />;
+        return <Flower2 className="h-4 w-4 text-farm-green" />;
       case 'growing':
         return <Sprout className="h-4 w-4 text-farm-lightGreen" />;
       case 'harvested':
