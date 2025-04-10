@@ -1,4 +1,3 @@
-
 import { 
   WeatherData, 
   Field, 
@@ -27,10 +26,16 @@ export const fields: Field[] = [
     location: 'North side of village',
     area: 5,
     areaUnit: 'acres',
+    area_unit: 'acres',
     soilType: 'Black soil',
+    soil_type: 'Black soil',
     soilPH: 6.8,
+    soil_ph: 6.8,
     crops: [],
-    images: ['/placeholder.svg']
+    images: ['/placeholder.svg'],
+    farm_id: 'demo-farm-01',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
   },
   {
     id: '2',
@@ -38,10 +43,16 @@ export const fields: Field[] = [
     location: 'Near the river',
     area: 3.5,
     areaUnit: 'acres',
+    area_unit: 'acres',
     soilType: 'Clayey soil',
+    soil_type: 'Clayey soil',
     soilPH: 7.2,
+    soil_ph: 7.2,
     crops: [],
-    images: ['/placeholder.svg']
+    images: ['/placeholder.svg'],
+    farm_id: 'demo-farm-01',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
   },
   {
     id: '3',
@@ -49,10 +60,16 @@ export const fields: Field[] = [
     location: 'Behind the house',
     area: 0.5,
     areaUnit: 'acres',
+    area_unit: 'acres',
     soilType: 'Loamy soil',
+    soil_type: 'Loamy soil',
     soilPH: 6.5,
+    soil_ph: 6.5,
     crops: [],
-    images: ['/placeholder.svg']
+    images: ['/placeholder.svg'],
+    farm_id: 'demo-farm-01',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z'
   }
 ];
 
@@ -80,7 +97,7 @@ export const crops: Crop[] = [
     variety: 'Pusa Ruby',
     plantingDate: '2024-03-10',
     harvestDate: '2024-06-15',
-    status: 'active'
+    status: 'growing'
   },
   {
     id: '4',
@@ -88,7 +105,7 @@ export const crops: Crop[] = [
     variety: 'Parbhani Kranti',
     plantingDate: '2024-04-01',
     harvestDate: '2024-06-30',
-    status: 'active'
+    status: 'growing'
   }
 ];
 
