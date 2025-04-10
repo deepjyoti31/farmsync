@@ -3,7 +3,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Leaf, ArrowLeft, Check } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Leaf, ArrowLeft, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -15,42 +16,53 @@ import {
 } from "@/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const signupSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
+  lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
+  agreeTerms: z.boolean().refine(val => val === true, {
+    message: "You must agree to the terms and conditions"
+  })
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"]
 });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 const Signup = () => {
+  const { signUp } = useAuth();
+  const [isLoading, setIsLoading] = React.useState(false);
+  
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
+      agreeTerms: false,
     },
   });
 
-  const onSubmit = (data: SignupFormValues) => {
-    console.log("Signup data:", data);
-    // In a real application, you would call your registration API here
-    toast({
-      title: "Account created!",
-      description: "You've successfully signed up for KisanSathi.",
-    });
-    // Example redirection - in real application, add proper authentication flow
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 1500);
+  const onSubmit = async (data: SignupFormValues) => {
+    try {
+      setIsLoading(true);
+      await signUp(data.email, data.password, {
+        first_name: data.firstName,
+        last_name: data.lastName
+      });
+      // Redirect to dashboard is handled in the auth context after signup
+    } catch (error) {
+      console.error("Signup error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,32 +79,53 @@ const Signup = () => {
 
           <div className="flex items-center mb-8">
             <Leaf className="h-8 w-8 text-primary mr-2" />
-            <h1 className="text-2xl font-bold">KisanSathi</h1>
+            <h1 className="text-2xl font-bold">FarmSync</h1>
           </div>
 
           <h2 className="text-3xl font-bold mb-2">Create an account</h2>
           <p className="text-muted-foreground mb-8">
-            Start your journey to smarter farming
+            Sign up to start managing your farm efficiently
           </p>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="John Doe" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="First name" 
+                          {...field} 
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Last name" 
+                          {...field} 
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -105,6 +138,7 @@ const Signup = () => {
                         placeholder="your@email.com" 
                         type="email" 
                         {...field} 
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -123,6 +157,7 @@ const Signup = () => {
                         placeholder="••••••••" 
                         type="password" 
                         {...field} 
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -141,6 +176,7 @@ const Signup = () => {
                         placeholder="••••••••" 
                         type="password" 
                         {...field} 
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -148,8 +184,44 @@ const Signup = () => {
                 )}
               />
 
-              <Button type="submit" className="w-full">
-                Create Account
+              <FormField
+                control={form.control}
+                name="agreeTerms"
+                render={({ field }) => (
+                  <FormItem className="flex items-start space-x-2 space-y-0">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value} 
+                        onCheckedChange={field.onChange}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-sm font-normal">
+                        I agree to the{" "}
+                        <a href="#" className="text-primary hover:underline">
+                          terms of service
+                        </a>{" "}
+                        and{" "}
+                        <a href="#" className="text-primary hover:underline">
+                          privacy policy
+                        </a>
+                      </FormLabel>
+                      <FormMessage />
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Create account"
+                )}
               </Button>
             </form>
           </Form>
@@ -165,63 +237,16 @@ const Signup = () => {
         </div>
       </div>
 
-      {/* Right side - Benefits */}
-      <div className="hidden lg:block flex-1 bg-muted">
-        <div className="h-full flex flex-col justify-center p-12">
-          <div className="max-w-md mx-auto">
-            <h2 className="text-2xl font-bold mb-6">Why join KisanSathi?</h2>
-            
-            <ul className="space-y-4">
-              <li className="flex items-start">
-                <div className="mt-1 mr-3 flex-shrink-0 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="h-3 w-3 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-medium">Complete Farm Management</h3>
-                  <p className="text-muted-foreground">Manage all aspects of your farm in one platform - from fields to finances.</p>
-                </div>
-              </li>
-              
-              <li className="flex items-start">
-                <div className="mt-1 mr-3 flex-shrink-0 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="h-3 w-3 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-medium">Data-Driven Insights</h3>
-                  <p className="text-muted-foreground">Make better decisions with AI-powered analytics and recommendations.</p>
-                </div>
-              </li>
-              
-              <li className="flex items-start">
-                <div className="mt-1 mr-3 flex-shrink-0 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="h-3 w-3 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-medium">Weather Integration</h3>
-                  <p className="text-muted-foreground">Get real-time weather updates and forecasts specific to your farm location.</p>
-                </div>
-              </li>
-              
-              <li className="flex items-start">
-                <div className="mt-1 mr-3 flex-shrink-0 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="h-3 w-3 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-medium">Mobile Access</h3>
-                  <p className="text-muted-foreground">Access your farm data from anywhere, on any device.</p>
-                </div>
-              </li>
-              
-              <li className="flex items-start">
-                <div className="mt-1 mr-3 flex-shrink-0 h-5 w-5 bg-primary rounded-full flex items-center justify-center">
-                  <Check className="h-3 w-3 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-medium">Free Starter Plan</h3>
-                  <p className="text-muted-foreground">Get started for free and upgrade as your farm's needs grow.</p>
-                </div>
-              </li>
-            </ul>
+      {/* Right side - Image */}
+      <div className="hidden lg:block flex-1 bg-muted relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20">
+          <div className="absolute inset-0 flex flex-col justify-center items-center p-12 text-center">
+            <h2 className="text-3xl font-bold mb-4 max-w-md">
+              Welcome to FarmSync
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-md">
+              Join our community of farmers and start optimizing your agricultural operations today.
+            </p>
           </div>
         </div>
       </div>

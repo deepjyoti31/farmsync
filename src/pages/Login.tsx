@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Leaf, ArrowLeft } from "lucide-react";
+import { Leaf, ArrowLeft, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import {
   Form,
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -27,7 +27,9 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
+  const { signIn } = useAuth();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = React.useState(false);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -38,17 +40,16 @@ const Login = () => {
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    console.log("Login data:", data);
-    // In a real application, you would call your authentication API here
-    toast({
-      title: "Login Successful",
-      description: "Redirecting to dashboard...",
-    });
-    // Example redirection - in real application, add proper authentication checks
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      setIsLoading(true);
+      await signIn(data.email, data.password);
+      // Navigation is handled in the auth context
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,7 +66,7 @@ const Login = () => {
 
           <div className="flex items-center mb-8">
             <Leaf className="h-8 w-8 text-primary mr-2" />
-            <h1 className="text-2xl font-bold">KisanSathi</h1>
+            <h1 className="text-2xl font-bold">FarmSync</h1>
           </div>
 
           <h2 className="text-3xl font-bold mb-2">Welcome back</h2>
@@ -86,6 +87,7 @@ const Login = () => {
                         placeholder="your@email.com" 
                         type="email" 
                         {...field} 
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -104,6 +106,7 @@ const Login = () => {
                         placeholder="••••••••" 
                         type="password" 
                         {...field} 
+                        disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -121,6 +124,7 @@ const Login = () => {
                         <Checkbox 
                           checked={field.value} 
                           onCheckedChange={field.onChange} 
+                          disabled={isLoading}
                         />
                       </FormControl>
                       <FormLabel className="text-sm font-normal cursor-pointer">
@@ -134,8 +138,15 @@ const Login = () => {
                 </a>
               </div>
 
-              <Button type="submit" className="w-full">
-                Log in
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  "Log in"
+                )}
               </Button>
             </form>
           </Form>
