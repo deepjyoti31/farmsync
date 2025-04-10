@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,28 +13,33 @@ import Livestock from "./pages/Livestock";
 import Finances from "./pages/Finances";
 import NotFound from "./pages/NotFound";
 
+// Create a client outside of the component to avoid recreating it on each render
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="fields" element={<Fields />} />
-            <Route path="crops" element={<Crops />} />
-            <Route path="livestock" element={<Livestock />} />
-            <Route path="finances" element={<Finances />} />
-            {/* Add more routes as needed */}
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<MainLayout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="fields" element={<Fields />} />
+                <Route path="crops" element={<Crops />} />
+                <Route path="livestock" element={<Livestock />} />
+                <Route path="finances" element={<Finances />} />
+                {/* Add more routes as needed */}
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
+  );
+};
 
 export default App;
