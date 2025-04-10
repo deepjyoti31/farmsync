@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import StatsCard from "@/components/dashboard/StatsCard";
 import FarmSelector from "@/components/farms/FarmSelector";
@@ -14,12 +14,148 @@ import {
   MapPin,
   Sprout, 
   PiggyBank,
-  Bird
+  Bird,
+  Loader2
 } from "lucide-react";
-import { crops, tasks, notifications } from '@/data/mockData';
+import { tasks, notifications } from '@/data/mockData';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { Field, Farm, FieldCrop, Crop } from '@/types';
 
 const Dashboard = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
+
+  // Fetch farms for the logged in user
+  const { 
+    data: farms = [], 
+    isLoading: isLoadingFarms,
+    error: farmsError
+  } = useQuery({
+    queryKey: ['farms'],
+    queryFn: async () => {
+      const { data: userFarms, error } = await supabase
+        .from('farms')
+        .select('*');
+      
+      if (error) throw error;
+      return userFarms as Farm[];
+    },
+  });
+
+  // Set the first farm as selected if none is selected
+  useEffect(() => {
+    if (farms.length > 0 && !selectedFarmId) {
+      setSelectedFarmId(farms[0].id);
+    }
+  }, [farms, selectedFarmId]);
+
+  // Fetch fields for the selected farm
+  const { 
+    data: fields = [], 
+    isLoading: isLoadingFields,
+    error: fieldsError 
+  } = useQuery({
+    queryKey: ['fields', selectedFarmId],
+    queryFn: async () => {
+      if (!selectedFarmId) return [];
+      
+      const { data, error } = await supabase
+        .from('fields')
+        .select('*')
+        .eq('farm_id', selectedFarmId);
+      
+      if (error) throw error;
+      return data as Field[];
+    },
+    enabled: !!selectedFarmId,
+  });
+
+  // Fetch crops data
+  const { 
+    data: fieldCrops = [], 
+    isLoading: isLoadingCrops,
+    error: cropsError 
+  } = useQuery({
+    queryKey: ['field_crops', selectedFarmId],
+    queryFn: async () => {
+      if (!selectedFarmId) return [];
+      
+      // First get all fields for this farm
+      const { data: fieldData, error: fieldError } = await supabase
+        .from('fields')
+        .select('id')
+        .eq('farm_id', selectedFarmId);
+      
+      if (fieldError) throw fieldError;
+      if (!fieldData || fieldData.length === 0) return [];
+      
+      const fieldIds = fieldData.map(field => field.id);
+      
+      // Then get all field_crops that link to these fields
+      const { data: fieldCropsData, error: cropError } = await supabase
+        .from('field_crops')
+        .select(`
+          *,
+          crop:crops(*)
+        `)
+        .in('field_id', fieldIds);
+      
+      if (cropError) throw cropError;
+      return fieldCropsData || [];
+    },
+    enabled: !!selectedFarmId,
+  });
+
+  // Convert field_crops to the format expected by CropStatus component
+  const cropsList = fieldCrops.map((fieldCrop) => {
+    return {
+      id: fieldCrop.id,
+      name: fieldCrop.crop?.name || 'Unknown Crop',
+      variety: fieldCrop.crop?.variety || '',
+      status: fieldCrop.status || 'planned',
+      plantingDate: fieldCrop.planting_date,
+      harvestDate: fieldCrop.expected_harvest_date || '',
+      fieldId: fieldCrop.field_id
+    } as Crop;
+  });
+
+  // Handle errors
+  useEffect(() => {
+    if (farmsError) {
+      toast({
+        title: 'Error loading farms',
+        description: (farmsError as Error).message,
+        variant: 'destructive',
+      });
+    }
+    
+    if (fieldsError) {
+      toast({
+        title: 'Error loading fields',
+        description: (fieldsError as Error).message,
+        variant: 'destructive',
+      });
+    }
+    
+    if (cropsError) {
+      toast({
+        title: 'Error loading crops',
+        description: (cropsError as Error).message,
+        variant: 'destructive',
+      });
+    }
+  }, [farmsError, fieldsError, cropsError]);
+
+  const isLoading = isLoadingFarms || isLoadingFields || isLoadingCrops;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -31,105 +167,114 @@ const Dashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatsCard 
-              title="Fields" 
-              value="5" 
-              description="Total fields" 
-              trend="up" 
-              trendValue="2"
-              icon={MapPin}
-            />
-            <StatsCard 
-              title="Crops" 
-              value="12" 
-              description="Currently growing" 
-              trend="up" 
-              trendValue="4"
-              icon={Sprout}
-            />
-            <StatsCard 
-              title="Livestock" 
-              value="28" 
-              description="Total animals" 
-              trend="up" 
-              trendValue="3"
-              icon={Bird}
-            />
-            <StatsCard 
-              title="Revenue" 
-              value="₹45,000" 
-              description="This month" 
-              trend="up" 
-              trendValue="12%"
-              icon={PiggyBank}
-            />
-          </div>
+      {farms.length === 0 ? (
+        <Card className="p-8 text-center">
+          <CardTitle className="mb-4">Welcome to FarmSync</CardTitle>
+          <CardDescription className="mb-6">
+            You don't have any farms yet. Add your first farm to get started managing your agricultural operations.
+          </CardDescription>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <StatsCard 
+                title="Fields" 
+                value={fields.length.toString()} 
+                description="Total fields" 
+                trend={fields.length > 0 ? "up" : "neutral"} 
+                trendValue={fields.length > 0 ? fields.length.toString() : "0"}
+                icon={MapPin}
+              />
+              <StatsCard 
+                title="Crops" 
+                value={cropsList.filter(c => c.status === 'growing' || c.status === 'planted').length.toString()} 
+                description="Currently growing" 
+                trend={cropsList.length > 0 ? "up" : "neutral"} 
+                trendValue={cropsList.length.toString()}
+                icon={Sprout}
+              />
+              <StatsCard 
+                title="Livestock" 
+                value="0" 
+                description="Total animals" 
+                trend="neutral" 
+                trendValue="0"
+                icon={Bird}
+              />
+              <StatsCard 
+                title="Revenue" 
+                value="₹0" 
+                description="This month" 
+                trend="neutral" 
+                trendValue="0%"
+                icon={PiggyBank}
+              />
+            </div>
 
-          <Tabs defaultValue="overview" className="mb-6">
-            <TabsList className="mb-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="crops">Crops</TabsTrigger>
-              <TabsTrigger value="tasks">Tasks</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="overview">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <WeatherWidget farmId={selectedFarmId} />
-                <QuickLinks />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="crops">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Crop Status</CardTitle>
-                  <CardDescription>Current status of your crops</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CropStatus crops={crops} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="tasks">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Upcoming Tasks</CardTitle>
-                  <CardDescription>Tasks scheduled for the next 7 days</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <TaskList tasks={tasks} />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activities</CardTitle>
-              <CardDescription>Latest updates from your farm</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <NotificationList notifications={notifications} />
-            </CardContent>
-          </Card>
+            <Tabs defaultValue="overview" className="mb-6">
+              <TabsList className="mb-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="crops">Crops</TabsTrigger>
+                <TabsTrigger value="tasks">Tasks</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <WeatherWidget farmId={selectedFarmId} />
+                  <QuickLinks />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="crops">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Crop Status</CardTitle>
+                    <CardDescription>Current status of your crops</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CropStatus crops={cropsList} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="tasks">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Upcoming Tasks</CardTitle>
+                    <CardDescription>Tasks scheduled for the next 7 days</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <TaskList tasks={tasks} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Tasks</CardTitle>
-              <CardDescription>Tasks scheduled for the next 7 days</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TaskList tasks={tasks} />
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activities</CardTitle>
+                <CardDescription>Latest updates from your farm</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <NotificationList notifications={notifications} />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Tasks</CardTitle>
+                <CardDescription>Tasks scheduled for the next 7 days</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TaskList tasks={tasks} />
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

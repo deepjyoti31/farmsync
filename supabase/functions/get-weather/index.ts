@@ -1,95 +1,87 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
-  
+
   try {
-    const { latitude, longitude, farmId } = await req.json();
-    
-    if (!latitude || !longitude || !farmId) {
+    // Parse the request body
+    const { latitude, longitude } = await req.json();
+
+    // Validate the input
+    if (!latitude || !longitude) {
       return new Response(
-        JSON.stringify({ error: 'Latitude, longitude, and farmId are required' }),
-        { 
-          status: 400, 
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
-        }
+        JSON.stringify({ error: 'Missing latitude or longitude parameters' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // In a real implementation, you would use an API key from environment variables
-    // and call an actual weather API like OpenWeatherMap
-    const mockWeatherData = {
-      current: {
-        temperature: Math.round(20 + Math.random() * 15),
-        humidity: Math.round(60 + Math.random() * 30),
-        precipitation: Math.round(Math.random() * 100) / 10,
-        wind_speed: Math.round(Math.random() * 50) / 10,
-        condition: ['Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Thunderstorm'][Math.floor(Math.random() * 5)],
-      },
-      forecast: Array(7).fill(0).map((_, i) => ({
-        date: new Date(Date.now() + i * 86400000).toISOString().split('T')[0],
-        temperature_min: Math.round(15 + Math.random() * 10),
-        temperature_max: Math.round(25 + Math.random() * 10),
-        condition: ['Sunny', 'Partly Cloudy', 'Cloudy', 'Rainy', 'Thunderstorm'][Math.floor(Math.random() * 5)],
-        precipitation_chance: Math.round(Math.random() * 100),
-      })),
-    };
+    // For demo purposes, we'll return mock weather data
+    // In a real implementation, you would call a weather API like OpenWeatherMap or similar
+    const mockData = generateMockWeatherData(latitude, longitude);
 
-    // Create a Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Store the weather data in the database
-    const { error } = await supabase
-      .from('weather_data')
-      .insert({
-        farm_id: farmId,
-        date: new Date().toISOString().split('T')[0],
-        temperature_min: mockWeatherData.current.temperature - 5,
-        temperature_max: mockWeatherData.current.temperature + 5,
-        humidity: mockWeatherData.current.humidity,
-        precipitation: mockWeatherData.current.precipitation,
-        wind_speed: mockWeatherData.current.wind_speed,
-        weather_condition: mockWeatherData.current.condition,
-        forecast_data: mockWeatherData.forecast,
-      });
-
-    if (error) {
-      console.error('Error storing weather data:', error);
-      return new Response(
-        JSON.stringify({ error: 'Failed to store weather data' }),
-        { 
-          status: 500, 
-          headers: { 'Content-Type': 'application/json', ...corsHeaders } 
-        }
-      );
-    }
-
-    // Return the weather data
     return new Response(
-      JSON.stringify(mockWeatherData),
-      { 
-        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
-      }
+      JSON.stringify(mockData),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error in weather function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500, 
-        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
-      }
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
+
+// Helper function to generate mock weather data
+function generateMockWeatherData(latitude: number, longitude: number) {
+  // Use the coordinates to create some variety in the data
+  const latSeed = Math.abs(Math.sin(latitude));
+  const longSeed = Math.abs(Math.cos(longitude));
+  const randomSeed = (latSeed + longSeed) / 2;
+
+  // Generate current weather
+  const current = {
+    temperature: Math.round(25 + (randomSeed * 10 - 5)), // 20-30°C
+    humidity: Math.round(60 + (randomSeed * 30 - 15)), // 45-75%
+    precipitation: Math.round(randomSeed * 10) / 10, // 0-1.0 mm
+    wind_speed: Math.round(5 + (randomSeed * 10)), // 5-15 km/h
+    condition: getWeatherCondition(randomSeed)
+  };
+
+  // Generate 5-day forecast
+  const forecast = [];
+  for (let i = 1; i <= 5; i++) {
+    const daySeed = (randomSeed + (i * 0.1)) % 1;
+    forecast.push({
+      date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      temperature_min: Math.round(20 + (daySeed * 10 - 5)),
+      temperature_max: Math.round(30 + (daySeed * 10 - 5)),
+      condition: getWeatherCondition(daySeed),
+      precipitation_chance: Math.round(daySeed * 100)
+    });
+  }
+
+  return { current, forecast };
+}
+
+// Helper function to get weather condition based on a random seed
+function getWeatherCondition(seed: number) {
+  const conditions = [
+    'Clear sky',
+    'Partly cloudy',
+    'Cloudy',
+    'Light rain',
+    'Thunderstorm',
+    'Sunny'
+  ];
+  return conditions[Math.floor(seed * conditions.length)];
+}

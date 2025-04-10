@@ -40,6 +40,9 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({ selectedFarmId, onFarmChang
         totalArea: 0, // Will be calculated from fields
         areaUnit: 'acres',
         fields: [],
+        user_id: '',
+        created_at: '',
+        updated_at: ''
       }));
     },
   });

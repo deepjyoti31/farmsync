@@ -6,11 +6,14 @@ export interface Field {
   name: string;
   area: number;
   areaUnit: string;
-  location: string;
-  soilType: string;
-  soilPH: number;
+  location?: string;
+  soilType?: string;
+  soilPH?: number;
   images?: string[];
   crops: Crop[];
+  farm_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Crop {
@@ -19,25 +22,53 @@ export interface Crop {
   variety?: string;
   plantingDate: string;
   harvestDate: string;
-  status: 'planned' | 'active' | 'harvested' | 'failed';
+  status: 'planned' | 'planted' | 'growing' | 'harvested' | 'failed';
+  fieldId?: string;
+  description?: string;
+  growing_season?: string;
+  growing_duration?: number;
+}
+
+export interface FieldCrop {
+  id: string;
+  field_id: string;
+  crop_id: string;
+  planting_date: string;
+  expected_harvest_date?: string;
+  actual_harvest_date?: string;
+  status: 'planned' | 'planted' | 'growing' | 'harvested' | 'failed';
+  yield_amount?: number;
+  yield_unit?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  crop?: Crop;
 }
 
 export interface Farm {
   id: string;
   name: string;
-  location: string;
-  totalArea: number;
-  areaUnit: string;
+  location?: string;
+  village?: string;
+  district?: string;
+  state?: string;
+  totalArea?: number;
+  areaUnit?: string;
   fields: Field[];
+  user_id: string;
+  gps_latitude?: number;
+  gps_longitude?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FieldFormData {
   name: string;
   area: number;
   areaUnit: string;
-  location: string;
-  soilType: string;
-  soilPH: number;
+  location?: string;
+  soilType?: string;
+  soilPH?: number;
 }
 
 export interface User {

@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw, CloudSun, Droplets, Wind } from 'lucide-react';
+import { Loader2, RefreshCw, CloudSun, Droplets, Wind, Cloud, CloudRain, Sun } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -58,13 +58,13 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
     queryFn: async () => {
       if (!farmId) return null;
       
-      // First, check if we have coordinates
+      // Use default coordinates if farm doesn't have GPS coordinates
       const latitude = farm?.gps_latitude || 20.5937; // Default to central India if not set
       const longitude = farm?.gps_longitude || 78.9629;
       
       try {
         const { data, error } = await supabase.functions.invoke('get-weather', {
-          body: { latitude, longitude, farmId },
+          body: { latitude, longitude },
         });
         
         if (error) throw error;
@@ -74,13 +74,17 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
         throw new Error('Failed to fetch weather data');
       }
     },
-    enabled: !!farmId && !!farm,
+    enabled: !!farm || !!farmId, // Enable even if we don't have farm GPS data, we'll use defaults
   });
 
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
       await refetch();
+      toast({
+        title: 'Weather updated',
+        description: 'Weather data has been refreshed',
+      });
     } catch (error) {
       toast({
         title: 'Error',
@@ -92,12 +96,24 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
     }
   };
 
+  const getWeatherIcon = (condition: string) => {
+    if (!condition) return <CloudSun className="h-10 w-10 text-primary" />;
+    
+    const conditionLower = condition.toLowerCase();
+    
+    if (conditionLower.includes('clear') || conditionLower.includes('sunny')) {
+      return <Sun className="h-10 w-10 text-farm-yellow" />;
+    } else if (conditionLower.includes('cloud') || conditionLower.includes('partly')) {
+      return <Cloud className="h-10 w-10 text-gray-400" />;
+    } else if (conditionLower.includes('rain') || conditionLower.includes('thunder')) {
+      return <CloudRain className="h-10 w-10 text-farm-sky" />;
+    } else {
+      return <CloudSun className="h-10 w-10 text-primary" />;
+    }
+  };
+
   if (error) {
-    toast({
-      title: 'Error',
-      description: (error as Error).message || 'Failed to load weather data.',
-      variant: 'destructive',
-    });
+    console.error('Weather error:', error);
   }
 
   return (
@@ -126,7 +142,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CloudSun className="h-10 w-10 text-primary" />
+                {getWeatherIcon(weather.current.condition)}
                 <div>
                   <p className="text-3xl font-bold">{weather.current.temperature}°C</p>
                   <p className="text-muted-foreground">{weather.current.condition}</p>
@@ -151,7 +167,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
                   <p className="text-sm font-medium">
                     {day.temperature_min}° / {day.temperature_max}°
                   </p>
-                  <p className="text-xs text-muted-foreground">{day.condition}</p>
+                  <p className="text-xs text-muted-foreground">{day.condition.split(' ')[0]}</p>
                 </div>
               ))}
             </div>
