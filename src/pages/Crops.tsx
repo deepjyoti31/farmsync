@@ -23,7 +23,7 @@ import {
   Sprout,
   CheckCircle2,
   Clock,
-  Seedling,
+  Plant,
   Scissors
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +40,7 @@ const Crops = () => {
       case 'planned':
         return <Clock className="h-4 w-4 text-farm-yellow" />;
       case 'planted':
-        return <Seedling className="h-4 w-4 text-farm-green" />;
+        return <Plant className="h-4 w-4 text-farm-green" />;
       case 'growing':
         return <Sprout className="h-4 w-4 text-farm-lightGreen" />;
       case 'harvested':
