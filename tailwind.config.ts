@@ -74,6 +74,10 @@ export default {
 					sky: '#64B5F6'
 				}
 			},
+			backgroundImage: {
+				'farm-background': 'url(/farm-pattern.png)',
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
