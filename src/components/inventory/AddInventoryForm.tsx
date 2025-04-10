@@ -60,13 +60,21 @@ interface AddInventoryFormProps {
   farmId: string;
   onSuccess?: () => void;
   onCancel?: () => void;
+  categories?: any[]; // Add this line to accept the categories prop
 }
 
-const AddInventoryForm: React.FC<AddInventoryFormProps> = ({ farmId, onSuccess, onCancel }) => {
-  // Query to get inventory categories
-  const { data: categories = [] } = useQuery({
+const AddInventoryForm: React.FC<AddInventoryFormProps> = ({ 
+  farmId, 
+  onSuccess, 
+  onCancel,
+  categories = [] // Add categories with a default empty array
+}) => {
+  // Only fetch categories if none were provided via props
+  const { data: fetchedCategories = [] } = useQuery({
     queryKey: ['inventoryCategories'],
     queryFn: async () => {
+      if (categories.length > 0) return categories;
+      
       const { data, error } = await supabase
         .from('inventory_categories')
         .select('*')
@@ -75,7 +83,11 @@ const AddInventoryForm: React.FC<AddInventoryFormProps> = ({ farmId, onSuccess, 
       if (error) throw error;
       return data || [];
     },
+    enabled: categories.length === 0, // Only run the query if categories prop is empty
   });
+
+  // Use provided categories or fetched ones
+  const availableCategories = categories.length > 0 ? categories : fetchedCategories;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -154,7 +166,7 @@ const AddInventoryForm: React.FC<AddInventoryFormProps> = ({ farmId, onSuccess, 
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {categories.map((category: any) => (
+                  {availableCategories.map((category: any) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name} ({category.type})
                     </SelectItem>
