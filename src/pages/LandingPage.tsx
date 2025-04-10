@@ -13,15 +13,17 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+interface FeatureCardProps {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+}
+
 const FeatureCard = ({ 
   icon: Icon, 
   title, 
   description 
-}: { 
-  icon: React.ComponentType, 
-  title: string, 
-  description: string 
-}) => (
+}: FeatureCardProps) => (
   <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-all">
     <div className="flex items-center mb-4">
       <Icon className="h-10 w-10 text-primary mr-4" />
