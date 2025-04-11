@@ -91,7 +91,7 @@ const Community = () => {
           {
             id: '1',
             title: 'Tips for managing pests in organic farming',
-            content: 'I've been trying organic methods to control pests in my vegetable garden. Has anyone tried neem oil spray?',
+            content: "I've been trying organic methods to control pests in my vegetable garden. Has anyone tried neem oil spray?",
             created_at: new Date().toISOString(),
             user: { 
               first_name: 'Arjun', 
@@ -104,7 +104,7 @@ const Community = () => {
           {
             id: '2',
             title: 'Best practices for soil health maintenance',
-            content: 'I'm looking to improve my soil health naturally. What cover crops do you recommend for sandy soils?',
+            content: "I'm looking to improve my soil health naturally. What cover crops do you recommend for sandy soils?",
             created_at: new Date(Date.now() - 86400000).toISOString(),
             user: { 
               first_name: 'Priya', 
