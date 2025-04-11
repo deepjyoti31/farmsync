@@ -13,10 +13,18 @@ import {
   Github,
   BarChart2,
   CalendarDays,
-  GanttChartSquare
+  GanttChartSquare,
+  ArrowDownCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface FeatureCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -29,9 +37,9 @@ const FeatureCard = ({
   title, 
   description 
 }: FeatureCardProps) => (
-  <Card className="border border-border/50 h-full transition-all duration-200 hover:shadow-md hover:border-primary/20">
-    <CardContent className="pt-6">
-      <div className="mb-4 bg-primary/10 w-12 h-12 flex items-center justify-center rounded-lg">
+  <Card className="border border-border/50 h-full transition-all duration-200 hover:shadow-md hover:border-primary/20 overflow-hidden group">
+    <CardContent className="pt-6 p-6">
+      <div className="mb-4 bg-primary/10 w-12 h-12 flex items-center justify-center rounded-lg transition-all duration-300 group-hover:bg-primary/20">
         <Icon className="h-6 w-6 text-primary" />
       </div>
       <h3 className="text-xl font-semibold mb-2">{title}</h3>
@@ -40,12 +48,16 @@ const FeatureCard = ({
   </Card>
 );
 
-const Testimonial = ({ quote, author, role }: { quote: string; author: string; role: string }) => (
-  <div className="bg-muted/50 rounded-xl p-6 border border-border/50">
-    <p className="italic text-muted-foreground mb-4">"{quote}"</p>
+const Testimonial = ({ quote, author, role, imageUrl }: { quote: string; author: string; role: string; imageUrl?: string }) => (
+  <div className="bg-muted/50 rounded-xl p-6 border border-border/50 h-full">
+    <p className="italic text-muted-foreground mb-6 text-lg">&ldquo;{quote}&rdquo;</p>
     <div className="flex items-center">
-      <div className="bg-primary/20 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-        <span className="text-primary font-medium">{author.charAt(0)}</span>
+      <div className="bg-primary/20 w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden">
+        {imageUrl ? (
+          <img src={imageUrl} alt={author} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-primary font-medium text-lg">{author.charAt(0)}</span>
+        )}
       </div>
       <div>
         <p className="font-medium">{author}</p>
@@ -103,37 +115,50 @@ const LandingPage = () => {
     {
       quote: "FarmSync has transformed how I manage my crops. I've seen a 15% increase in yield since I started using it.",
       author: "Rajesh Kumar",
-      role: "Rice Farmer, Bihar"
+      role: "Rice Farmer, Bihar",
+      imageUrl: "/farmer1.jpg"
     },
     {
       quote: "The financial tracking helps me understand where my money goes and how to optimize my farming operations.",
       author: "Sunita Patel",
-      role: "Vegetable Grower, Gujarat"
+      role: "Vegetable Grower, Gujarat",
+      imageUrl: "/farmer2.jpg"
     },
     {
       quote: "As a small-scale farmer, I never thought I'd be able to use technology like this. It's easy and free!",
       author: "Vijay Singh",
-      role: "Mixed Farmer, Haryana"
+      role: "Mixed Farmer, Haryana",
+      imageUrl: "/farmer3.jpg"
     }
   ];
 
+  const screenshots = [
+    { src: "/dashboard-screenshot.jpg", alt: "FarmSync Dashboard" },
+    { src: "/crop-management-screenshot.jpg", alt: "Crop Management Interface" },
+    { src: "/weather-forecast-screenshot.jpg", alt: "Weather Forecast Module" },
+    { src: "/financial-reports-screenshot.jpg", alt: "Financial Reports" }
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-farm-green/10 to-farm-lightGreen/5 z-0"></div>
-        <div className="container mx-auto px-4 py-20 md:py-32 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Smart Farming, Simplified
+    <div className="min-h-screen bg-background overflow-hidden">
+      {/* Hero Section with Parallax Effect */}
+      <section className="relative h-screen flex items-center">
+        <div className="absolute inset-0 bg-[url('/hero-farm.jpg')] bg-cover bg-center bg-no-repeat" 
+             style={{ transform: "translateZ(-10px) scale(2)", zIndex: -2 }}>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-lg">
+              Smart Farming, <span className="text-primary">Simplified</span>
             </h1>
-            <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+            <p className="text-xl text-white/90 mb-8 drop-shadow md:text-2xl max-w-2xl">
               FarmSync is a free, open-source farm management platform designed for Indian farmers. Manage crops, track finances, and grow your yields.
             </p>
             
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto gap-2">
+                <Button size="lg" className="w-full sm:w-auto gap-2 text-base">
                   Get Started Free
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -143,7 +168,7 @@ const LandingPage = () => {
                 target="_blank" 
                 rel="noopener noreferrer"
               >
-                <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2 text-base bg-white/20 backdrop-blur-sm text-white border-white/40 hover:bg-white/30">
                   <Github className="h-4 w-4" />
                   Star on GitHub
                 </Button>
@@ -151,13 +176,63 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
+        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
+          <ArrowDownCircle className="h-10 w-10 text-white/70" />
+        </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
+      {/* App Screenshots Carousel */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-background to-transparent z-10"></div>
+        <div className="container mx-auto px-4 mb-12 relative z-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">See FarmSync in Action</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Take a look at our intuitive interface designed specifically for farmers
+            </p>
+          </div>
+          
+          <div className="max-w-5xl mx-auto">
+            <Carousel className="w-full">
+              <CarouselContent>
+                {screenshots.map((screenshot, index) => (
+                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/1">
+                    <div className="p-2">
+                      <Card className="overflow-hidden border-2 border-border/30 shadow-lg">
+                        <div className="aspect-video relative overflow-hidden bg-muted">
+                          <img 
+                            src={screenshot.src} 
+                            alt={screenshot.alt} 
+                            className="object-cover w-full h-full"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "/placeholder.svg";
+                            }}
+                          />
+                        </div>
+                        <CardContent className="p-4">
+                          <p className="text-center font-medium">{screenshot.alt}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <div className="hidden md:block">
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
+              </div>
+            </Carousel>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section with Grid */}
+      <section className="py-20 bg-muted/30 relative">
+        <div className="absolute inset-0 bg-[url('/pattern-bg.jpg')] bg-cover opacity-5"></div>
+        <div className="container mx-auto px-4 relative">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Everything You Need to Manage Your Farm</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything You Need to Manage Your Farm</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               A complete suite of tools designed specifically for Indian agricultural needs,
               available to everyone at no cost.
@@ -177,56 +252,94 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Why Free Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Why Is FarmSync Free?</h2>
-            <p className="text-lg text-muted-foreground">
-              We believe that technology should empower all farmers, regardless of their size or resources.
-              FarmSync is open-source and will always remain free to use.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="bg-primary/10 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <Globe className="h-8 w-8 text-primary" />
+      {/* Visual Divider */}
+      <div className="h-32 md:h-40 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/farm-landscape.jpg')] bg-cover bg-center bg-fixed"></div>
+        <div className="absolute inset-0 bg-primary/30 backdrop-blur-sm"></div>
+      </div>
+
+      {/* Why Free Section with Visual Elements */}
+      <section className="py-20 relative">
+        <div className="absolute top-1/2 right-0 w-96 h-96 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
+        
+        <div className="container mx-auto px-4 relative">
+          <div className="flex flex-col md:flex-row items-center gap-12">
+            <div className="md:w-1/2 relative">
+              <div className="aspect-square rounded-2xl overflow-hidden shadow-xl">
+                <img 
+                  src="/farmer-with-tablet.jpg" 
+                  alt="Farmer using FarmSync app" 
+                  className="object-cover w-full h-full"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/placeholder.svg";
+                  }}
+                />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Open for All</h3>
-              <p className="text-muted-foreground">
-                Available to every farmer across India, regardless of farm size or budget.
-              </p>
+              <div className="absolute -bottom-6 -right-6 bg-white rounded-xl p-4 shadow-lg max-w-xs hidden md:block">
+                <p className="flex items-center text-sm">
+                  <span className="text-primary font-bold mr-2">15% Growth</span>
+                  in average crop yield for FarmSync users
+                </p>
+              </div>
             </div>
             
-            <div className="text-center">
-              <div className="bg-primary/10 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <Github className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Open Source</h3>
-              <p className="text-muted-foreground">
-                Completely open source and community-driven, ensuring transparency and continuous improvement.
+            <div className="md:w-1/2">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Why Is FarmSync Free?</h2>
+              <p className="text-lg text-muted-foreground mb-8">
+                We believe that technology should empower all farmers, regardless of their size or resources.
+                FarmSync is open-source and will always remain free to use.
               </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="bg-primary/10 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-                <ShieldCheck className="h-8 w-8 text-primary" />
+              
+              <div className="grid gap-6">
+                <div className="flex gap-4 items-start">
+                  <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center shrink-0">
+                    <Globe className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">Open for All</h3>
+                    <p className="text-muted-foreground">
+                      Available to every farmer across India, regardless of farm size or budget.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 items-start">
+                  <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center shrink-0">
+                    <Github className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">Open Source</h3>
+                    <p className="text-muted-foreground">
+                      Completely open source and community-driven, ensuring transparency and continuous improvement.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 items-start">
+                  <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">Data Privacy</h3>
+                    <p className="text-muted-foreground">
+                      Your farm data belongs to you. We're committed to data privacy and security.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Data Privacy</h3>
-              <p className="text-muted-foreground">
-                Your farm data belongs to you. We're committed to data privacy and security.
-              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
+      {/* Testimonials Section with Modern Cards */}
+      <section className="py-20 bg-muted/30 relative">
+        <div className="absolute inset-0 bg-[url('/pattern-light.jpg')] bg-repeat opacity-5"></div>
+        <div className="container mx-auto px-4 relative">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Trusted by Farmers Across India</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by Farmers Across India</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               See how FarmSync has helped farmers improve their operations and increase productivity.
             </p>
@@ -239,30 +352,33 @@ const LandingPage = () => {
                 quote={testimonial.quote}
                 author={testimonial.author}
                 role={testimonial.role}
+                imageUrl={testimonial.imageUrl}
               />
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="bg-primary/10 rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Farming?</h2>
-            <p className="text-lg mb-8 max-w-2xl mx-auto">
+      {/* CTA Section with Background Image */}
+      <section className="py-20 relative">
+        <div className="absolute inset-0 bg-[url('/rice-field.jpg')] bg-cover bg-center"></div>
+        <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm"></div>
+        <div className="container mx-auto px-4 relative">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto border border-white/20 shadow-xl">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Ready to Transform Your Farming?</h2>
+            <p className="text-lg mb-8 max-w-2xl mx-auto text-white/90">
               Join thousands of farmers already using FarmSync to increase yields, 
               reduce costs, and manage their farms more efficiently.
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto bg-white text-primary hover:bg-white/90">
                   Create Free Account
                 </Button>
               </Link>
               <Link to="/login">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto border-white text-white hover:bg-white/20">
                   Log in
                 </Button>
               </Link>
@@ -272,11 +388,14 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-muted/50 py-12">
+      <footer className="bg-muted/70 py-12 border-t border-border">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-6 md:mb-0">
-              <h2 className="text-2xl font-bold text-primary">FarmSync</h2>
+              <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
+                <Leaf className="h-6 w-6" />
+                FarmSync
+              </h2>
               <p className="text-muted-foreground">Free forever. Open source.</p>
             </div>
             
