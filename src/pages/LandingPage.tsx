@@ -116,19 +116,19 @@ const LandingPage = () => {
       quote: "FarmSync has transformed how I manage my crops. I've seen a 15% increase in yield since I started using it.",
       author: "Rajesh Kumar",
       role: "Rice Farmer, Bihar",
-      imageUrl: "/farmer1.jpg"
+      imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80"
     },
     {
       quote: "The financial tracking helps me understand where my money goes and how to optimize my farming operations.",
       author: "Sunita Patel",
       role: "Vegetable Grower, Gujarat",
-      imageUrl: "/farmer2.jpg"
+      imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80"
     },
     {
       quote: "As a small-scale farmer, I never thought I'd be able to use technology like this. It's easy and free!",
       author: "Vijay Singh",
       role: "Mixed Farmer, Haryana",
-      imageUrl: "/farmer3.jpg"
+      imageUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80"
     }
   ];
 
@@ -143,16 +143,20 @@ const LandingPage = () => {
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Hero Section with Parallax Effect */}
       <section className="relative h-screen flex items-center">
-        <div className="absolute inset-0 bg-[url('/hero-farm.jpg')] bg-cover bg-center bg-no-repeat" 
-             style={{ transform: "translateZ(-10px) scale(2)", zIndex: -2 }}>
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+             style={{ 
+               backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')",
+               transform: "translateZ(-10px) scale(2)", 
+               zIndex: -2 
+             }}>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
             <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-lg">
               Smart Farming, <span className="text-primary">Simplified</span>
             </h1>
-            <p className="text-xl text-white/90 mb-8 drop-shadow md:text-2xl max-w-2xl">
+            <p className="text-xl text-white mb-8 drop-shadow-md md:text-2xl max-w-2xl">
               FarmSync is a free, open-source farm management platform designed for Indian farmers. Manage crops, track finances, and grow your yields.
             </p>
             
@@ -177,7 +181,7 @@ const LandingPage = () => {
           </div>
         </div>
         <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <ArrowDownCircle className="h-10 w-10 text-white/70" />
+          <ArrowDownCircle className="h-10 w-10 text-white" />
         </div>
       </section>
 
@@ -206,7 +210,7 @@ const LandingPage = () => {
                             className="object-cover w-full h-full"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = "/placeholder.svg";
+                              target.src = "https://images.unsplash.com/photo-1535378620166-273708d44e4c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
                             }}
                           />
                         </div>
@@ -229,7 +233,9 @@ const LandingPage = () => {
 
       {/* Features Section with Grid */}
       <section className="py-20 bg-muted/30 relative">
-        <div className="absolute inset-0 bg-[url('/pattern-bg.jpg')] bg-cover opacity-5"></div>
+        <div className="absolute inset-0 bg-cover bg-center opacity-5"
+             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
+        </div>
         <div className="container mx-auto px-4 relative">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything You Need to Manage Your Farm</h2>
@@ -254,7 +260,9 @@ const LandingPage = () => {
 
       {/* Visual Divider */}
       <div className="h-32 md:h-40 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/farm-landscape.jpg')] bg-cover bg-center bg-fixed"></div>
+        <div className="absolute inset-0 bg-cover bg-center bg-fixed"
+             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
+        </div>
         <div className="absolute inset-0 bg-primary/30 backdrop-blur-sm"></div>
       </div>
 
@@ -268,13 +276,9 @@ const LandingPage = () => {
             <div className="md:w-1/2 relative">
               <div className="aspect-square rounded-2xl overflow-hidden shadow-xl">
                 <img 
-                  src="/farmer-with-tablet.jpg" 
+                  src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&q=80" 
                   alt="Farmer using FarmSync app" 
                   className="object-cover w-full h-full"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/placeholder.svg";
-                  }}
                 />
               </div>
               <div className="absolute -bottom-6 -right-6 bg-white rounded-xl p-4 shadow-lg max-w-xs hidden md:block">
@@ -336,7 +340,9 @@ const LandingPage = () => {
 
       {/* Testimonials Section with Modern Cards */}
       <section className="py-20 bg-muted/30 relative">
-        <div className="absolute inset-0 bg-[url('/pattern-light.jpg')] bg-repeat opacity-5"></div>
+        <div className="absolute inset-0 bg-cover bg-center opacity-5"
+             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535378620166-273708d44e4c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
+        </div>
         <div className="container mx-auto px-4 relative">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by Farmers Across India</h2>
@@ -361,7 +367,9 @@ const LandingPage = () => {
 
       {/* CTA Section with Background Image */}
       <section className="py-20 relative">
-        <div className="absolute inset-0 bg-[url('/rice-field.jpg')] bg-cover bg-center"></div>
+        <div className="absolute inset-0 bg-cover bg-center"
+             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
+        </div>
         <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm"></div>
         <div className="container mx-auto px-4 relative">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto border border-white/20 shadow-xl">
