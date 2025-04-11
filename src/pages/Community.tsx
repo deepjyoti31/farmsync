@@ -81,8 +81,7 @@ const Community = () => {
         .from('forum_posts')
         .select(`
           *,
-          user_id,
-          profiles:profiles(first_name, last_name, profile_image_url)
+          profiles(first_name, last_name, profile_image_url)
         `)
         .eq('forum_id', activeForum)
         .order('created_at', { ascending: false });
