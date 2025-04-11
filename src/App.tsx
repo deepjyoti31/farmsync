@@ -22,6 +22,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import Notifications from "./pages/Notifications";
+import Community from "./pages/Community";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -57,8 +59,8 @@ const App = () => {
                 <Route path="weather" element={<Weather />} />
                 <Route path="market" element={<Market />} />
                 <Route path="reports" element={<Reports />} />
-                <Route path="notifications" element={<NotFound />} />
-                <Route path="community" element={<NotFound />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="community" element={<Community />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

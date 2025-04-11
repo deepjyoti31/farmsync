@@ -20,7 +20,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Field, Farm, FieldCrop, Crop } from '@/types';
+import { Field, Farm, FieldCrop, Crop, Task, Notification } from '@/types';
 
 const Dashboard = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -169,7 +169,8 @@ const Dashboard = () => {
         dueDate: task.due_date,
         priority: task.priority || 'medium',
         status: task.status || 'pending',
-        assignedTo: task.assigned_to || ''
+        assignedTo: task.assigned_to || '',
+        completed: task.status === 'completed'
       }));
     },
     enabled: !!selectedFarmId,
@@ -181,7 +182,7 @@ const Dashboard = () => {
     isLoading: isLoadingNotifications,
     error: notificationsError 
   } = useQuery({
-    queryKey: ['notifications', selectedFarmId],
+    queryKey: ['notifications'],
     queryFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
@@ -194,6 +195,7 @@ const Dashboard = () => {
         .limit(5);
       
       if (error) {
+        console.error('Error fetching notifications:', error);
         // If the table doesn't exist yet, return empty array without error
         if (error.code === '42P01') return [];
         throw error;
@@ -205,6 +207,7 @@ const Dashboard = () => {
         message: notification.message,
         type: notification.type,
         read: notification.read,
+        date: notification.created_at,
         createdAt: notification.created_at
       }));
     },
@@ -381,7 +384,7 @@ const Dashboard = () => {
                 <CardDescription>Latest updates from your farm</CardDescription>
               </CardHeader>
               <CardContent>
-                <NotificationList notifications={notifications} />
+                <NotificationList notifications={notifications as Notification[]} />
               </CardContent>
             </Card>
             

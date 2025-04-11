@@ -98,6 +98,9 @@ export interface Task {
   description?: string;
   dueDate: string;
   completed: boolean;
+  priority?: string;
+  status?: string;
+  assignedTo?: string;
   relatedTo?: {
     type: 'crop' | 'field' | 'equipment' | 'livestock';
     id: string;
@@ -108,9 +111,11 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  date: string;
-  read: boolean;
   type: 'info' | 'warning' | 'alert';
+  read: boolean;
+  date: string;
+  createdAt?: string;
+  category?: string;
 }
 
 export interface Livestock {
