@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,7 +58,6 @@ const Community = () => {
         .order('title', { ascending: true });
 
       if (error) {
-        // If the table doesn't exist yet, return mock data
         console.error('Error fetching forums:', error);
         return [
           { id: 'general', title: 'General Discussion', description: 'Talk about anything farming related' },
@@ -95,7 +93,11 @@ const Community = () => {
             title: 'Tips for managing pests in organic farming',
             content: 'I've been trying organic methods to control pests in my vegetable garden. Has anyone tried neem oil spray?',
             created_at: new Date().toISOString(),
-            user: { first_name: 'Arjun', last_name: 'Patel' },
+            user: { 
+              first_name: 'Arjun', 
+              last_name: 'Patel',
+              profile_image_url: null 
+            },
             comment_count: 5,
             like_count: 12
           },
@@ -104,32 +106,27 @@ const Community = () => {
             title: 'Best practices for soil health maintenance',
             content: 'I'm looking to improve my soil health naturally. What cover crops do you recommend for sandy soils?',
             created_at: new Date(Date.now() - 86400000).toISOString(),
-            user: { first_name: 'Priya', last_name: 'Sharma' },
+            user: { 
+              first_name: 'Priya', 
+              last_name: 'Sharma',
+              profile_image_url: null 
+            },
             comment_count: 8,
             like_count: 19
           },
         ];
       }
 
-      // Process the data to add comment counts
-      const processedPosts = await Promise.all(data.map(async (post) => {
-        // Count comments for each post
-        const { count: commentCount, error: countError } = await supabase
-          .from('forum_comments')
-          .select('*', { count: 'exact', head: true })
-          .eq('post_id', post.id);
-
-        if (countError) {
-          console.error('Error counting comments:', countError);
-          return { ...post, comment_count: 0, like_count: Math.floor(Math.random() * 20) };
-        }
-
-        return { 
-          ...post, 
-          comment_count: commentCount || 0, 
-          like_count: Math.floor(Math.random() * 20),
-          user: post.profiles
-        };
+      // Process the data to add comment counts and user info
+      const processedPosts = data.map((post) => ({
+        ...post,
+        user: post.profiles ? {
+          first_name: post.profiles.first_name,
+          last_name: post.profiles.last_name,
+          profile_image_url: post.profiles.profile_image_url
+        } : null,
+        comment_count: 0, // You might want to fetch this separately
+        like_count: Math.floor(Math.random() * 20)
       }));
 
       return processedPosts;
