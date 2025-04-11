@@ -24,6 +24,10 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Notifications from "./pages/Notifications";
 import Community from "./pages/Community";
+import FarmsList from "./pages/FarmsList";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
+import { toast } from "@/hooks/use-toast";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -61,6 +65,9 @@ const App = () => {
                 <Route path="reports" element={<Reports />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="community" element={<Community />} />
+                <Route path="farms" element={<FarmsList />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="settings" element={<Settings />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -13,12 +13,16 @@ import {
   Store, 
   LineChart, 
   Bell, 
-  MessageSquare 
+  MessageSquare,
+  Farm,
+  User,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
   { icon: Home, label: 'Dashboard', path: '/dashboard' },
+  { icon: Farm, label: 'Farms', path: '/dashboard/farms' },
   { icon: Map, label: 'Fields', path: '/dashboard/fields' },
   { icon: Sprout, label: 'Crops', path: '/dashboard/crops' },
   { icon: Users, label: 'Livestock', path: '/dashboard/livestock' },
@@ -30,6 +34,11 @@ const menuItems = [
   { icon: LineChart, label: 'Reports', path: '/dashboard/reports' },
   { icon: Bell, label: 'Notifications', path: '/dashboard/notifications' },
   { icon: MessageSquare, label: 'Community', path: '/dashboard/community' },
+];
+
+const userMenuItems = [
+  { icon: User, label: 'Profile', path: '/dashboard/profile' },
+  { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
 ];
 
 const AppSidebar = () => {
@@ -61,6 +70,28 @@ const AppSidebar = () => {
             </li>
           ))}
         </ul>
+
+        <div className="mt-8 pt-6 border-t border-sidebar-border">
+          <p className="px-4 mb-2 text-xs font-medium text-sidebar-foreground/60 uppercase">Account</p>
+          <ul className="space-y-2">
+            {userMenuItems.map((item) => (
+              <li key={item.path}>
+                <Link 
+                  to={item.path}
+                  className={cn(
+                    "flex items-center gap-4 px-4 py-2 rounded-md transition-colors",
+                    location.pathname === item.path 
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground" 
+                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
     </div>
   );
