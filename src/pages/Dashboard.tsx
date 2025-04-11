@@ -17,7 +17,6 @@ import {
   Bird,
   Loader2
 } from "lucide-react";
-import { tasks, notifications } from '@/data/mockData';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -144,6 +143,73 @@ const Dashboard = () => {
     enabled: !!selectedFarmId,
   });
 
+  // Fetch tasks for the selected farm
+  const { 
+    data: tasks = [], 
+    isLoading: isLoadingTasks,
+    error: tasksError 
+  } = useQuery({
+    queryKey: ['tasks', selectedFarmId],
+    queryFn: async () => {
+      if (!selectedFarmId) return [];
+      
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('farm_id', selectedFarmId)
+        .order('due_date', { ascending: true })
+        .limit(5);
+      
+      if (error) throw error;
+      
+      return (data || []).map(task => ({
+        id: task.id,
+        title: task.title,
+        description: task.description || '',
+        dueDate: task.due_date,
+        priority: task.priority || 'medium',
+        status: task.status || 'pending',
+        assignedTo: task.assigned_to || ''
+      }));
+    },
+    enabled: !!selectedFarmId,
+  });
+
+  // Fetch notifications
+  const { 
+    data: notifications = [], 
+    isLoading: isLoadingNotifications,
+    error: notificationsError 
+  } = useQuery({
+    queryKey: ['notifications', selectedFarmId],
+    queryFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return [];
+      
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (error) {
+        // If the table doesn't exist yet, return empty array without error
+        if (error.code === '42P01') return [];
+        throw error;
+      }
+      
+      return (data || []).map(notification => ({
+        id: notification.id,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        read: notification.read,
+        createdAt: notification.created_at
+      }));
+    },
+  });
+
   // Convert field_crops to the format expected by CropStatus component
   const cropsList = fieldCrops.map((fieldCrop) => {
     return {
@@ -182,9 +248,25 @@ const Dashboard = () => {
         variant: 'destructive',
       });
     }
-  }, [farmsError, fieldsError, cropsError]);
 
-  const isLoading = isLoadingFarms || isLoadingFields || isLoadingCrops;
+    if (tasksError) {
+      toast({
+        title: 'Error loading tasks',
+        description: (tasksError as Error).message,
+        variant: 'destructive',
+      });
+    }
+
+    if (notificationsError) {
+      toast({
+        title: 'Error loading notifications',
+        description: (notificationsError as Error).message,
+        variant: 'destructive',
+      });
+    }
+  }, [farmsError, fieldsError, cropsError, tasksError, notificationsError]);
+
+  const isLoading = isLoadingFarms || isLoadingFields || isLoadingCrops || isLoadingTasks || isLoadingNotifications;
 
   if (isLoading) {
     return (

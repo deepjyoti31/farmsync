@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -19,7 +18,8 @@ import {
   PiggyBank,
   DollarSign,
   BarChart3,
-  Filter 
+  Filter,
+  Trash
 } from 'lucide-react';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -34,6 +34,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog } from '@/components/ui/dialog';
 import AddTransactionForm from '@/components/finances/AddTransactionForm';
+import DeleteButton from '@/components/common/DeleteButton';
+import { deleteEntity } from '@/utils/deleteUtils';
+import { toast } from '@/hooks/use-toast';
 
 type TransactionFilterType = 'all' | 'income' | 'expense';
 type DateRangeType = 'all' | 'this-month' | 'last-month' | 'this-quarter' | 'this-year';
@@ -45,7 +48,6 @@ const Finances = () => {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Fetch transactions from Supabase
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['financial_transactions', selectedFarmId],
     queryFn: async () => {
@@ -53,7 +55,6 @@ const Finances = () => {
       
       console.log('Fetching financial transactions for farm:', selectedFarmId);
       
-      // Fetch transactions from Supabase
       let query = supabase
         .from('financial_transactions')
         .select(`
@@ -70,7 +71,6 @@ const Finances = () => {
         throw error;
       }
       
-      // Transform data to match the expected format
       return data.map(transaction => ({
         id: transaction.id,
         date: transaction.transaction_date,
@@ -86,14 +86,11 @@ const Finances = () => {
   
   console.log('Current transactions:', transactions);
 
-  // Apply filters
   const filteredTransactions = transactions.filter(transaction => {
-    // Filter by transaction type
     if (transactionFilter !== 'all' && transaction.type !== transactionFilter) {
       return false;
     }
     
-    // Filter by date range
     if (dateRange !== 'all') {
       const transactionDate = new Date(transaction.date);
       const now = new Date();
@@ -121,7 +118,6 @@ const Finances = () => {
     return true;
   });
 
-  // Calculate summary stats
   const incomeTotal = filteredTransactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -138,11 +134,28 @@ const Finances = () => {
 
   const handleTransactionAdded = () => {
     setIsAddTransactionOpen(false);
-    // Invalidate and refetch transactions data
     queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });
   };
 
-  // Type-safe handlers for Select components
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      await deleteEntity({
+        id,
+        entityType: 'transaction',
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });
+        }
+      });
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete transaction',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleTransactionFilterChange = (value: string) => {
     setTransactionFilter(value as TransactionFilterType);
   };
@@ -311,6 +324,7 @@ const Finances = () => {
                     <TableHead>Category</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="w-[80px]">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -322,11 +336,18 @@ const Finances = () => {
                       <TableCell className="text-right">
                         {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
                       </TableCell>
+                      <TableCell>
+                        <DeleteButton 
+                          onDelete={() => handleDeleteTransaction(transaction.id)} 
+                          entityType="transaction"
+                          buttonSize="icon"
+                        />
+                      </TableCell>
                     </TableRow>
                   ))}
                   {filteredTransactions.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                         No transactions found for the selected filters.
                       </TableCell>
                     </TableRow>
