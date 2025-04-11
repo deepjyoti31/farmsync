@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -14,7 +13,7 @@ import {
   LineChart, 
   Bell, 
   MessageSquare,
-  Farm,
+  Landmark,
   User,
   Settings
 } from 'lucide-react';
@@ -22,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 const menuItems = [
   { icon: Home, label: 'Dashboard', path: '/dashboard' },
-  { icon: Farm, label: 'Farms', path: '/dashboard/farms' },
+  { icon: Landmark, label: 'Farms', path: '/dashboard/farms' },
   { icon: Map, label: 'Fields', path: '/dashboard/fields' },
   { icon: Sprout, label: 'Crops', path: '/dashboard/crops' },
   { icon: Users, label: 'Livestock', path: '/dashboard/livestock' },

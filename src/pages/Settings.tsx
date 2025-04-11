@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -192,7 +191,7 @@ const Settings = () => {
                     </div>
                   </div>
                   
-                  <Alert variant="outline">
+                  <Alert variant="default">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Password Requirements</AlertTitle>
                     <AlertDescription>
@@ -335,7 +334,7 @@ const Settings = () => {
                     </select>
                   </div>
                   
-                  <Alert variant="outline">
+                  <Alert variant="default">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Language Support</AlertTitle>
                     <AlertDescription>

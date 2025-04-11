@@ -6,6 +6,7 @@ import UserMenu from './UserMenu';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 
 const TopBar = () => {
   const navigate = useNavigate();
