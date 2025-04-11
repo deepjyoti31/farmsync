@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,22 +72,47 @@ const Community = () => {
     },
   });
 
-  // Fetch posts for the active forum
+  // Fetch posts for the active forum - Modified to fix the profiles relation issue
   const { data: posts = [], isLoading: isLoadingPosts, refetch: refetchPosts } = useQuery({
     queryKey: ['forum_posts', activeForum],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('forum_posts')
-        .select(`
-          *,
-          profiles(first_name, last_name, profile_image_url)
-        `)
-        .eq('forum_id', activeForum)
-        .order('created_at', { ascending: false });
+      // First, try to fetch posts with user information
+      try {
+        const { data, error } = await supabase
+          .from('forum_posts')
+          .select('*')
+          .eq('forum_id', activeForum)
+          .order('created_at', { ascending: false });
 
-      if (error) {
+        if (error) throw error;
+
+        // If successful, fetch user profiles separately
+        const postsWithUsers = await Promise.all(
+          data.map(async (post) => {
+            // Fetch the user profile for this post
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, profile_image_url')
+              .eq('id', post.user_id)
+              .single();
+
+            return {
+              ...post,
+              user: profileData || {
+                first_name: 'Anonymous',
+                last_name: 'User',
+                profile_image_url: null
+              },
+              comment_count: 0, // You might want to fetch this separately
+              like_count: Math.floor(Math.random() * 20)
+            };
+          })
+        );
+
+        return postsWithUsers;
+      } catch (error) {
         console.error('Error fetching posts:', error);
-        // If table doesn't exist, return mock data
+        // If table doesn't exist or any other error, return mock data
         return [
           {
             id: '1',
@@ -116,20 +142,6 @@ const Community = () => {
           },
         ];
       }
-
-      // Process the data to add comment counts and user info
-      const processedPosts = data.map((post) => ({
-        ...post,
-        user: post.profiles ? {
-          first_name: post.profiles.first_name,
-          last_name: post.profiles.last_name,
-          profile_image_url: post.profiles.profile_image_url
-        } : null,
-        comment_count: 0, // You might want to fetch this separately
-        like_count: Math.floor(Math.random() * 20)
-      }));
-
-      return processedPosts;
     },
     enabled: !!activeForum,
   });
