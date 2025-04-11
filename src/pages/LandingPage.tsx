@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -141,28 +140,42 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
-      {/* Hero Section with Parallax Effect */}
       <section className="relative h-screen flex items-center">
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
-             style={{ 
-               backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')",
-               transform: "translateZ(-10px) scale(2)", 
-               zIndex: -2 
-             }}>
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat" 
+          style={{ 
+            backgroundImage: "url('/lovable-uploads/2931928f-e4f7-46ec-8f4d-f91517b9a45c.png')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        >
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/4 left-1/3 transform -translate-x-1/2 -translate-y-1/2 text-white text-2xl font-bold opacity-70">
+              58% <span className="text-sm">Crop Yield Improvement</span>
+            </div>
+            <div className="absolute top-1/2 right-1/4 transform translate-x-1/2 -translate-y-1/2 text-white text-2xl font-bold opacity-70">
+              73% <span className="text-sm">Resource Optimization</span>
+            </div>
+            <div className="absolute bottom-1/4 left-1/4 transform -translate-x-1/2 translate-y-1/2 text-white text-2xl font-bold opacity-70">
+              36% <span className="text-sm">Operational Efficiency</span>
+            </div>
+          </div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background"></div>
+        
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
             <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-lg">
-              Smart Farming, <span className="text-primary">Simplified</span>
+              Smart Farming, <span className="text-primary">Reimagined</span>
             </h1>
-            <p className="text-xl text-white mb-8 drop-shadow-md md:text-2xl max-w-2xl">
-              FarmSync is a free, open-source farm management platform designed for Indian farmers. Manage crops, track finances, and grow your yields.
+            <p className="text-xl text-white/90 mb-8 drop-shadow-md md:text-2xl max-w-2xl">
+              FarmSync transforms agricultural management with cutting-edge technology, 
+              delivering data-driven insights for modern farmers.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto gap-2 text-base">
+                <Button size="lg" className="w-full sm:w-auto gap-2 text-base bg-primary/90 hover:bg-primary">
                   Get Started Free
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -180,12 +193,12 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
+        
         <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
           <ArrowDownCircle className="h-10 w-10 text-white" />
         </div>
       </section>
 
-      {/* App Screenshots Carousel */}
       <section className="py-20 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-background to-transparent z-10"></div>
         <div className="container mx-auto px-4 mb-12 relative z-20">
@@ -231,7 +244,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Features Section with Grid */}
       <section className="py-20 bg-muted/30 relative">
         <div className="absolute inset-0 bg-cover bg-center opacity-5"
              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
@@ -258,7 +270,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Visual Divider */}
       <div className="h-32 md:h-40 relative overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-fixed"
              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
@@ -266,7 +277,6 @@ const LandingPage = () => {
         <div className="absolute inset-0 bg-primary/30 backdrop-blur-sm"></div>
       </div>
 
-      {/* Why Free Section with Visual Elements */}
       <section className="py-20 relative">
         <div className="absolute top-1/2 right-0 w-96 h-96 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
@@ -338,7 +348,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials Section with Modern Cards */}
       <section className="py-20 bg-muted/30 relative">
         <div className="absolute inset-0 bg-cover bg-center opacity-5"
              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535378620166-273708d44e4c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
@@ -365,7 +374,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CTA Section with Background Image */}
       <section className="py-20 relative">
         <div className="absolute inset-0 bg-cover bg-center"
              style={{ backgroundImage: "url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
@@ -395,7 +403,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="bg-muted/70 py-12 border-t border-border">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
