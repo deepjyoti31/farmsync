@@ -1,4 +1,0 @@
-# Active Context
-Timestamp: 2025-04-14 12:18:32
-
-FarmSync is a comprehensive farm management application designed to streamline operations on a modern farm. The project structure reveals a modular design with a robust front-end built using React (TypeScript) and Vite, a backend powered by Supabase, and organized components divided across directories for crops, livestock, fields, equipment, finances, and more. This architecture supports features such as dashboards with crop status, notifications, weather updates, and quick access to essential functionalities, enabling efficient farm operations and data-driven decision-making.
