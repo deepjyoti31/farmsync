@@ -1122,6 +1122,199 @@ export type Database = {
           },
         ]
       }
+      testimonials: {
+        Row: {
+          id: string
+          user_name: string
+          role: string | null
+          quote: string
+          image_url: string | null
+          rating: number | null
+          is_featured: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_name: string
+          role?: string | null
+          quote: string
+          image_url?: string | null
+          rating?: number | null
+          is_featured?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_name?: string
+          role?: string | null
+          quote?: string
+          image_url?: string | null
+          rating?: number | null
+          is_featured?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      app_screenshots: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          image_url: string
+          display_order: number | null
+          is_featured: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          image_url: string
+          display_order?: number | null
+          is_featured?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          image_url?: string
+          display_order?: number | null
+          is_featured?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      forums: {
+        Row: {
+          id: string
+          title: string
+          description: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      post_comments: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          content: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          content: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          content?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      post_likes: {
+        Row: {
+          id: string
+          post_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          post_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          post_id?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      market_data: {
+        Row: {
+          id: string
+          crop_name: string
+          price_per_unit: number
+          unit: string
+          market_location: string | null
+          price_date: string
+          source: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          crop_name: string
+          price_per_unit: number
+          unit: string
+          market_location?: string | null
+          price_date: string
+          source?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          crop_name?: string
+          price_per_unit?: number
+          unit?: string
+          market_location?: string | null
+          price_date?: string
+          source?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

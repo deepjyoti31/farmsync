@@ -95,166 +95,14 @@ const Market = () => {
   const { data: marketData = [], isLoading, refetch } = useQuery({
     queryKey: ['market_data', selectedState],
     queryFn: async () => {
-      // In a real app, this would fetch from a real API
-      // For now, we'll fetch real Indian crop market data
-
-      // Simulate network latency
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      try {
-        // This would typically be your real API endpoint
-        const apiUrl = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070';
-        const apiKey = '579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b';
-        
-        // Construct the API URL with filters
-        let url = `${apiUrl}?api-key=${apiKey}&format=json&limit=100`;
-        
-        if (selectedState) {
-          url += `&filters[state]=${encodeURIComponent(selectedState)}`;
-        }
-        
-        const response = await fetch(url);
-        const jsonData = await response.json();
-        
-        if (jsonData.records) {
-          return jsonData.records.map((record: any) => ({
-            commodity: record.commodity,
-            variety: record.variety,
-            market: record.market,
-            state: record.state,
-            district: record.district,
-            min_price: parseFloat(record.min_price),
-            max_price: parseFloat(record.max_price),
-            modal_price: parseFloat(record.modal_price),
-            date: record.arrival_date
-          }));
-        }
-        
-        // If API call fails, return mock data that looks like real market data
-        return [
-          {
-            commodity: "Rice",
-            variety: "Common",
-            market: "Adilabad",
-            state: "Telangana",
-            district: "Adilabad",
-            min_price: 2100,
-            max_price: 2200,
-            modal_price: 2150,
-            date: "10/04/2025"
-          },
-          {
-            commodity: "Wheat",
-            variety: "Dara",
-            market: "Amritsar",
-            state: "Punjab",
-            district: "Amritsar",
-            min_price: 1950,
-            max_price: 2050,
-            modal_price: 2000,
-            date: "10/04/2025"
-          },
-          {
-            commodity: "Maize",
-            variety: "Yellow",
-            market: "Bangalore",
-            state: "Karnataka",
-            district: "Bangalore",
-            min_price: 1800,
-            max_price: 1900,
-            modal_price: 1850,
-            date: "10/04/2025"
-          },
-          {
-            commodity: "Cotton",
-            variety: "Raw",
-            market: "Guntur",
-            state: "Andhra Pradesh",
-            district: "Guntur",
-            min_price: 5500,
-            max_price: 6000,
-            modal_price: 5750,
-            date: "10/04/2025"
-          },
-          {
-            commodity: "Soybean",
-            variety: "Yellow",
-            market: "Indore",
-            state: "Madhya Pradesh",
-            district: "Indore",
-            min_price: 3800,
-            max_price: 4200,
-            modal_price: 4000,
-            date: "10/04/2025"
-          },
-          {
-            commodity: "Sugar",
-            variety: "M-30",
-            market: "Kolhapur",
-            state: "Maharashtra",
-            district: "Kolhapur",
-            min_price: 3300,
-            max_price: 3500,
-            modal_price: 3400,
-            date: "10/04/2025"
-          },
-          {
-            commodity: "Onion",
-            variety: "Red",
-            market: "Lasalgaon",
-            state: "Maharashtra",
-            district: "Nashik",
-            min_price: 1200,
-            max_price: 1500,
-            modal_price: 1350,
-            date: "10/04/2025"
-          },
-          {
-            commodity: "Potato",
-            variety: "Kufri Jyoti",
-            market: "Agra",
-            state: "Uttar Pradesh",
-            district: "Agra",
-            min_price: 900,
-            max_price: 1100,
-            modal_price: 1000,
-            date: "10/04/2025"
-          }
-        ] as MarketData[];
-      } catch (error) {
-        console.error("Error fetching market data:", error);
-        toast({
-          title: "Error fetching market data",
-          description: "Could not load the latest market prices. Using cached data instead.",
-          variant: "destructive"
-        });
-        
-        // Return mock data as fallback
-        return [
-          {
-            commodity: "Rice",
-            variety: "Common",
-            market: "Adilabad",
-            state: "Telangana",
-            district: "Adilabad",
-            min_price: 2100,
-            max_price: 2200,
-            modal_price: 2150,
-            date: "10/04/2025"
-          },
-          {
-            commodity: "Wheat",
-            variety: "Dara",
-            market: "Amritsar",
-            state: "Punjab",
-            district: "Amritsar",
-            min_price: 1950,
-            max_price: 2050,
-            modal_price: 2000,
-            date: "10/04/2025"
-          }
-        ] as MarketData[];
-      }
+      const { data, error } = await supabase
+        .from('market_data')
+        .select('*')
+        .eq('state', selectedState)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data;
     },
   });
   
@@ -303,7 +151,7 @@ const Market = () => {
       location: `${item.district}, ${item.state}`,
       distance: Math.floor(Math.random() * 100),
       rating: 4 + Math.random(),
-      image: `/placeholder.svg`, // Use a placeholder image
+      image: getProductionImageUrl(item),
       inStock: true
     };
     

@@ -1,73 +1,137 @@
-# Welcome to your Lovable project
+# FarmSync - Farm Management Application
 
-## Project info
+FarmSync is a comprehensive farm management application designed to streamline operations on a modern farm. It provides tools for managing crops, livestock, fields, equipment, finances, and more, with a user-friendly interface and data-driven insights.
 
-**URL**: https://lovable.dev/projects/dc2278d3-70a5-432b-a2cf-be1389b3921c
+## Table of Contents
 
-## How can I edit this code?
+- [Features](#features)
+- [Technologies Used](#technologies-used)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Environment Variables](#environment-variables)
+- [Supabase Setup](#supabase-setup)
+- [WeatherAPI.com Integration](#weatherapicom-integration)
+- [Running the Application](#running-the-application)
+- [Deployment](#deployment)
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- Dashboard with farm overview and key metrics
+- Crop management and planning
+- Field mapping and management
+- Equipment tracking and maintenance scheduling
+- Financial transaction recording and reporting
+- Weather forecasting integration
+- Community forums for farmer discussions
+- Responsive design for desktop and mobile use
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dc2278d3-70a5-432b-a2cf-be1389b3921c) and start prompting.
+## Technologies Used
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (PostgreSQL database, authentication, storage)
+- **APIs**: WeatherAPI.com for weather data
+- **State Management**: React Query
 
-**Use your preferred IDE**
+## Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js (v16 or higher)
+- npm or yarn
+- Supabase account
+- WeatherAPI.com API key
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Installation
 
-Follow these steps:
+1. Clone the repository:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+git clone https://github.com/deepjyoti31/farmsync.git
+cd farmsync
 ```
 
-**Edit a file directly in GitHub**
+2. Install dependencies:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+npm install
+# or
+yarn install
+```
 
-**Use GitHub Codespaces**
+3. Create a `.env` file in the root directory based on the `.env.example` file:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```sh
+cp .env.example .env
+```
 
-## What technologies are used for this project?
+## Environment Variables
 
-This project is built with:
+Edit the `.env` file and add your environment variables:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+# Supabase Configuration
+VITE_SUPABASE_URL=your_supabase_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+```
 
-## How can I deploy this project?
+## Supabase Setup
 
-Simply open [Lovable](https://lovable.dev/projects/dc2278d3-70a5-432b-a2cf-be1389b3921c) and click on Share -> Publish.
+1. Create a Supabase account at [supabase.com](https://supabase.com)
 
-## Can I connect a custom domain to my Lovable project?
+2. Create a new project in Supabase
 
-Yes it is!
+3. Get your Supabase URL and anon key from the project settings (API section)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+4. Add these values to your `.env` file
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+5. Apply the database migrations:
+
+```sh
+npx supabase login
+npx supabase link --project-ref your_project_id
+npx supabase db push
+# or use our helper script
+node supabase/apply-migrations.js
+```
+
+## WeatherAPI.com Integration
+
+1. Create an account at [WeatherAPI.com](https://www.weatherapi.com/)
+
+2. Get your API key from the dashboard
+
+3. Set up the environment variable for the Supabase Edge Function:
+
+```sh
+npx supabase secrets set WEATHER_API_KEY="your_api_key" --project-ref your_project_id
+# or use our helper script
+node supabase/setup-env-vars.js
+```
+
+## Running the Application
+
+Start the development server:
+
+```sh
+npm run dev
+# or
+yarn dev
+```
+
+The application will be available at `http://localhost:8080`
+
+## Deployment
+
+Build the application for production:
+
+```sh
+npm run build
+# or
+yarn build
+```
+
+The built files will be in the `dist` directory, which you can deploy to any static hosting service.
+
+For Supabase Edge Functions deployment:
+
+```sh
+npx supabase functions deploy get-weather --project-ref your_project_id
+```

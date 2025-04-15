@@ -55,19 +55,10 @@ const Community = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('forums')
-        .select('*')
-        .order('title', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching forums:', error);
-        return [
-          { id: 'general', title: 'General Discussion', description: 'Talk about anything farming related' },
-          { id: 'crops', title: 'Crop Management', description: 'Share tips and advice about crop cultivation' },
-          { id: 'equipment', title: 'Farm Equipment', description: 'Discuss farming equipment and tools' },
-          { id: 'market', title: 'Market & Prices', description: 'Updates about agricultural markets and pricing' },
-        ];
-      }
-
+        .select('*, posts(count)')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
       return data;
     },
   });
@@ -76,72 +67,19 @@ const Community = () => {
   const { data: posts = [], isLoading: isLoadingPosts, refetch: refetchPosts } = useQuery({
     queryKey: ['forum_posts', activeForum],
     queryFn: async () => {
-      // First, try to fetch posts with user information
-      try {
-        const { data, error } = await supabase
-          .from('forum_posts')
-          .select('*')
-          .eq('forum_id', activeForum)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // If successful, fetch user profiles separately
-        const postsWithUsers = await Promise.all(
-          data.map(async (post) => {
-            // Fetch the user profile for this post
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('first_name, last_name, profile_image_url')
-              .eq('id', post.user_id)
-              .single();
-
-            return {
-              ...post,
-              user: profileData || {
-                first_name: 'Anonymous',
-                last_name: 'User',
-                profile_image_url: null
-              },
-              comment_count: 0, // You might want to fetch this separately
-              like_count: Math.floor(Math.random() * 20)
-            };
-          })
-        );
-
-        return postsWithUsers;
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        // If table doesn't exist or any other error, return mock data
-        return [
-          {
-            id: '1',
-            title: 'Tips for managing pests in organic farming',
-            content: "I've been trying organic methods to control pests in my vegetable garden. Has anyone tried neem oil spray?",
-            created_at: new Date().toISOString(),
-            user: { 
-              first_name: 'Arjun', 
-              last_name: 'Patel',
-              profile_image_url: null 
-            },
-            comment_count: 5,
-            like_count: 12
-          },
-          {
-            id: '2',
-            title: 'Best practices for soil health maintenance',
-            content: "I'm looking to improve my soil health naturally. What cover crops do you recommend for sandy soils?",
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            user: { 
-              first_name: 'Priya', 
-              last_name: 'Sharma',
-              profile_image_url: null 
-            },
-            comment_count: 8,
-            like_count: 19
-          },
-        ];
-      }
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          user:profiles(first_name, last_name, profile_image_url),
+          comments:post_comments(count),
+          likes:post_likes(count)
+        `)
+        .eq('forum_id', activeForum)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
     },
     enabled: !!activeForum,
   });

@@ -74,11 +74,8 @@ url = ""
 # Port to use for Functions server.
 port = 54321
 # Renames the default `/functions/v1/` path to the specified path.
-function_path = "/functions/v1"
+path = "/functions/v1"
 
-[functions.get-weather]
+[[functions.function]]
+name = "get-weather"
 verify_jwt = true
-
-[observability]
-# Port to use for the observability service.
-port = 54327
