@@ -30,7 +30,7 @@ const FarmsList = () => {
         .from('farms')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       return data;
     },
@@ -56,16 +56,16 @@ const FarmsList = () => {
 
   const handleDeleteFarm = async () => {
     if (!deletingFarm) return;
-    
+
     setIsDeleting(true);
     try {
       const { error } = await supabase
         .from('farms')
         .delete()
         .eq('id', deletingFarm.id);
-      
+
       if (error) throw error;
-      
+
       queryClient.invalidateQueries({ queryKey: ['farms'] });
       toast({
         title: "Farm deleted",
@@ -174,7 +174,7 @@ const FarmsList = () => {
 
       {/* Add Farm Dialog */}
       <Dialog open={isAddFarmOpen} onOpenChange={setIsAddFarmOpen}>
-        <DialogContent className="p-0 max-w-md">
+        <DialogContent className="p-0 max-w-4xl">
           <AddFarmForm
             onClose={() => setIsAddFarmOpen(false)}
             onSuccess={handleAddFarmSuccess}
@@ -184,7 +184,7 @@ const FarmsList = () => {
 
       {/* Edit Farm Dialog */}
       <Dialog open={!!editingFarm} onOpenChange={(open) => !open && setEditingFarm(null)}>
-        <DialogContent className="p-0 max-w-md">
+        <DialogContent className="p-0 max-w-4xl">
           {editingFarm && (
             <EditFarmForm
               farm={editingFarm}
@@ -206,7 +206,7 @@ const FarmsList = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteFarm}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

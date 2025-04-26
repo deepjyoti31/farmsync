@@ -30,9 +30,9 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({ selectedFarmId, onFarmChang
       const { data, error } = await supabase
         .from('farms')
         .select('id, name, village, district, state');
-      
+
       if (error) throw error;
-      
+
       return (data || []).map((farm: any): Farm => ({
         id: farm.id,
         name: farm.name,
@@ -95,7 +95,7 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({ selectedFarmId, onFarmChang
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               {farms.map((farm) => (
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   key={farm.id}
                   onClick={() => onFarmChange(farm.id)}
                 >
@@ -104,7 +104,7 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({ selectedFarmId, onFarmChang
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           <Button onClick={handleAddFarm} size="icon">
             <Plus className="h-4 w-4" />
           </Button>
@@ -112,7 +112,7 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({ selectedFarmId, onFarmChang
       )}
 
       <Dialog open={isAddFarmOpen} onOpenChange={setIsAddFarmOpen}>
-        <DialogContent className="p-0 max-w-md">
+        <DialogContent className="p-0 max-w-4xl">
           <AddFarmForm
             onClose={() => setIsAddFarmOpen(false)}
             onSuccess={handleFarmAdded}

@@ -183,6 +183,7 @@ export type Database = {
           updated_at: string
           user_id: string
           village: string | null
+          boundaries: Json | null
         }
         Insert: {
           address?: string | null
@@ -199,6 +200,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           village?: string | null
+          boundaries?: Json | null
         }
         Update: {
           address?: string | null
@@ -215,6 +217,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           village?: string | null
+          boundaries?: Json | null
         }
         Relationships: []
       }

@@ -1,4 +1,7 @@
 
+// Import GeoJSON types
+import * as GeoJSON from 'geojson';
+
 // Farm Management data types
 
 export interface Field {
@@ -63,6 +66,7 @@ export interface Farm {
   user_id: string;
   gps_latitude?: number;
   gps_longitude?: number;
+  boundaries?: GeoJSON.Polygon | null; // Farm boundary coordinates
   created_at: string;
   updated_at: string;
 }
