@@ -10,6 +10,7 @@ FarmSync is a comprehensive farm management application designed to streamline o
 - [Installation](#installation)
 - [Environment Variables](#environment-variables)
 - [Supabase Setup](#supabase-setup)
+- [Mapbox Integration](#mapbox-integration)
 - [WeatherAPI.com Integration](#weatherapicom-integration)
 - [Running the Application](#running-the-application)
 - [Deployment](#deployment)
@@ -19,6 +20,8 @@ FarmSync is a comprehensive farm management application designed to streamline o
 - Dashboard with farm overview and key metrics
 - Crop management and planning
 - Field mapping and management
+- Farm boundary mapping with automatic area calculation
+- Detailed farm information view with interactive map
 - Equipment tracking and maintenance scheduling
 - Financial transaction recording and reporting
 - Weather forecasting integration
@@ -29,8 +32,9 @@ FarmSync is a comprehensive farm management application designed to streamline o
 
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS, shadcn/ui
 - **Backend**: Supabase (PostgreSQL database, authentication, storage)
-- **APIs**: WeatherAPI.com for weather data
+- **APIs**: WeatherAPI.com for weather data, Mapbox for mapping and geospatial features
 - **State Management**: React Query
+- **Mapping**: Mapbox GL JS, @mapbox/mapbox-gl-draw for boundary drawing, @mapbox/geojson-area for area calculations
 
 ## Prerequisites
 
@@ -38,6 +42,7 @@ FarmSync is a comprehensive farm management application designed to streamline o
 - npm or yarn
 - Supabase account
 - WeatherAPI.com API key
+- Mapbox access token
 
 ## Installation
 
@@ -70,6 +75,9 @@ Edit the `.env` file and add your environment variables:
 # Supabase Configuration
 VITE_SUPABASE_URL=your_supabase_url_here
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+
+# Mapbox Configuration
+VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_token_here
 ```
 
 ## Supabase Setup
@@ -90,6 +98,18 @@ npx supabase link --project-ref your_project_id
 npx supabase db push
 # or use our helper script
 node supabase/apply-migrations.js
+```
+
+## Mapbox Integration
+
+1. Create an account at [Mapbox](https://www.mapbox.com/)
+
+2. Navigate to your account dashboard and create a new access token
+
+3. Add the access token to your `.env` file:
+
+```
+VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_token_here
 ```
 
 ## WeatherAPI.com Integration
