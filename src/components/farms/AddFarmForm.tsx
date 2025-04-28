@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, X, Map, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -27,13 +27,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import BoundaryMap from '@/components/maps/BoundaryMap';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import * as GeoJSON from 'geojson';
+import { calculateArea, formatArea, calculateCenter, formatCoordinates } from '@/utils/mapUtils';
 
 const farmFormSchema = z.object({
   name: z.string().min(2, { message: 'Farm name must be at least 2 characters' }),
   village: z.string().optional(),
   district: z.string().optional(),
   state: z.string().optional(),
-  totalArea: z.coerce.number().nonnegative().optional(),
   areaUnit: z.string().default('acres'),
 });
 
@@ -48,6 +48,8 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [boundaries, setBoundaries] = useState<GeoJSON.Polygon | null>(null);
+  const [calculatedArea, setCalculatedArea] = useState<number>(0);
+  const [centerCoordinates, setCenterCoordinates] = useState<[number, number]>([0, 0]);
   const { user } = useAuth();
 
   const form = useForm<FarmFormData>({
@@ -57,14 +59,34 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
       village: '',
       district: '',
       state: '',
-      totalArea: 0,
       areaUnit: 'acres',
     },
   });
 
   const handleBoundariesChange = (newBoundaries: GeoJSON.Polygon | null) => {
     setBoundaries(newBoundaries);
+
+    if (newBoundaries) {
+      // Calculate area based on the drawn boundaries
+      const area = calculateArea(newBoundaries, form.getValues().areaUnit as 'acres' | 'hectares');
+      setCalculatedArea(area);
+
+      // Calculate center coordinates
+      const center = calculateCenter(newBoundaries);
+      setCenterCoordinates(center);
+    } else {
+      setCalculatedArea(0);
+      setCenterCoordinates([0, 0]);
+    }
   };
+
+  // Recalculate area when area unit changes
+  useEffect(() => {
+    if (boundaries) {
+      const area = calculateArea(boundaries, form.getValues().areaUnit as 'acres' | 'hectares');
+      setCalculatedArea(area);
+    }
+  }, [form.watch('areaUnit'), boundaries]);
 
   const goToNextStep = () => {
     if (activeTab === "details") {
@@ -119,18 +141,8 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
     try {
       setIsSubmitting(true);
 
-      // Calculate center point of the boundaries for gps_latitude and gps_longitude
-      const coordinates = boundaries.coordinates[0];
-      let sumLat = 0;
-      let sumLng = 0;
-
-      for (const coord of coordinates) {
-        sumLng += coord[0]; // longitude is first in GeoJSON
-        sumLat += coord[1]; // latitude is second in GeoJSON
-      }
-
-      const centerLat = sumLat / coordinates.length;
-      const centerLng = sumLng / coordinates.length;
+      // Use the pre-calculated center coordinates
+      const [centerLat, centerLng] = centerCoordinates;
 
       const { error } = await supabase
         .from('farms')
@@ -140,7 +152,7 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
           village: data.village || null,
           district: data.district || null,
           state: data.state || null,
-          total_area: data.totalArea || null,
+          total_area: calculatedArea,
           area_unit: data.areaUnit,
           gps_latitude: centerLat,
           gps_longitude: centerLng,
@@ -257,34 +269,13 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="totalArea"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Area (optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0"
-                          {...field}
-                          disabled={isSubmitting}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+              <div>
                 <FormField
                   control={form.control}
                   name="areaUnit"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Unit</FormLabel>
+                      <FormLabel>Area Unit</FormLabel>
                       <Select
                         defaultValue={field.value}
                         onValueChange={field.onChange}
@@ -302,6 +293,9 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
                         </SelectContent>
                       </Select>
                       <FormMessage />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        The farm area will be calculated automatically from the boundaries you mark on the map.
+                      </p>
                     </FormItem>
                   )}
                 />
@@ -389,23 +383,30 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
 
                     <dt className="text-muted-foreground font-medium">State:</dt>
                     <dd>{form.getValues().state || 'Not specified'}</dd>
-
-                    <dt className="text-muted-foreground font-medium">Total Area:</dt>
-                    <dd>
-                      {form.getValues().totalArea ? `${form.getValues().totalArea} ${form.getValues().areaUnit}` : 'Not specified'}
-                    </dd>
                   </dl>
                 </div>
 
                 <div className="border rounded-lg p-3">
                   <h4 className="font-medium mb-2">Boundary Information</h4>
+                  <dl className="grid grid-cols-2 gap-1 text-sm mb-3">
+                    <dt className="text-muted-foreground font-medium">Calculated Area:</dt>
+                    <dd className="font-semibold">
+                      {formatArea(calculatedArea)} {form.getValues().areaUnit}
+                    </dd>
+
+                    <dt className="text-muted-foreground font-medium">GPS Coordinates:</dt>
+                    <dd>
+                      {formatCoordinates(centerCoordinates[0], centerCoordinates[1])}
+                    </dd>
+                  </dl>
+
                   <p className="text-muted-foreground text-sm mb-2">
                     These boundaries will be used for:
                   </p>
                   <ul className="list-disc pl-5 space-y-1 text-sm">
-                    <li>Calculating exact farm area</li>
                     <li>Weather forecasts for your location</li>
                     <li>Precision farming features</li>
+                    <li>Field planning and management</li>
                   </ul>
                 </div>
               </div>

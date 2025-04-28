@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Loader2, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import AddFarmForm from '@/components/farms/AddFarmForm';
 import EditFarmForm from '@/components/farms/EditFarmForm';
+import FarmDetailsDialog from '@/components/farms/FarmDetailsDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Farm } from '@/types';
 
@@ -22,6 +23,7 @@ const FarmsList = () => {
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
   const [deletingFarm, setDeletingFarm] = useState<Farm | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [viewingFarmId, setViewingFarmId] = useState<string | null>(null);
 
   const { data: farms = [], isLoading } = useQuery({
     queryKey: ['farms'],
@@ -132,7 +134,14 @@ const FarmsList = () => {
                   <TableBody>
                     {farms.map((farm) => (
                       <TableRow key={farm.id}>
-                        <TableCell className="font-medium">{farm.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <button
+                            onClick={() => setViewingFarmId(farm.id)}
+                            className="hover:underline text-left font-medium text-primary focus:outline-none focus:underline"
+                          >
+                            {farm.name}
+                          </button>
+                        </TableCell>
                         <TableCell>
                           {[farm.village, farm.district, farm.state].filter(Boolean).join(', ')}
                         </TableCell>
@@ -147,7 +156,17 @@ const FarmsList = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => setViewingFarmId(farm.id)}
+                              title="View Details"
+                            >
+                              <Info className="h-4 w-4" />
+                              <span className="sr-only">View Details</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => setEditingFarm(farm)}
+                              title="Edit Farm"
                             >
                               <Pencil className="h-4 w-4" />
                               <span className="sr-only">Edit</span>
@@ -156,6 +175,7 @@ const FarmsList = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => setDeletingFarm(farm)}
+                              title="Delete Farm"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                               <span className="sr-only">Delete</span>
@@ -217,6 +237,13 @@ const FarmsList = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Farm Details Dialog */}
+      <FarmDetailsDialog
+        farmId={viewingFarmId}
+        isOpen={!!viewingFarmId}
+        onClose={() => setViewingFarmId(null)}
+      />
     </div>
   );
 };
