@@ -80,7 +80,7 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
     queryFn: async () => {
       const { data, error } = await supabase
         .from('fields')
-        .select('*')
+        .select('*, farm:farm_id(name)')
         .eq('farm_id', farmId)
         .order('name');
 
@@ -107,8 +107,8 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
           crop_id: values.cropId,
           field_id: values.fieldId,
           planting_date: values.plantingDate.toISOString().split('T')[0],
-          expected_harvest_date: values.expectedHarvestDate 
-            ? values.expectedHarvestDate.toISOString().split('T')[0] 
+          expected_harvest_date: values.expectedHarvestDate
+            ? values.expectedHarvestDate.toISOString().split('T')[0]
             : null,
           status: values.status,
           notes: values.notes,
@@ -141,8 +141,8 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
           render={({ field }) => (
             <FormItem>
               <FormLabel>Crop Type</FormLabel>
-              <Select 
-                onValueChange={field.onChange} 
+              <Select
+                onValueChange={field.onChange}
                 defaultValue={field.value}
               >
                 <FormControl>
@@ -169,8 +169,8 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
           render={({ field }) => (
             <FormItem>
               <FormLabel>Field</FormLabel>
-              <Select 
-                onValueChange={field.onChange} 
+              <Select
+                onValueChange={field.onChange}
                 defaultValue={field.value}
               >
                 <FormControl>
@@ -272,8 +272,8 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <Select 
-                onValueChange={field.onChange} 
+              <Select
+                onValueChange={field.onChange}
                 defaultValue={field.value}
               >
                 <FormControl>
@@ -301,9 +301,9 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
             <FormItem>
               <FormLabel>Notes (Optional)</FormLabel>
               <FormControl>
-                <Textarea 
-                  placeholder="Add any additional notes about this crop..." 
-                  {...field} 
+                <Textarea
+                  placeholder="Add any additional notes about this crop..."
+                  {...field}
                 />
               </FormControl>
               <FormMessage />

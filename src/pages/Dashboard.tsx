@@ -9,10 +9,10 @@ import TaskList from "@/components/dashboard/TaskList";
 import NotificationList from "@/components/dashboard/NotificationList";
 import CropStatus from "@/components/dashboard/CropStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Tractor, 
+import {
+  Tractor,
   MapPin,
-  Sprout, 
+  Sprout,
   PiggyBank,
   Bird,
   Loader2
@@ -26,8 +26,8 @@ const Dashboard = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
 
   // Fetch farms for the logged in user
-  const { 
-    data: farms = [], 
+  const {
+    data: farms = [],
     isLoading: isLoadingFarms,
     error: farmsError
   } = useQuery({
@@ -36,9 +36,9 @@ const Dashboard = () => {
       const { data: userFarms, error } = await supabase
         .from('farms')
         .select('*');
-      
+
       if (error) throw error;
-      
+
       // Transform the data to match our Farm type
       return (userFarms || []).map((farm: any): Farm => ({
         id: farm.id,
@@ -69,22 +69,22 @@ const Dashboard = () => {
   }, [farms, selectedFarmId]);
 
   // Fetch fields for the selected farm
-  const { 
-    data: fields = [], 
+  const {
+    data: fields = [],
     isLoading: isLoadingFields,
-    error: fieldsError 
+    error: fieldsError
   } = useQuery({
     queryKey: ['fields', selectedFarmId],
     queryFn: async () => {
       if (!selectedFarmId) return [];
-      
+
       const { data, error } = await supabase
         .from('fields')
-        .select('*')
+        .select('*, farm:farm_id(name)')
         .eq('farm_id', selectedFarmId);
-      
+
       if (error) throw error;
-      
+
       // Transform the data to match our Field type
       return (data || []).map((field: any): Field => ({
         id: field.id,
@@ -100,6 +100,7 @@ const Dashboard = () => {
         images: [],
         crops: [], // We'll fetch crops separately
         farm_id: field.farm_id,
+        farm_name: field.farm?.name || '',
         created_at: field.created_at,
         updated_at: field.updated_at
       }));
@@ -108,26 +109,26 @@ const Dashboard = () => {
   });
 
   // Fetch crops data
-  const { 
-    data: fieldCrops = [], 
+  const {
+    data: fieldCrops = [],
     isLoading: isLoadingCrops,
-    error: cropsError 
+    error: cropsError
   } = useQuery({
     queryKey: ['field_crops', selectedFarmId],
     queryFn: async () => {
       if (!selectedFarmId) return [];
-      
+
       // First get all fields for this farm
       const { data: fieldData, error: fieldError } = await supabase
         .from('fields')
         .select('id')
         .eq('farm_id', selectedFarmId);
-      
+
       if (fieldError) throw fieldError;
       if (!fieldData || fieldData.length === 0) return [];
-      
+
       const fieldIds = fieldData.map(field => field.id);
-      
+
       // Then get all field_crops that link to these fields
       const { data: fieldCropsData, error: cropError } = await supabase
         .from('field_crops')
@@ -136,7 +137,7 @@ const Dashboard = () => {
           crop:crops(*)
         `)
         .in('field_id', fieldIds);
-      
+
       if (cropError) throw cropError;
       return fieldCropsData || [];
     },
@@ -144,24 +145,24 @@ const Dashboard = () => {
   });
 
   // Fetch tasks for the selected farm
-  const { 
-    data: tasks = [], 
+  const {
+    data: tasks = [],
     isLoading: isLoadingTasks,
-    error: tasksError 
+    error: tasksError
   } = useQuery({
     queryKey: ['tasks', selectedFarmId],
     queryFn: async () => {
       if (!selectedFarmId) return [];
-      
+
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
         .eq('farm_id', selectedFarmId)
         .order('due_date', { ascending: true })
         .limit(5);
-      
+
       if (error) throw error;
-      
+
       return (data || []).map(task => ({
         id: task.id,
         title: task.title,
@@ -177,30 +178,30 @@ const Dashboard = () => {
   });
 
   // Fetch notifications
-  const { 
-    data: notifications = [], 
+  const {
+    data: notifications = [],
     isLoading: isLoadingNotifications,
-    error: notificationsError 
+    error: notificationsError
   } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
-      
+
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', user.user.id)
         .order('created_at', { ascending: false })
         .limit(5);
-      
+
       if (error) {
         console.error('Error fetching notifications:', error);
         // If the table doesn't exist yet, return empty array without error
         if (error.code === '42P01') return [];
         throw error;
       }
-      
+
       return (data || []).map(notification => ({
         id: notification.id,
         title: notification.title,
@@ -235,7 +236,7 @@ const Dashboard = () => {
         variant: 'destructive',
       });
     }
-    
+
     if (fieldsError) {
       toast({
         title: 'Error loading fields',
@@ -243,7 +244,7 @@ const Dashboard = () => {
         variant: 'destructive',
       });
     }
-    
+
     if (cropsError) {
       toast({
         title: 'Error loading crops',
@@ -303,35 +304,35 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatsCard 
-                title="Fields" 
-                value={fields.length.toString()} 
-                description="Total fields" 
-                trend={fields.length > 0 ? "up" : "neutral"} 
+              <StatsCard
+                title="Fields"
+                value={fields.length.toString()}
+                description="Total fields"
+                trend={fields.length > 0 ? "up" : "neutral"}
                 trendValue={fields.length > 0 ? fields.length.toString() : "0"}
                 icon={MapPin}
               />
-              <StatsCard 
-                title="Crops" 
-                value={activeCropsCount.toString()} 
-                description="Currently growing" 
-                trend={cropsList.length > 0 ? "up" : "neutral"} 
+              <StatsCard
+                title="Crops"
+                value={activeCropsCount.toString()}
+                description="Currently growing"
+                trend={cropsList.length > 0 ? "up" : "neutral"}
                 trendValue={cropsList.length.toString()}
                 icon={Sprout}
               />
-              <StatsCard 
-                title="Livestock" 
-                value="0" 
-                description="Total animals" 
-                trend="neutral" 
+              <StatsCard
+                title="Livestock"
+                value="0"
+                description="Total animals"
+                trend="neutral"
                 trendValue="0"
                 icon={Bird}
               />
-              <StatsCard 
-                title="Revenue" 
-                value="₹0" 
-                description="This month" 
-                trend="neutral" 
+              <StatsCard
+                title="Revenue"
+                value="₹0"
+                description="This month"
+                trend="neutral"
                 trendValue="0%"
                 icon={PiggyBank}
               />
@@ -343,14 +344,14 @@ const Dashboard = () => {
                 <TabsTrigger value="crops">Crops</TabsTrigger>
                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="overview">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <WeatherWidget farmId={selectedFarmId} />
                   <QuickLinks />
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="crops">
                 <Card>
                   <CardHeader>
@@ -362,7 +363,7 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="tasks">
                 <Card>
                   <CardHeader>
@@ -376,7 +377,7 @@ const Dashboard = () => {
               </TabsContent>
             </Tabs>
           </div>
-          
+
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -387,7 +388,7 @@ const Dashboard = () => {
                 <NotificationList notifications={notifications as Notification[]} />
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Upcoming Tasks</CardTitle>

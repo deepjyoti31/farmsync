@@ -2,8 +2,11 @@
 
 FarmSync is a comprehensive farm management application designed to streamline operations on a modern farm. It provides tools for managing crops, livestock, fields, equipment, finances, and more, with a user-friendly interface and data-driven insights.
 
+![FarmSync Dashboard](src/data/dashboard.png)
+
 ## Table of Contents
 
+- [Overview](#overview)
 - [Features](#features)
 - [Technologies Used](#technologies-used)
 - [Prerequisites](#prerequisites)
@@ -14,27 +17,84 @@ FarmSync is a comprehensive farm management application designed to streamline o
 - [WeatherAPI.com Integration](#weatherapicom-integration)
 - [Running the Application](#running-the-application)
 - [Deployment](#deployment)
+- [Future Enhancements](#future-enhancements)
+
+## Overview
+
+FarmSync helps farmers manage all aspects of their farming operations through an intuitive web interface. The application allows users to register farms, track fields and crops, monitor livestock, check weather forecasts, and manage finances - all in one place. With interactive mapping features powered by Mapbox, farmers can visualize their farm boundaries and calculate areas automatically.
 
 ## Features
 
+### Farm Management
+- Farm registration with detailed information
+- Interactive farm boundary mapping with Mapbox
+- Automatic area calculation from drawn boundaries
+- Farm details display with GPS coordinates and map visualization
+- Centralized farm listing and management
+
+### Field & Crop Management
+- Field registration with soil information
+- Crop planning and status tracking
+- Crop rotation and planting schedule
+- Harvest forecasting and yield tracking
+
+### Livestock Management
+- Livestock registration and tracking
+- Health and breeding records
+- Feed management and cost tracking
+
+### Weather Integration
+- Real-time weather data for farm locations
+- Weather forecasts and historical data
+- Weather-based planning tools
+
+### Financial Management
+- Financial transaction recording
+- Expense and income tracking
+- Cost analysis by crop, field, or livestock
+
+### Additional Features
 - Dashboard with farm overview and key metrics
-- Crop management and planning
-- Field mapping and management
-- Farm boundary mapping with automatic area calculation
-- Detailed farm information view with interactive map
 - Equipment tracking and maintenance scheduling
-- Financial transaction recording and reporting
-- Weather forecasting integration
+- Inventory management
 - Community forums for farmer discussions
 - Responsive design for desktop and mobile use
 
 ## Technologies Used
 
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS, shadcn/ui
-- **Backend**: Supabase (PostgreSQL database, authentication, storage)
-- **APIs**: WeatherAPI.com for weather data, Mapbox for mapping and geospatial features
-- **State Management**: React Query
-- **Mapping**: Mapbox GL JS, @mapbox/mapbox-gl-draw for boundary drawing, @mapbox/geojson-area for area calculations
+### Frontend
+- **Framework**: React with TypeScript
+- **Build Tool**: Vite
+- **UI Components**: shadcn/ui (based on Radix UI)
+- **Styling**: Tailwind CSS
+- **State Management**: React Query for server state
+- **Routing**: React Router
+
+### Backend
+- **Database & Authentication**: Supabase (PostgreSQL)
+- **Storage**: Supabase Storage
+- **Functions**: Supabase Edge Functions
+
+### APIs & Integrations
+- **Mapping**: Mapbox GL JS for maps, @mapbox/mapbox-gl-draw for boundary drawing
+- **Weather**: WeatherAPI.com for weather data
+- **Geospatial**: @mapbox/geojson-area for area calculations
+
+### Database Schema
+The application uses a PostgreSQL database through Supabase with the following main tables:
+
+- **farms**: Stores farm information including boundaries as GeoJSON
+- **fields**: Field information linked to farms
+- **crops**: Crop information
+- **field_crops**: Junction table linking fields and crops with planting details
+- **livestock**: Livestock information
+- **livestock_types**: Types of livestock
+- **crop_activities**: Activities performed on crops
+- **weather_data**: Weather information for farms
+- **financial_transactions**: Financial records
+- **equipment**: Farm equipment
+- **inventory**: Inventory items
+- **forums**, **forum_posts**, **post_comments**, **post_likes**: Community features
 
 ## Prerequisites
 
@@ -155,3 +215,41 @@ For Supabase Edge Functions deployment:
 ```sh
 npx supabase functions deploy get-weather --project-ref your_project_id
 ```
+
+## Future Enhancements
+
+FarmSync is continuously evolving with plans for the following enhancements:
+
+### Advanced Analytics and Insights
+- Yield prediction using machine learning
+- Crop performance comparison across seasons
+- Profitability analysis by crop, field, and season
+- Resource optimization recommendations
+
+### Mobile Optimization and Offline Capabilities
+- Progressive Web App (PWA) with offline functionality
+- Mobile-specific features like GPS field mapping
+- Photo and voice documentation in the field
+- QR code integration for equipment and livestock
+
+### IoT and Sensor Integration
+- Weather station and soil moisture sensor integration
+- Equipment sensors for usage and maintenance tracking
+- Automated alerts based on sensor thresholds
+
+### Enhanced Crop Management
+- AI-powered pest and disease identification
+- Visual crop rotation planning tools
+- Precision agriculture with field zoning
+
+### Sustainability and Environmental Impact
+- Carbon footprint tracking and reduction suggestions
+- Biodiversity monitoring tools
+- Water management and conservation planning
+
+### Augmented Reality and Visual Tools
+- AR visualization of crop growth stages
+- Drone imagery integration
+- 3D farm modeling for planning
+
+For a detailed roadmap of planned enhancements, see the project_tracker.md file.

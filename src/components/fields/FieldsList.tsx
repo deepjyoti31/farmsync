@@ -5,20 +5,30 @@ import { supabase } from '@/integrations/supabase/client';
 import { Field } from '@/types';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Pencil } from 'lucide-react';
 import FieldCard from './FieldCard';
 import AddFieldForm from './AddFieldForm';
+import EditFieldForm from './EditFieldForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DeleteButton } from '@/components/common/DeleteButton';
 import { deleteEntity } from '@/utils/deleteUtils';
 
 interface FieldsListProps {
   farmId?: string;
+  isAddDialogOpen?: boolean;
+  setIsAddDialogOpen?: (open: boolean) => void;
+  handleAddSuccess?: () => void;
 }
 
-const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+const FieldsList: React.FC<FieldsListProps> = ({
+  farmId,
+  isAddDialogOpen = false,
+  setIsAddDialogOpen = () => {},
+  handleAddSuccess = () => {}
+}) => {
   const queryClient = useQueryClient();
+  const [selectedField, setSelectedField] = useState<Field | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const {
     data: fields = [],
@@ -28,14 +38,14 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
     queryKey: ['fields', farmId],
     queryFn: async () => {
       if (!farmId) return [];
-      
+
       const { data, error } = await supabase
         .from('fields')
-        .select('*, field_crops(*, crop:crops(*))')
+        .select('*, field_crops(*, crop:crops(*)), farm:farm_id(name)')
         .eq('farm_id', farmId);
-      
+
       if (error) throw error;
-      
+
       // Transform the data to match the Field interface
       return data.map((field: any) => ({
         id: field.id,
@@ -48,6 +58,7 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
         images: [],
         crops: field.field_crops?.map((fc: any) => fc.crop) || [],
         farm_id: field.farm_id,
+        farm_name: field.farm?.name || '',
         created_at: field.created_at,
         updated_at: field.updated_at
       })) as Field[];
@@ -66,11 +77,6 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
     }
   }, [error]);
 
-  const handleAddSuccess = () => {
-    setIsAddDialogOpen(false);
-    queryClient.invalidateQueries({ queryKey: ['fields'] });
-  };
-
   const handleDeleteField = async (fieldId: string) => {
     await deleteEntity({
       id: fieldId,
@@ -79,6 +85,16 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
         queryClient.invalidateQueries({ queryKey: ['fields'] });
       }
     });
+  };
+
+  const handleEditField = (field: Field) => {
+    setSelectedField(field);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['fields'] });
   };
 
   if (isLoading) {
@@ -99,24 +115,19 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
 
   if (fields.length === 0) {
     return (
-      <div className="text-center p-8">
-        <h3 className="text-lg font-medium mb-2">No Fields Added Yet</h3>
-        <p className="text-muted-foreground mb-4">
-          Start adding fields to your farm to track crops and activities.
-        </p>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Add Your First Field
-        </Button>
-        
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Field</DialogTitle>
-            </DialogHeader>
-            <AddFieldForm farmId={farmId} onSuccess={handleAddSuccess} onClose={() => setIsAddDialogOpen(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
+      <>
+        <div className="text-center p-8">
+          <h3 className="text-lg font-medium mb-2">No Fields Added Yet</h3>
+          <p className="text-muted-foreground mb-4">
+            Start adding fields to your farm to track crops and activities.
+          </p>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Add Your First Field
+          </Button>
+        </div>
+
+        {/* Dialog moved to the end of the component */}
+      </>
     );
   }
 
@@ -128,34 +139,76 @@ const FieldsList: React.FC<FieldsListProps> = ({ farmId }) => {
           <Plus className="mr-2 h-4 w-4" /> Add Field
         </Button>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {fields.map((field) => (
           <div key={field.id} className="relative">
-            <FieldCard field={field} />
-            <div className="absolute top-2 right-2">
-              <DeleteButton 
-                onDelete={() => handleDeleteField(field.id)}
-                itemName={field.name}
-                entityType="Field"
-                buttonSize="sm"
-                buttonVariant="ghost"
-              />
-            </div>
+            <FieldCard
+              field={field}
+              onEdit={handleEditField}
+              onDelete={() => handleDeleteField(field.id)}
+            />
+
           </div>
         ))}
       </div>
-      
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Field</DialogTitle>
+
+      {/* Edit Field Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="p-0 max-w-md">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle>Edit Field</DialogTitle>
           </DialogHeader>
-          <AddFieldForm farmId={farmId} onSuccess={handleAddSuccess} onClose={() => setIsAddDialogOpen(false)} />
+          {selectedField && (
+            <EditFieldForm
+              field={selectedField}
+              onSuccess={handleEditSuccess}
+              onClose={() => setIsEditDialogOpen(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
   );
 };
 
-export default FieldsList;
+// Create a wrapper component for the FieldsList to handle the dialog
+const FieldsListWithDialog: React.FC<FieldsListProps> = (props) => {
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleAddSuccess = () => {
+    setIsAddDialogOpen(false);
+    queryClient.invalidateQueries({ queryKey: ['fields'] });
+  };
+
+  // Override the original component's state handlers
+  const enhancedProps = {
+    ...props,
+    isAddDialogOpen,
+    setIsAddDialogOpen,
+    handleAddSuccess
+  };
+
+  return (
+    <>
+      <FieldsList {...enhancedProps} />
+
+      {/* Single dialog instance with proper styling */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="p-0 max-w-md">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle>Add New Field</DialogTitle>
+          </DialogHeader>
+          <AddFieldForm
+            farmId={props.farmId}
+            onSuccess={handleAddSuccess}
+            onClose={() => setIsAddDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+export default FieldsListWithDialog;

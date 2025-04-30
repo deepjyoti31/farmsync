@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,117 +20,74 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FieldFormData, Farm } from '@/types';
+import { Field } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 
 const fieldFormSchema = z.object({
   name: z.string().min(2, { message: 'Field name must be at least 2 characters' }),
-  farmId: z.string().min(1, { message: 'Please select a farm' }),
   area: z.coerce.number().positive({ message: 'Area must be a positive number' }),
   areaUnit: z.string().default('acres'),
   soilType: z.string().min(2, { message: 'Soil type must be at least 2 characters' }),
   soilPH: z.coerce.number().min(0, { message: 'Soil pH must be at least 0' }).max(14, { message: 'Soil pH must be at most 14' }),
 });
 
-interface AddFieldFormProps {
-  farmId?: string; // Made optional since we'll select it in the form
+type FieldFormData = z.infer<typeof fieldFormSchema>;
+
+interface EditFieldFormProps {
+  field: Field;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onClose, onSuccess }) => {
+const EditFieldForm: React.FC<EditFieldFormProps> = ({ field, onClose, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
   const queryClient = useQueryClient();
 
-  // Fetch all farms
-  const { data: farms = [], isLoading: isLoadingFarms } = useQuery({
-    queryKey: ['farms'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('farms')
-        .select('id, name, village, district, state, area_unit');
-
-      if (error) throw error;
-
-      return (data || []).map((farm: any): Farm => ({
-        id: farm.id,
-        name: farm.name,
-        location: [farm.village, farm.district, farm.state].filter(Boolean).join(', '),
-        areaUnit: farm.area_unit || 'acres',
-        user_id: '',
-        created_at: '',
-        updated_at: ''
-      }));
-    },
-  });
-
-  const form = useForm<FieldFormData & { farmId: string }>({
+  const form = useForm<FieldFormData>({
     resolver: zodResolver(fieldFormSchema),
     defaultValues: {
-      name: '',
-      farmId: initialFarmId || '',
-      area: 1,
-      areaUnit: 'acres',
-      soilType: 'Clay',
-      soilPH: 7.0,
+      name: field.name,
+      area: field.area,
+      areaUnit: field.areaUnit,
+      soilType: field.soilType || 'Clay',
+      soilPH: field.soilPH || 7.0,
     },
   });
 
-  // When initialFarmId changes or when farms are loaded, update the form
-  useEffect(() => {
-    if (initialFarmId && farms.length > 0) {
-      const farm = farms.find(f => f.id === initialFarmId);
-      if (farm) {
-        form.setValue('farmId', farm.id);
-        form.setValue('areaUnit', farm.areaUnit || 'acres');
-        setSelectedFarm(farm);
-      }
-    }
-  }, [initialFarmId, farms, form]);
-
-  // When farm selection changes, update the area unit
-  const handleFarmChange = (farmId: string) => {
-    const farm = farms.find(f => f.id === farmId);
-    if (farm) {
-      form.setValue('areaUnit', farm.areaUnit || 'acres');
-      setSelectedFarm(farm);
-    }
-  };
-
-  const onSubmit = async (data: FieldFormData & { farmId: string }) => {
+  const onSubmit = async (data: FieldFormData) => {
     try {
       setIsSubmitting(true);
 
       const { error } = await supabase
         .from('fields')
-        .insert({
-          farm_id: data.farmId,
+        .update({
           name: data.name,
           area: data.area,
           area_unit: data.areaUnit,
           soil_type: data.soilType,
           soil_ph: data.soilPH,
-        });
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', field.id);
 
       if (error) throw error;
 
       toast({
-        title: 'Field added',
-        description: `The field "${data.name}" has been added successfully.`,
+        title: 'Field updated',
+        description: `The field "${data.name}" has been updated successfully.`,
       });
 
       // Invalidate queries to refetch the fields list
-      queryClient.invalidateQueries({ queryKey: ['fields', data.farmId] });
+      queryClient.invalidateQueries({ queryKey: ['fields'] });
 
       onSuccess();
       onClose();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to add the field.',
+        description: error.message || 'Failed to update the field.',
         variant: 'destructive',
       });
     } finally {
@@ -156,38 +113,6 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="farmId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Farm</FormLabel>
-                <Select
-                  value={field.value}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    handleFarmChange(value);
-                  }}
-                  disabled={isSubmitting || isLoadingFarms}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingFarms ? "Loading farms..." : "Select a farm"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {farms.map((farm) => (
-                      <SelectItem key={farm.id} value={farm.id}>
-                        {farm.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -196,7 +121,14 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
                 <FormItem>
                   <FormLabel>Area</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" min="0" {...field} disabled={isSubmitting} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      placeholder="Area"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -210,9 +142,9 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
                 <FormItem>
                   <FormLabel>Unit</FormLabel>
                   <Select
-                    value={field.value}
+                    disabled={isSubmitting}
                     onValueChange={field.onChange}
-                    disabled={isSubmitting || !!selectedFarm}
+                    defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -222,14 +154,10 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
                     <SelectContent>
                       <SelectItem value="acres">Acres</SelectItem>
                       <SelectItem value="hectares">Hectares</SelectItem>
-                      <SelectItem value="bigha">Bigha</SelectItem>
+                      <SelectItem value="sq_meters">Square Meters</SelectItem>
+                      <SelectItem value="sq_feet">Square Feet</SelectItem>
                     </SelectContent>
                   </Select>
-                  {selectedFarm && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Unit is set to match the farm's unit
-                    </p>
-                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -244,9 +172,9 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
                 <FormItem>
                   <FormLabel>Soil Type</FormLabel>
                   <Select
-                    defaultValue={field.value}
-                    onValueChange={field.onChange}
                     disabled={isSubmitting}
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -260,8 +188,6 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
                       <SelectItem value="Silty">Silty</SelectItem>
                       <SelectItem value="Peaty">Peaty</SelectItem>
                       <SelectItem value="Chalky">Chalky</SelectItem>
-                      <SelectItem value="Black">Black</SelectItem>
-                      <SelectItem value="Red">Red</SelectItem>
                       <SelectItem value="Alluvial">Alluvial</SelectItem>
                     </SelectContent>
                   </Select>
@@ -308,7 +234,7 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
                   Saving...
                 </>
               ) : (
-                "Add Field"
+                "Update Field"
               )}
             </Button>
           </div>
@@ -318,4 +244,4 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
   );
 };
 
-export default AddFieldForm;
+export default EditFieldForm;

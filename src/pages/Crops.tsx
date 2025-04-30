@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { 
-  Plus, 
-  Filter, 
-  CalendarRange, 
+import {
+  Plus,
+  Filter,
+  CalendarRange,
   ArrowUpDown,
   Sprout,
   CheckCircle2,
@@ -43,20 +43,20 @@ const Crops = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { 
-    data: farmFields = [], 
+  const {
+    data: farmFields = [],
     isLoading: isLoadingFields,
-    error: fieldsError 
+    error: fieldsError
   } = useQuery({
     queryKey: ['fields', selectedFarmId],
     queryFn: async () => {
       if (!selectedFarmId) return [];
-      
+
       const { data, error } = await supabase
         .from('fields')
-        .select('*')
+        .select('*, farm:farm_id(name)')
         .eq('farm_id', selectedFarmId);
-      
+
       if (error) throw error;
       return data || [];
     },
@@ -71,17 +71,17 @@ const Crops = () => {
     queryKey: ['field_crops', selectedFarmId],
     queryFn: async () => {
       if (!selectedFarmId) return [];
-      
+
       const { data: fieldData, error: fieldError } = await supabase
         .from('fields')
         .select('id')
         .eq('farm_id', selectedFarmId);
-      
+
       if (fieldError) throw fieldError;
       if (!fieldData || fieldData.length === 0) return [];
-      
+
       const fieldIds = fieldData.map(field => field.id);
-      
+
       const { data: fieldCropsData, error: cropError } = await supabase
         .from('field_crops')
         .select(`
@@ -89,7 +89,7 @@ const Crops = () => {
           crop:crops(*)
         `)
         .in('field_id', fieldIds);
-      
+
       if (cropError) throw cropError;
       return fieldCropsData || [];
     },
@@ -104,7 +104,7 @@ const Crops = () => {
         variant: 'destructive',
       });
     }
-    
+
     if (cropsError) {
       toast({
         title: 'Error loading crops',
@@ -180,13 +180,13 @@ const Crops = () => {
             Plan, track, and manage all your crops throughout their lifecycle.
           </p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <FarmSelector
             selectedFarmId={selectedFarmId}
             onFarmChange={setSelectedFarmId}
           />
-          
+
           <div className="flex gap-2">
             <Button variant="outline" className="gap-2">
               <Filter className="h-4 w-4" />
@@ -204,8 +204,8 @@ const Crops = () => {
                   <DialogTitle>Add New Crop</DialogTitle>
                 </DialogHeader>
                 {selectedFarmId && (
-                  <AddCropForm 
-                    farmId={selectedFarmId} 
+                  <AddCropForm
+                    farmId={selectedFarmId}
                     onSuccess={handleAddCropSuccess}
                     onCancel={() => setDialogOpen(false)}
                   />
@@ -215,7 +215,7 @@ const Crops = () => {
           </div>
         </div>
       </div>
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center h-[50vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -293,7 +293,7 @@ const Crops = () => {
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Button variant="ghost" size="sm">View</Button>
-                        <DeleteButton 
+                        <DeleteButton
                           onDelete={() => handleDeleteCrop(fieldCrop.id)}
                           itemName={fieldCrop.crop?.name}
                           entityType="Crop"
@@ -309,7 +309,7 @@ const Crops = () => {
           </CardContent>
         </Card>
       )}
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Crop Calendar</CardTitle>

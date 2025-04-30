@@ -18,6 +18,7 @@ export interface Field {
   images?: string[];
   crops: Crop[];
   farm_id: string;
+  farm_name?: string; // Parent farm name
   created_at: string;
   updated_at: string;
 }
@@ -73,9 +74,9 @@ export interface Farm {
 
 export interface FieldFormData {
   name: string;
+  farmId?: string;
   area: number;
   areaUnit: string;
-  location?: string;
   soilType?: string;
   soilPH?: number;
 }
