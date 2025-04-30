@@ -35,38 +35,42 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
     queryKey: ['farm', farmId],
     queryFn: async () => {
       if (!farmId) return null;
-      
+
       const { data, error } = await supabase
         .from('farms')
-        .select('gps_latitude, gps_longitude')
+        .select('name, village, district, state, gps_latitude, gps_longitude')
         .eq('id', farmId)
         .single();
-      
+
       if (error) throw error;
       return data;
     },
     enabled: !!farmId,
   });
 
-  const { 
+  const {
     data: weather,
     isLoading,
     error,
-    refetch 
+    refetch
   } = useQuery({
-    queryKey: ['weather', farmId],
+    queryKey: ['weather', farmId, farm?.gps_latitude, farm?.gps_longitude],
     queryFn: async () => {
-      if (!farmId) return null;
-      
-      // Use default coordinates if farm doesn't have GPS coordinates
-      const latitude = farm?.gps_latitude || 20.5937; // Default to central India if not set
-      const longitude = farm?.gps_longitude || 78.9629;
-      
+      if (!farmId || !farm) return null;
+
+      // Only fetch weather if we have valid coordinates
+      if (!farm.gps_latitude || !farm.gps_longitude) {
+        return null;
+      }
+
       try {
         const { data, error } = await supabase.functions.invoke('get-weather', {
-          body: { latitude, longitude },
+          body: {
+            latitude: farm.gps_latitude,
+            longitude: farm.gps_longitude
+          },
         });
-        
+
         if (error) throw error;
         return data as WeatherData;
       } catch (error) {
@@ -74,8 +78,10 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
         throw new Error('Failed to fetch weather data');
       }
     },
-    enabled: !!farm || !!farmId, // Enable even if we don't have farm GPS data, we'll use defaults
+    enabled: !!farm && !!farm.gps_latitude && !!farm.gps_longitude,
     refetchInterval: 1000 * 60 * 30, // Refetch every 30 minutes
+    refetchOnMount: true,
+    staleTime: 0 // Always fetch fresh data on mount
   });
 
   const handleRefresh = async () => {
@@ -99,9 +105,9 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
 
   const getWeatherIcon = (condition: string) => {
     if (!condition) return <CloudSun className="h-10 w-10 text-primary" />;
-    
+
     const conditionLower = condition.toLowerCase();
-    
+
     if (conditionLower.includes('clear') || conditionLower.includes('sunny')) {
       return <Sun className="h-10 w-10 text-farm-yellow" />;
     } else if (conditionLower.includes('cloud') || conditionLower.includes('partly')) {
@@ -120,12 +126,20 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium">Weather</CardTitle>
+        <CardTitle className="text-lg font-medium">
+          {farm?.name ? (
+            <span title={`${farm.village || ''} ${farm.district || ''} ${farm.state || ''}`}>
+              {farm.name}
+            </span>
+          ) : (
+            "Weather"
+          )}
+        </CardTitle>
         <Button
           variant="ghost"
           size="sm"
           onClick={handleRefresh}
-          disabled={isLoading || isRefreshing || !farmId}
+          disabled={isLoading || isRefreshing || !farmId || !farm?.gps_latitude || !farm?.gps_longitude}
         >
           {isLoading || isRefreshing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -135,9 +149,23 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
         </Button>
       </CardHeader>
       <CardContent>
-        {isLoading || !weather ? (
+        {isLoading ? (
           <div className="flex justify-center items-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : !weather ? (
+          <div className="flex flex-col justify-center items-center py-8 text-center">
+            <CloudSun className="h-12 w-12 text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">Weather information not available</p>
+            {!farm?.gps_latitude || !farm?.gps_longitude ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                No GPS coordinates available for this farm
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Click refresh to try again
+              </p>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
@@ -160,7 +188,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-2 pt-2">
               {weather.forecast.slice(0, 3).map((day) => (
                 <div key={day.date} className="text-center p-2 bg-muted/30 rounded-md">
