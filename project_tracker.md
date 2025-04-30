@@ -136,6 +136,8 @@ The application features a modern, responsive UI with:
 
 5. **UI organization**: When adding a farm, users see the details and map in one section rather than separate tabs.
 
+6. **Field card design**: Field cards display the parent farm name instead of "No location specified" for better context. Cards use a compact layout with appropriate icons and well-positioned action buttons.
+
 ## Recent Fixes and Improvements
 
 ### 1. Dialog Component Structure
@@ -149,6 +151,22 @@ The application features a modern, responsive UI with:
   - Consistent user experience across all dialogs in the application
   - Cleaner component hierarchy with better separation of concerns
   - Improved maintainability with a standardized approach to dialog implementation
+
+### 2. Field Card Redesign
+- **Issue**: Field cards had a large icon taking up space, showed redundant information, and had overlapping edit/delete buttons.
+- **Solution**:
+  - Redesigned field cards with a more compact and informative layout
+  - Replaced the large icon with a smaller, more appropriate icon (LandPlot)
+  - Added edit functionality directly in the card header
+  - Improved the positioning of action buttons to prevent overlap
+  - Removed redundant information (soil type was shown twice)
+  - Created a dedicated EditFieldForm component for editing fields
+  - Added parent farm name display in field cards for better context
+- **Benefits**:
+  - More efficient use of space in the field cards
+  - Clearer information hierarchy with better visual organization
+  - Improved user experience with properly positioned action buttons
+  - Better context with parent farm name displayed prominently
 
 # Enhancement Plan
 
