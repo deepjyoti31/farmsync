@@ -38,11 +38,18 @@ FarmSync is a comprehensive farm management application designed to streamline o
 - **Field-Crop Association**: Associate crops with specific fields
 - **Parent Farm Display**: Fields display their parent farm name for better context
 - **Field Cards**: Redesigned field cards with improved layout and information display
+- **Quick Field Creation**: Add fields directly from the Farms page or farm details dialog
+- **Farm Context Preservation**: When adding fields, the parent farm is pre-selected
+- **Field Grouping**: Fields are grouped by farm in selection dropdowns
 
 ### 3. Crop Management
 - **Crop Planning**: Plan and track crops with planting dates, expected harvest dates
 - **Crop Status Tracking**: Monitor crop status (planned, planted, growing, harvested, failed)
 - **Crop Activities**: Record activities related to crops (planting, fertilizing, harvesting)
+- **Crop Categorization**: Organize crops by type (vegetables, fruits, cereals, flowers)
+- **Automatic Harvest Date**: Calculate expected harvest dates based on planting date and crop growing duration
+- **Crop Details View**: View comprehensive information about each crop
+- **Status Updates**: Update crop status as it progresses through growth stages
 
 ### 4. Livestock Management
 - **Livestock Registration**: Add livestock with details like type, breed, gender, and status
@@ -90,8 +97,8 @@ The application uses a PostgreSQL database through Supabase with the following m
 
 1. **farms**: Stores farm information including boundaries as GeoJSON
 2. **fields**: Field information linked to farms
-3. **crops**: Crop information
-4. **field_crops**: Junction table linking fields and crops with planting details
+3. **crops**: Crop information including crop type (vegetables, fruits, cereals, flowers) and growing duration
+4. **field_crops**: Junction table linking fields and crops with planting details, expected harvest dates, and status
 5. **livestock**: Livestock information
 6. **livestock_types**: Types of livestock
 7. **crop_activities**: Activities performed on crops
@@ -138,6 +145,16 @@ The application features a modern, responsive UI with:
 
 6. **Field card design**: Field cards display the parent farm name instead of "No location specified" for better context. Cards use a compact layout with appropriate icons and well-positioned action buttons.
 
+7. **Crop categorization**: When adding a crop, users first select a category (vegetables, fruits, cereals, flowers) and then choose from a filtered list of crops within that category.
+
+8. **Field selection by farm**: When selecting a field for a crop, fields are grouped by their parent farm for better organization and context.
+
+9. **Automatic harvest date calculation**: Based on the selected crop and planting date, the system automatically calculates the expected harvest date while keeping it editable for user adjustments.
+
+10. **Field creation accessibility**: Add Field buttons are placed in multiple strategic locations (Farms page, farm details dialog) to reduce navigation steps.
+
+11. **Authentication notifications**: Authentication success messages are only shown for explicit user actions (login, logout) and not for automatic session refreshes or browser minimization.
+
 ## Recent Fixes and Improvements
 
 ### 1. Dialog Component Structure
@@ -167,6 +184,65 @@ The application features a modern, responsive UI with:
   - Clearer information hierarchy with better visual organization
   - Improved user experience with properly positioned action buttons
   - Better context with parent farm name displayed prominently
+
+### 3. Enhanced Crop Management
+- **Issue**: The crop management system lacked categorization, field grouping by farm, and automatic harvest date calculation.
+- **Solution**:
+  - Added crop type categorization (vegetables, fruits, cereals, flowers)
+  - Implemented filtering of crops based on selected category
+  - Added a crop_type column to the database
+  - Grouped fields by farm in the field selection dropdown
+  - Added automatic calculation of expected harvest date based on planting date and crop growing duration
+  - Made the harvest date editable for user adjustments
+- **Benefits**:
+  - Easier crop selection through logical categorization
+  - Better organization of fields by showing which farm they belong to
+  - Time-saving through automatic harvest date calculation
+  - Improved user experience with a more logical form flow
+
+### 4. Crop Details and Status Management
+- **Issue**: After adding a crop, there was no way to view details, update status, or delete it.
+- **Solution**:
+  - Created a CropDetailsDialog component to display comprehensive crop information
+  - Implemented an UpdateCropStatusForm component for status changes
+  - Added View, Edit, and Delete buttons to the crop listing
+  - Made the View button open the details dialog
+  - Made the Edit button open the same dialog focused on status update
+  - Enhanced the Delete functionality with proper confirmation
+- **Benefits**:
+  - Complete crop lifecycle management
+  - Easy status updates as crops progress through growth stages
+  - Better data organization with detailed view of crop information
+  - Improved user control over crop data
+
+### 5. Fields Page Loading and Authentication Improvements
+- **Issue**: The Fields page sometimes failed to load fields properly, and authentication toasts appeared on browser minimize/refresh.
+- **Solution**:
+  - Added better error handling and retry logic to the fields query
+  - Improved farm selection logic to ensure a farm is always selected when available
+  - Added force refetch when the component mounts
+  - Added an isInitialAuthCheck flag to track when the app is first loading
+  - Removed automatic toast messages from auth state changes
+  - Only show toast messages for explicit user actions
+- **Benefits**:
+  - More reliable data loading with proper error handling
+  - Smoother user experience with fewer unnecessary notifications
+  - Proper UI updates when data changes
+  - Less intrusive authentication process
+
+### 6. Field Management Accessibility
+- **Issue**: Adding fields required navigating to the Fields page, creating extra steps for users.
+- **Solution**:
+  - Added "Add Field" buttons in multiple locations:
+    - Next to "View Details" on the Farms page
+    - In the fields tab of the farm details dialog
+  - Ensured the farm is pre-selected when adding a field from these locations
+  - Added proper query invalidation to refresh field lists after adding
+- **Benefits**:
+  - Reduced number of steps needed to add a field
+  - More intuitive workflow for farm and field management
+  - Consistent user experience across different entry points
+  - Improved data consistency with proper refreshing
 
 # Enhancement Plan
 

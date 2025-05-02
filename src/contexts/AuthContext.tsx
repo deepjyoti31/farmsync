@@ -22,23 +22,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Track if this is the initial auth check to avoid showing toast on app startup/refresh
+  const [isInitialAuthCheck, setIsInitialAuthCheck] = useState(true);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        
-        if (event === 'SIGNED_IN') {
-          toast({
-            title: "Success",
-            description: "You have successfully signed in.",
-          });
-        } else if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Signed out",
-            description: "You have been signed out.",
-          });
+
+        // Only show toast messages for explicit user actions, not on initial load or refresh
+        if (!isInitialAuthCheck) {
+          if (event === 'SIGNED_IN') {
+            // Don't show toast on automatic sign-ins (page refresh, etc.)
+            // We'll show toasts explicitly in the signIn function instead
+          } else if (event === 'SIGNED_OUT') {
+            // Don't show toast on automatic sign-outs (session expiry, etc.)
+            // We'll show toasts explicitly in the signOut function instead
+          }
         }
       }
     );
@@ -48,12 +50,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
+      // Mark initial auth check as complete
+      setIsInitialAuthCheck(false);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isInitialAuthCheck]);
 
   const signUp = async (email: string, password: string, metadata: { first_name: string; last_name: string }) => {
     try {
@@ -64,9 +68,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: metadata,
         }
       });
-      
+
       if (error) throw error;
-      
+
       toast({
         title: "Account created",
         description: "Your account has been created successfully. Please check your email for verification.",
@@ -87,9 +91,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password
       });
-      
+
       if (error) throw error;
-      
+
+      // Show success toast only for explicit user-initiated sign-ins
+      toast({
+        title: "Success",
+        description: "You have successfully signed in.",
+      });
+
       navigate('/dashboard');
     } catch (error: any) {
       toast({
@@ -105,6 +115,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+
+      // Show success toast only for explicit user-initiated sign-outs
+      toast({
+        title: "Signed out",
+        description: "You have been signed out.",
+      });
+
       navigate('/login');
     } catch (error: any) {
       toast({

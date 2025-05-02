@@ -40,6 +40,7 @@ const FieldsList: React.FC<FieldsListProps> = ({
     queryFn: async () => {
       if (!farmId) return [];
 
+      console.log(`Fetching fields for farm: ${farmId}`);
       const { data, error } = await supabase
         .from('fields')
         .select('*, field_crops(*, crop:crops(*)), farm:farm_id(name)')
@@ -66,11 +67,14 @@ const FieldsList: React.FC<FieldsListProps> = ({
     },
     enabled: !!farmId,
     staleTime: 0, // Don't cache the data
+    retry: 3, // Retry failed requests 3 times
+    retryDelay: 1000, // Wait 1 second between retries
   });
 
   // Refetch when farmId changes
   React.useEffect(() => {
     if (farmId) {
+      console.log(`Farm ID changed to: ${farmId}, refetching fields`);
       refetch();
     }
   }, [farmId, refetch]);

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import FieldsList from '@/components/fields/FieldsList';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 const Fields = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const queryClient = useQueryClient();
 
   // Fetch farms to ensure we have data before rendering
   const { data: farms = [], isLoading: isLoadingFarms } = useQuery({
@@ -30,6 +31,7 @@ const Fields = () => {
   useEffect(() => {
     if (farms.length > 0) {
       if (!selectedFarmId) {
+        console.log('Setting initial farm ID:', farms[0].id);
         setSelectedFarmId(farms[0].id);
       }
       setIsInitializing(false);
@@ -37,6 +39,22 @@ const Fields = () => {
       setIsInitializing(false);
     }
   }, [farms, selectedFarmId, isLoadingFarms]);
+
+  // Force refetch when the component mounts
+  useEffect(() => {
+    const refetchData = async () => {
+      try {
+        await queryClient.invalidateQueries({ queryKey: ['farms'] });
+        if (selectedFarmId) {
+          await queryClient.invalidateQueries({ queryKey: ['fields', selectedFarmId] });
+        }
+      } catch (error) {
+        console.error('Error refetching data:', error);
+      }
+    };
+
+    refetchData();
+  }, []);
 
   // Show loading state while initializing
   if (isInitializing || isLoadingFarms) {

@@ -25,7 +25,9 @@ import {
   Flower2,
   Scissors,
   Loader2,
-  X
+  X,
+  Eye,
+  Edit
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -34,6 +36,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddCropForm from '@/components/crops/AddCropForm';
+import CropDetailsDialog from '@/components/crops/CropDetailsDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DeleteButton } from '@/components/common/DeleteButton';
 import { deleteEntity } from '@/utils/deleteUtils';
@@ -41,6 +44,8 @@ import { deleteEntity } from '@/utils/deleteUtils';
 const Crops = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewingCropId, setViewingCropId] = useState<string | null>(null);
+  const [editingCropId, setEditingCropId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const {
@@ -165,6 +170,13 @@ const Crops = () => {
       entityType: 'crop',
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['field_crops'] });
+        if (selectedFarmId) {
+          queryClient.invalidateQueries({ queryKey: ['field_crops', selectedFarmId] });
+        }
+        toast({
+          title: "Crop deleted",
+          description: "The crop has been deleted successfully.",
+        });
       }
     });
   };
@@ -292,7 +304,22 @@ const Crops = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">View</Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewingCropId(fieldCrop.id)}
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewingCropId(fieldCrop.id)}
+                          title="Edit Status"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <DeleteButton
                           onDelete={() => handleDeleteCrop(fieldCrop.id)}
                           itemName={fieldCrop.crop?.name}
@@ -325,6 +352,13 @@ const Crops = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Crop Details Dialog */}
+      <CropDetailsDialog
+        cropId={viewingCropId}
+        isOpen={!!viewingCropId}
+        onClose={() => setViewingCropId(null)}
+      />
     </div>
   );
 };
