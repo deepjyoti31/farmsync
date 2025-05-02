@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -34,7 +34,13 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 
+// Define crop types
+const cropTypes = ['vegetables', 'fruits', 'cereals', 'flowers'] as const;
+
 const formSchema = z.object({
+  cropType: z.enum(cropTypes, {
+    required_error: "Please select a crop type"
+  }),
   cropId: z.string().uuid({
     message: "Please select a crop"
   }),
@@ -60,6 +66,9 @@ interface AddCropFormProps {
 }
 
 const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }) => {
+  // State to track the selected crop type
+  const [selectedCropType, setSelectedCropType] = useState<string | null>(null);
+
   // Query to get crop list
   const { data: crops = [] } = useQuery({
     queryKey: ['crops'],
@@ -76,19 +85,62 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
 
   // Query to get fields for selected farm
   const { data: fields = [] } = useQuery({
-    queryKey: ['fields', farmId],
+    queryKey: ['fields'],
     queryFn: async () => {
+      // Get all fields from all farms to group them
       const { data, error } = await supabase
         .from('fields')
-        .select('*, farm:farm_id(name)')
-        .eq('farm_id', farmId)
+        .select('*, farm:farm_id(id, name)')
         .order('name');
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!farmId,
   });
+
+  // Group fields by farm for display
+  const fieldsByFarm = useMemo(() => {
+    const groupedFields: Record<string, any> = {};
+
+    fields.forEach((field: any) => {
+      const farmName = field.farm?.name || 'Unknown Farm';
+      const farmId = field.farm?.id || 'unknown';
+
+      if (!groupedFields[farmId]) {
+        groupedFields[farmId] = {
+          name: farmName,
+          fields: []
+        };
+      }
+
+      groupedFields[farmId].fields.push(field);
+    });
+
+    return groupedFields;
+  }, [fields]);
+
+  // Filter crops by selected type
+  const filteredCrops = useMemo(() => {
+    if (!selectedCropType) return [];
+
+    // Filter crops by the crop_type field in the database
+    return crops.filter((crop: any) => {
+      // If crop_type is set in the database, use it
+      if (crop.crop_type) {
+        return crop.crop_type === selectedCropType;
+      }
+
+      // Fallback mapping for crops without a type set
+      const cropTypeMapping: Record<string, string[]> = {
+        vegetables: ['Tomato', 'Potato', 'Onion', 'Carrot', 'Cabbage', 'Spinach', 'Broccoli'],
+        fruits: ['Apple', 'Banana', 'Orange', 'Mango', 'Grapes', 'Watermelon'],
+        cereals: ['Rice', 'Wheat', 'Maize', 'Barley', 'Oats', 'Corn', 'Millet'],
+        flowers: ['Rose', 'Sunflower', 'Tulip', 'Lily', 'Marigold', 'Jasmine']
+      };
+
+      return cropTypeMapping[selectedCropType as keyof typeof cropTypeMapping]?.includes(crop.name);
+    });
+  }, [crops, selectedCropType]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -99,8 +151,41 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
     },
   });
 
+  // Watch for changes in cropId and plantingDate to calculate harvest date
+  const cropId = useWatch({
+    control: form.control,
+    name: 'cropId',
+  });
+
+  const plantingDate = useWatch({
+    control: form.control,
+    name: 'plantingDate',
+  });
+
+  // Update crop type in form when selected
+  useEffect(() => {
+    if (selectedCropType) {
+      form.setValue('cropType', selectedCropType as any);
+    }
+  }, [selectedCropType, form]);
+
+  // Calculate expected harvest date based on crop growing duration
+  useEffect(() => {
+    if (cropId && plantingDate) {
+      const selectedCrop = crops.find((crop: any) => crop.id === cropId);
+
+      if (selectedCrop && selectedCrop.growing_duration) {
+        const harvestDate = addDays(new Date(plantingDate), selectedCrop.growing_duration);
+        form.setValue('expectedHarvestDate', harvestDate);
+      }
+    }
+  }, [cropId, plantingDate, crops, form]);
+
   const onSubmit = async (values: FormValues) => {
     try {
+      // Get the selected crop for reference
+      const selectedCrop = crops.find((crop: any) => crop.id === values.cropId);
+
       const { error } = await supabase
         .from('field_crops')
         .insert({
@@ -118,7 +203,7 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
 
       toast({
         title: "Crop added successfully",
-        description: "The crop has been added to the field.",
+        description: `${selectedCrop?.name || 'Crop'} has been added to the field.`,
       });
 
       if (onSuccess) onSuccess();
@@ -137,21 +222,52 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="cropId"
+          name="cropType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Crop Type</FormLabel>
+              <FormLabel>Crop Category</FormLabel>
               <Select
-                onValueChange={field.onChange}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  setSelectedCropType(value);
+                }}
                 defaultValue={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a crop" />
+                    <SelectValue placeholder="Select a crop category" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {crops.map((crop: any) => (
+                  <SelectItem value="vegetables">Vegetables</SelectItem>
+                  <SelectItem value="fruits">Fruits</SelectItem>
+                  <SelectItem value="cereals">Cereals</SelectItem>
+                  <SelectItem value="flowers">Flowers</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="cropId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Crop</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                disabled={!selectedCropType}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedCropType ? "Select a crop" : "Select a category first"} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {filteredCrops.map((crop: any) => (
                     <SelectItem key={crop.id} value={crop.id}>
                       {crop.name} {crop.variety ? `(${crop.variety})` : ''}
                     </SelectItem>
@@ -179,11 +295,19 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {fields.map((field: any) => (
-                    <SelectItem key={field.id} value={field.id}>
-                      {field.name} ({field.area} {field.area_unit})
-                    </SelectItem>
-                  ))}
+                  {/* Only show fields from the selected farm */}
+                  {fieldsByFarm[farmId] && (
+                    <React.Fragment>
+                      <SelectItem value={farmId} disabled className="font-semibold text-muted-foreground py-2">
+                        {fieldsByFarm[farmId].name}
+                      </SelectItem>
+                      {fieldsByFarm[farmId].fields.map((fieldItem: any) => (
+                        <SelectItem key={fieldItem.id} value={fieldItem.id} className="pl-6">
+                          {fieldItem.name} ({fieldItem.area} {fieldItem.area_unit})
+                        </SelectItem>
+                      ))}
+                    </React.Fragment>
+                  )}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -233,7 +357,14 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
             name="expectedHarvestDate"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Expected Harvest Date (Optional)</FormLabel>
+                <FormLabel>
+                  Expected Harvest Date
+                  {cropId && plantingDate && (
+                    <span className="text-xs text-muted-foreground ml-2">
+                      (Auto-calculated)
+                    </span>
+                  )}
+                </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>

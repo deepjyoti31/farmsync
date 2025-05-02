@@ -6,13 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Pencil, Trash2, Loader2, Info } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Loader2, Info, Rows3 } from 'lucide-react';
 import { format } from 'date-fns';
 import AddFarmForm from '@/components/farms/AddFarmForm';
 import EditFarmForm from '@/components/farms/EditFarmForm';
 import FarmDetailsDialog from '@/components/farms/FarmDetailsDialog';
+import AddFieldForm from '@/components/fields/AddFieldForm';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Farm } from '@/types';
 
@@ -24,6 +25,7 @@ const FarmsList = () => {
   const [deletingFarm, setDeletingFarm] = useState<Farm | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [viewingFarmId, setViewingFarmId] = useState<string | null>(null);
+  const [addingFieldForFarmId, setAddingFieldForFarmId] = useState<string | null>(null);
 
   const { data: farms = [], isLoading } = useQuery({
     queryKey: ['farms'],
@@ -53,6 +55,19 @@ const FarmsList = () => {
     toast({
       title: "Farm updated",
       description: "Your farm has been successfully updated.",
+    });
+  };
+
+  const handleAddFieldSuccess = () => {
+    setAddingFieldForFarmId(null);
+    queryClient.invalidateQueries({ queryKey: ['fields'] });
+    // Also invalidate farm-fields query for the farm details dialog
+    if (addingFieldForFarmId) {
+      queryClient.invalidateQueries({ queryKey: ['farm-fields', addingFieldForFarmId] });
+    }
+    toast({
+      title: "Field added",
+      description: "The field has been added successfully.",
     });
   };
 
@@ -165,6 +180,15 @@ const FarmsList = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => setAddingFieldForFarmId(farm.id)}
+                              title="Add Field"
+                            >
+                              <Rows3 className="h-4 w-4" />
+                              <span className="sr-only">Add Field</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => setEditingFarm(farm)}
                               title="Edit Farm"
                             >
@@ -244,6 +268,22 @@ const FarmsList = () => {
         isOpen={!!viewingFarmId}
         onClose={() => setViewingFarmId(null)}
       />
+
+      {/* Add Field Dialog */}
+      <Dialog open={!!addingFieldForFarmId} onOpenChange={(open) => !open && setAddingFieldForFarmId(null)}>
+        <DialogContent className="p-0 max-w-md">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle>Add New Field</DialogTitle>
+          </DialogHeader>
+          {addingFieldForFarmId && (
+            <AddFieldForm
+              farmId={addingFieldForFarmId}
+              onSuccess={handleAddFieldSuccess}
+              onClose={() => setAddingFieldForFarmId(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

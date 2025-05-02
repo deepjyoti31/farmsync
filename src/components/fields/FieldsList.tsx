@@ -33,7 +33,8 @@ const FieldsList: React.FC<FieldsListProps> = ({
   const {
     data: fields = [],
     isLoading,
-    error
+    error,
+    refetch
   } = useQuery({
     queryKey: ['fields', farmId],
     queryFn: async () => {
@@ -47,7 +48,7 @@ const FieldsList: React.FC<FieldsListProps> = ({
       if (error) throw error;
 
       // Transform the data to match the Field interface
-      return data.map((field: any) => ({
+      return (data || []).map((field: any) => ({
         id: field.id,
         name: field.name,
         area: field.area,
@@ -64,7 +65,15 @@ const FieldsList: React.FC<FieldsListProps> = ({
       })) as Field[];
     },
     enabled: !!farmId,
+    staleTime: 0, // Don't cache the data
   });
+
+  // Refetch when farmId changes
+  React.useEffect(() => {
+    if (farmId) {
+      refetch();
+    }
+  }, [farmId, refetch]);
 
   // Handle errors
   React.useEffect(() => {
@@ -82,7 +91,11 @@ const FieldsList: React.FC<FieldsListProps> = ({
       id: fieldId,
       entityType: 'field',
       onSuccess: () => {
+        // Invalidate both general fields query and the specific farm fields query
         queryClient.invalidateQueries({ queryKey: ['fields'] });
+        if (farmId) {
+          queryClient.invalidateQueries({ queryKey: ['fields', farmId] });
+        }
       }
     });
   };
@@ -94,7 +107,11 @@ const FieldsList: React.FC<FieldsListProps> = ({
 
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false);
+    // Invalidate both general fields query and the specific farm fields query
     queryClient.invalidateQueries({ queryKey: ['fields'] });
+    if (farmId) {
+      queryClient.invalidateQueries({ queryKey: ['fields', farmId] });
+    }
   };
 
   if (isLoading) {
@@ -179,7 +196,11 @@ const FieldsListWithDialog: React.FC<FieldsListProps> = (props) => {
 
   const handleAddSuccess = () => {
     setIsAddDialogOpen(false);
+    // Invalidate both fields and specific farm fields queries
     queryClient.invalidateQueries({ queryKey: ['fields'] });
+    if (props.farmId) {
+      queryClient.invalidateQueries({ queryKey: ['fields', props.farmId] });
+    }
   };
 
   // Override the original component's state handlers

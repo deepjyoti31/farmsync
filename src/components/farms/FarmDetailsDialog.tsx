@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Farm } from '@/types';
-import { Loader2, MapPin, Calendar, Ruler, Map as MapIcon } from 'lucide-react';
+import { Loader2, MapPin, Calendar, Ruler, Map as MapIcon, Plus } from 'lucide-react';
 import BoundaryMap from '@/components/maps/BoundaryMap';
 import { formatArea, formatCoordinates } from '@/utils/mapUtils';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import AddFieldForm from '@/components/fields/AddFieldForm';
 
 interface FarmDetailsDialogProps {
   farmId: string | null;
@@ -22,13 +24,25 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState('details');
+  const [isAddFieldOpen, setIsAddFieldOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Reset active tab when dialog opens
   useEffect(() => {
     if (isOpen) {
       setActiveTab('details');
+      setIsAddFieldOpen(false);
     }
   }, [isOpen]);
+
+  const handleAddFieldSuccess = () => {
+    setIsAddFieldOpen(false);
+    // Invalidate queries to refresh the fields list
+    queryClient.invalidateQueries({ queryKey: ['fields'] });
+    if (farmId) {
+      queryClient.invalidateQueries({ queryKey: ['farm-fields', farmId] });
+    }
+  };
 
   const { data: farm, isLoading } = useQuery({
     queryKey: ['farm-details', farmId],
@@ -185,13 +199,19 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
 
               <TabsContent value="fields" className="mt-4">
                 <Card>
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg">Fields</CardTitle>
+                    <Button size="sm" onClick={() => setIsAddFieldOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1" /> Add Field
+                    </Button>
                   </CardHeader>
                   <CardContent>
                     {fields.length === 0 ? (
                       <div className="text-center py-8">
-                        <p>No fields have been added to this farm yet.</p>
+                        <p className="mb-4">No fields have been added to this farm yet.</p>
+                        <Button onClick={() => setIsAddFieldOpen(true)}>
+                          <Plus className="h-4 w-4 mr-1" /> Add Your First Field
+                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -230,6 +250,22 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
           </>
         )}
       </DialogContent>
+
+      {/* Add Field Dialog */}
+      {farmId && (
+        <Dialog open={isAddFieldOpen} onOpenChange={setIsAddFieldOpen}>
+          <DialogContent className="p-0 max-w-md">
+            <DialogHeader className="p-6 pb-2">
+              <DialogTitle>Add New Field</DialogTitle>
+            </DialogHeader>
+            <AddFieldForm
+              farmId={farmId}
+              onSuccess={handleAddFieldSuccess}
+              onClose={() => setIsAddFieldOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 };

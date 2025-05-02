@@ -47,11 +47,12 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({ selectedFarmId, onFarmChang
     },
   });
 
+  // Only set the first farm as selected if we have farms and no selection
   React.useEffect(() => {
-    if (farms.length > 0 && !selectedFarmId) {
+    if (farms.length > 0 && !selectedFarmId && !isLoading) {
       onFarmChange(farms[0].id);
     }
-  }, [farms, selectedFarmId, onFarmChange]);
+  }, [farms, selectedFarmId, onFarmChange, isLoading]);
 
   const handleAddFarm = () => {
     setIsAddFarmOpen(true);
