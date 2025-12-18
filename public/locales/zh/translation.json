@@ -1,0 +1,46 @@
+{
+    "app": {
+        "name": "FarmSync",
+        "tagline": "现代农业管理"
+    },
+    "nav": {
+        "dashboard": "仪表板",
+        "fields": "田地",
+        "crops": "作物",
+        "livestock": "牲畜",
+        "finances": "财务",
+        "inventory": "库存",
+        "equipment": "设备",
+        "weather": "天气",
+        "sensors": "物联网与传感器",
+        "market": "市场",
+        "reports": "报告",
+        "analytics": "分析",
+        "sustainability": "可持续性",
+        "community": "社区",
+        "notifications": "通知",
+        "settings": "设置",
+        "profile": "个人资料"
+    },
+    "common": {
+        "loading": "加载中...",
+        "error": "发生错误",
+        "save": "保存",
+        "cancel": "取消",
+        "delete": "删除",
+        "edit": "编辑",
+        "view": "查看",
+        "add": "添加",
+        "search": "搜索",
+        "filter": "筛选",
+        "actions": "操作",
+        "confirm_delete": "您确定要删除此项目吗？",
+        "success": "成功",
+        "saved_successfully": "保存成功"
+    },
+    "auth": {
+        "login": "登录",
+        "signup": "注册",
+        "logout": "退出"
+    }
+}

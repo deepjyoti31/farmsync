@@ -296,6 +296,28 @@ The application features a modern, responsive UI with:
   - Responsible resource management
   - Complete digital trail of all farm inputs
 
+### 11. Internationalization (i18n) Foundation
+- **Issue**: Application was English-only and lacked support for Right-to-Left (RTL) languages or regional formatting.
+- **Solution**:
+  - Implemented `i18next` architecture with `I18nProvider` for seamless translation loading
+  - Created initial translation files (`en/translation.json`)
+  - Added `useDirection` hook to automatically set `dir="rtl"` based on language
+  - Refactored core UI components (`Sidebar`, `StatsCard`, `Table`, `Toast`) to use logical properties (`ms-`, `me-`, `text-start`) instead of physical ones (`ml-`, `mr-`, `text-left`)
+- **Benefits**:
+  - Ready for multi-language support (including Arabic/Hebrew)
+  - Scalable formatting for dates and numbers
+  - Foundation for global accessibility features
+
+### [x] Multi-User & Role-Based Access Control (RBAC)
+- [x] Database Schema (Organizations, Members, Invites)
+- [x] RLS Policies for secure access
+- [x] UI for Organization Management (Create, Invite, Switch)
+- [x] Role definitions (Owner, Admin, Editor, Viewer)
+- **Benefits**:
+  - Secure team collaboration
+  - Granular access control
+  - Scalable for large farming operations
+
 # Enhancement Plan
 
 ## 1. Future Enhancements
@@ -448,6 +470,46 @@ The application features a modern, responsive UI with:
 - **Time-lapse Capabilities**: Create time-lapse documentation of crop growth
 - **Drone Integration**: Import and analyze drone imagery
 - **3D Farm Modeling**: Create 3D models of the farm for planning and visualization
+
+## 11. Global Accessibility Infrastructure
+
+### Internationalization & Localization
+- **Multi-Language Support**: RTL support (Arabic/Hebrew) and scalable translation architecture
+- **Unit Conversions**: Native handling of Imperial, Metric, and Traditional units (e.g., Bigha, Feddan)
+- **Calendar Systems**: Support for agricultural calendars beyond Gregorian (Hijri, Lunisolar, Ethiopian)
+- **Currency Agnosticism**: Multi-currency support for global markets
+
+### Low-Bandwidth Resilience
+- **SMS/USSD Interface**: Basic data entry and alerts via SMS for feature phones
+- **IVR Services**: Voice-based advisory services for accessibility
+- **Data Lite Mode**: Text-only PWA mode for 2G/EDGE networks
+
+## 12. Scalable Farm Models
+
+### Multi-User & RBAC
+- **Organization Level**: Support for Cooperatives and Organizations above Farm level
+- **Role-Based Access**: Granular roles (Owner, Manager, Agronomist, Worker, Auditor)
+- **Audit Trails**: Detailed logs of record changes for certification tracking
+
+### Cooperative Management
+- **Aggregated Analytics**: Yield forecasts across member farms
+- **Bulk Purchasing**: Management of group buy orders for inputs
+- **Traceability Batches**: Aggregation of produce for export lots
+
+## 13. Ecosystem & Value Chain
+
+### Financial Integration
+- **Micro-Finance**: Creditworthiness reporting based on yield/input history
+- **Insurance Automation**: Weather-index based claim generation
+- **Mobile Payments**: Integration with local payment gateways (M-Pesa, UPI, Stripe)
+
+### Regulatory Compliance
+- **Dynamic Compliance Engine**: Pluggable rule sets (EU Organic, USDA GAP, India NPOP)
+- **Auto-Validation**: Pre-application warnings for banned inputs based on active compliance packs
+
+### Marketplace Connection
+- **Virtual Mandi**: Direct connection to buyers and wholesalers
+- **Supplier Directory**: Verified local input suppliers directory
 
 ## Implementation Roadmap
 

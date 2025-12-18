@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -32,7 +31,11 @@ import Community from "./pages/Community";
 import FarmsList from "./pages/FarmsList";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import OrgSettings from "./pages/OrgSettings";
 import { toast } from "@/hooks/use-toast";
+import { I18nProvider } from "./components/providers/I18nProvider";
+import { useDirection } from "./hooks/useDirection";
+import "./i18n"; // Import i18n config
 
 // Create a client
 const queryClient = new QueryClient({
@@ -47,50 +50,61 @@ const persister = createSyncStoragePersister({
   storage: window.localStorage,
 });
 
+const AppContent = () => {
+  useDirection(); // Handle RTL direction
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/landing" replace />} />
+      <Route path="/landing" element={<LandingPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="fields" element={<Fields />} />
+        <Route path="crops" element={<Crops />} />
+        <Route path="livestock" element={<Livestock />} />
+        <Route path="finances" element={<Finances />} />
+        <Route path="inventory" element={<Inventory />} />
+        <Route path="equipment" element={<Equipment />} />
+        <Route path="weather" element={<Weather />} />
+        <Route path="sensors" element={<Sensors />} />
+        <Route path="market" element={<Market />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="analytics" element={<Analytics />} />
+        <Route path="sustainability" element={<Sustainability />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="community" element={<Community />} />
+        <Route path="farms" element={<FarmsList />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="dashboard/settings" element={<OrgSettings />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Navigate to="/landing" replace />} />
-              <Route path="/landing" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <MainLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Dashboard />} />
-                <Route path="fields" element={<Fields />} />
-                <Route path="crops" element={<Crops />} />
-                <Route path="livestock" element={<Livestock />} />
-                <Route path="finances" element={<Finances />} />
-                <Route path="inventory" element={<Inventory />} />
-                <Route path="equipment" element={<Equipment />} />
-                <Route path="weather" element={<Weather />} />
-                <Route path="sensors" element={<Sensors />} />
-                <Route path="market" element={<Market />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="sustainability" element={<Sustainability />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="community" element={<Community />} />
-                <Route path="farms" element={<FarmsList />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="settings" element={<Settings />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
+        <I18nProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </BrowserRouter>
+        </I18nProvider>
       </TooltipProvider>
     </PersistQueryClientProvider>
   );

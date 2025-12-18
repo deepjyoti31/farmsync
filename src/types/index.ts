@@ -65,6 +65,7 @@ export interface Farm {
   area_unit?: string; // Database field name
   fields?: Field[]; // Make this optional since it's not always returned from DB
   user_id: string;
+  organization_id?: string; // Add Organization ID
   gps_latitude?: number;
   gps_longitude?: number;
   boundaries?: GeoJSON.Polygon | null; // Farm boundary coordinates

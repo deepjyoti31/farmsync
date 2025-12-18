@@ -19,6 +19,7 @@ import {
   User,
   Settings,
   Activity,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +44,7 @@ const menuItems = [
 
 const userMenuItems = [
   { icon: User, label: 'Profile', path: '/dashboard/profile' },
+  { icon: Building2, label: 'Org Settings', path: '/dashboard/settings' },
   { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
 ];
 

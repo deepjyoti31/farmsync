@@ -1,0 +1,46 @@
+{
+    "app": {
+        "name": "FarmSync",
+        "tagline": "إدارة زراعية حديثة"
+    },
+    "nav": {
+        "dashboard": "لوحة القيادة",
+        "fields": "الحقول",
+        "crops": "المحاصيل",
+        "livestock": "الماشية",
+        "finances": "المالية",
+        "inventory": "المخزون",
+        "equipment": "المعدات",
+        "weather": "الطقس",
+        "sensors": "إنترنت الأشياء وأجهزة الاستشعار",
+        "market": "السوق",
+        "reports": "التقارير",
+        "analytics": "التحليلات",
+        "sustainability": "الاستدامة",
+        "community": "المجتمع",
+        "notifications": "الإشعارات",
+        "settings": "الإعدادات",
+        "profile": "الملف الشخصي"
+    },
+    "common": {
+        "loading": "جار التحميل...",
+        "error": "حدث خطأ",
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "delete": "حذف",
+        "edit": "تعديل",
+        "view": "عرض",
+        "add": "إضافة",
+        "search": "بحث",
+        "filter": "تصفية",
+        "actions": "إجراءات",
+        "confirm_delete": "هل أنت متأكد أنك تريد حذف هذا العنصر؟",
+        "success": "نجاح",
+        "saved_successfully": "تم الحفظ بنجاح"
+    },
+    "auth": {
+        "login": "تسجيل الدخول",
+        "signup": "اشتراك",
+        "logout": "تسجيل الخروج"
+    }
+}

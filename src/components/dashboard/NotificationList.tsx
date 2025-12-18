@@ -44,7 +44,7 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications }) =>
                   <h4 className="font-medium text-sm">
                     {notification.title}
                     {!notification.read && (
-                      <span className="ml-2 inline-block h-2 w-2 rounded-full bg-primary"></span>
+                      <span className="ms-2 inline-block h-2 w-2 rounded-full bg-primary"></span>
                     )}
                   </h4>
                   <p className="text-xs text-muted-foreground">{notification.message}</p>

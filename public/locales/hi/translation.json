@@ -1,0 +1,46 @@
+{
+    "app": {
+        "name": "FarmSync",
+        "tagline": "आधुनिक कृषि प्रबंधन"
+    },
+    "nav": {
+        "dashboard": "डैशबोर्ड",
+        "fields": "खेत",
+        "crops": "फसलें",
+        "livestock": "पशुधन",
+        "finances": "वित्त",
+        "inventory": "इन्वेंटरी",
+        "equipment": "उपकरण",
+        "weather": "मौसम",
+        "sensors": "IoT और सेंसर",
+        "market": "बाजार",
+        "reports": "रिपोर्ट",
+        "analytics": "एनालिटिक्स",
+        "sustainability": "स्थिरता",
+        "community": "समुदाय",
+        "notifications": "सूचनाएं",
+        "settings": "सेटिंग्स",
+        "profile": "प्रोफ़ाइल"
+    },
+    "common": {
+        "loading": "लोड हो रहा है...",
+        "error": "एक त्रुटि हुई",
+        "save": "सहेजें",
+        "cancel": "रद्द करें",
+        "delete": "हटाएं",
+        "edit": "संपादित करें",
+        "view": "देखें",
+        "add": "जोड़ें",
+        "search": "खोजें",
+        "filter": "फ़िल्टर",
+        "actions": "कार्रवाई",
+        "confirm_delete": "क्या आप वाकई इस आइटम को हटाना चाहते हैं?",
+        "success": "सफलता",
+        "saved_successfully": "सफलतापूर्वक सहेजा गया"
+    },
+    "auth": {
+        "login": "लॉग इन करें",
+        "signup": "साइन अप करें",
+        "logout": "लॉग आउट"
+    }
+}

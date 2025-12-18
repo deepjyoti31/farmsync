@@ -1,0 +1,46 @@
+{
+    "app": {
+        "name": "FarmSync",
+        "tagline": "Gestion Agricole Moderne"
+    },
+    "nav": {
+        "dashboard": "Tableau de bord",
+        "fields": "Champs",
+        "crops": "Cultures",
+        "livestock": "Bétail",
+        "finances": "Finances",
+        "inventory": "Inventaire",
+        "equipment": "Équipement",
+        "weather": "Météo",
+        "sensors": "IoT & Capteurs",
+        "market": "Marché",
+        "reports": "Rapports",
+        "analytics": "Analytique",
+        "sustainability": "Durabilité",
+        "community": "Communauté",
+        "notifications": "Notifications",
+        "settings": "Paramètres",
+        "profile": "Profil"
+    },
+    "common": {
+        "loading": "Chargement...",
+        "error": "Une erreur est survenue",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "delete": "Supprimer",
+        "edit": "Modifier",
+        "view": "Voir",
+        "add": "Ajouter",
+        "search": "Rechercher",
+        "filter": "Filtrer",
+        "actions": "Actions",
+        "confirm_delete": "Êtes-vous sûr de vouloir supprimer cet élément ?",
+        "success": "Succès",
+        "saved_successfully": "Enregistré avec succès"
+    },
+    "auth": {
+        "login": "Connexion",
+        "signup": "S'inscrire",
+        "logout": "Déconnexion"
+    }
+}

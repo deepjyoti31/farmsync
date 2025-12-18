@@ -3,6 +3,8 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import NotificationsDropdown from './NotificationsDropdown';
 import UserMenu from './UserMenu';
+import OrgSwitcher from '../org/OrgSwitcher';
+import LanguageSwitcher from './LanguageSwitcher';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { MessageSquare, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -33,6 +35,8 @@ const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
+        <OrgSwitcher />
+        <LanguageSwitcher />
         <NotificationsDropdown />
 
         <Button variant="ghost" size="icon" onClick={handleOpenMessaging}>
