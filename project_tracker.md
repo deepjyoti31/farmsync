@@ -244,9 +244,61 @@ The application features a modern, responsive UI with:
   - Consistent user experience across different entry points
   - Improved data consistency with proper refreshing
 
+### 7. Mobile Optimization (PWA)
+- **Issue**: Application was not optimized for mobile devices and required internet connection.
+- **Solution**:
+  - Implemented Progressive Web App (PWA) capabilities with manifest and service workers
+  - Added "Add to Home Screen" support
+  - Created a responsive mobile navigation with hamburger menu (Sheet component)
+  - Unified header structure for both mobile and desktop
+  - Implemented offline read-only access using `PersistQueryClientProvider` and local storage
+- **Benefits**:
+  - Native app-like experience on mobile devices
+  - Access to farm data even without internet connection (offline mode)
+  - Better usability on small screens with dedicated mobile navigation
+  - Improved performance through caching
+
+### 8. Smart Farming (IoT)
+- **Issue**: No integration with physical farm hardware or sensors.
+- **Solution**:
+  - Implemented hardware-agnostic IoT architecture using Supabase Edge Functions
+  - Created `devices` and `telemetry` tables to store hardware registry and streaming data
+  - Built `ingest-telemetry` API endpoint that accepts JSON from any device type
+  - Added new "IoT & Sensors" dashboard page for device management and real-time visualization
+  - Supported diverse sensor types: Weather, Soil, Irrigation, Livestock, Drones, Camera, Storage
+- **Benefits**:
+  - Real-time monitoring of farm conditions
+  - Compatibility with any hardware vendor (DIY or Commercial)
+  - Centralized dashboard for all farm assets
+  - Foundation for future automated alerts and AI analysis
+
+### 9. Advanced Analytics
+- **Issue**: Lack of deep insights into financial health and crop yield performance.
+- **Solution**:
+  - Implemented `harvests` table to track actual crop yield efficiency
+  - Created a dedicated **Analytics Dashboard** (`/dashboard/analytics`)
+  - Added "Financial Health" view with Profit/Loss, Revenue vs Expense charts, and category breakdown
+  - Added "Yield Analysis" view to benchmark crop performance per hectare
+- **Benefits**:
+  - Data-driven decision making for crop planning
+  - Clear visibility into farm profitability and major cost centers
+  - Ability to compare planned vs actual production
+
+### 10. Sustainability & Compliance
+- **Issue**: No standardized way to track chemical inputs and water usage for certification.
+- **Solution**:
+  - Implemented `sustainability_logs` table for detailed input tracking (fertilizers, pesticides)
+  - Created `water_usage` table for irrigation monitoring
+  - Added dedicated **Sustainability Dashboard** (`/dashboard/sustainability`)
+  - Built "Compliance Reports" view to generate audit-ready logs for Organic/GlobalG.A.P certification
+- **Benefits**:
+  - Simplified certification audits
+  - Responsible resource management
+  - Complete digital trail of all farm inputs
+
 # Enhancement Plan
 
-## 1. Advanced Analytics and Insights
+## 1. Future Enhancements
 
 ### Crop Performance Analytics
 - **Yield Prediction**: Implement machine learning models to predict crop yields based on historical data, weather patterns, and soil conditions

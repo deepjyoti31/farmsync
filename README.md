@@ -60,6 +60,27 @@ FarmSync helps farmers manage all aspects of their farming operations through an
 - Community forums for farmer discussions
 - Responsive design for desktop and mobile use
 
+### Mobile Optimization (PWA)
+- **Offline Access**: View cached data even without internet connection
+- **Installable**: "Add to Home Screen" capability on iOS and Android
+- **Mobile-First UX**: Responsive sidebar and touch-friendly navigation
+
+### Smart Farming (IoT)
+- **Hardware Agnostic**: Integrate any sensor (weather stations, soil moisture, drones) which supports HTTP POST
+- **Device Registry**: Manage all farm hardware in one place
+- **Real-time Telemetry**: Visualize temperature, humidity, and other metrics instantly
+
+### Advanced Analytics
+- **Yield Analysis**: Track actual harvest quantities vs planned production
+- **Financial Health**: Visual profit/loss trends and expense categorization
+- **Benchmarking**: Compare crop performance per field/acre
+
+### Sustainability & Compliance
+- **Input Logging**: Track fertilizers, pesticides, and seeds for organic certification
+- **Water Usage**: Monitor irrigation volumes and sources
+- **Compliance Reports**: One-click generation of audit-ready PDF reports
+
+
 ## Technologies Used
 
 ### Frontend
@@ -94,6 +115,11 @@ The application uses a PostgreSQL database through Supabase with the following m
 - **financial_transactions**: Financial records
 - **equipment**: Farm equipment
 - **inventory**: Inventory items
+- **devices**: IoT device registry
+- **telemetry**: Sensor data logs
+- **harvests**: Crop yield records
+- **sustainability_logs**: Input compliance tracking (fertilizers/chemicals)
+- **water_usage**: Irrigation tracking
 - **forums**, **forum_posts**, **post_comments**, **post_likes**: Community features
 
 ## Prerequisites
@@ -214,38 +240,17 @@ For Supabase Edge Functions deployment:
 
 ```sh
 npx supabase functions deploy get-weather --project-ref your_project_id
+npx supabase functions deploy ingest-telemetry --project-ref your_project_id
 ```
 
 ## Future Enhancements
 
 FarmSync is continuously evolving with plans for the following enhancements:
 
-### Advanced Analytics and Insights
-- Yield prediction using machine learning
-- Crop performance comparison across seasons
-- Profitability analysis by crop, field, and season
-- Resource optimization recommendations
-
-### Mobile Optimization and Offline Capabilities
-- Progressive Web App (PWA) with offline functionality
-- Mobile-specific features like GPS field mapping
-- Photo and voice documentation in the field
-- QR code integration for equipment and livestock
-
-### IoT and Sensor Integration
-- Weather station and soil moisture sensor integration
-- Equipment sensors for usage and maintenance tracking
-- Automated alerts based on sensor thresholds
-
 ### Enhanced Crop Management
 - AI-powered pest and disease identification
 - Visual crop rotation planning tools
 - Precision agriculture with field zoning
-
-### Sustainability and Environmental Impact
-- Carbon footprint tracking and reduction suggestions
-- Biodiversity monitoring tools
-- Water management and conservation planning
 
 ### Augmented Reality and Visual Tools
 - AR visualization of crop growth stages

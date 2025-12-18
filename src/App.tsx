@@ -3,7 +3,9 @@ import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import MainLayout from "./components/layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
@@ -14,8 +16,11 @@ import Finances from "./pages/Finances";
 import Inventory from "./pages/Inventory";
 import Equipment from "./pages/Equipment";
 import Weather from "./pages/Weather";
+import Sensors from "./pages/Sensors";
 import Market from "./pages/Market";
 import Reports from "./pages/Reports";
+import Analytics from "./pages/Analytics";
+import Sustainability from "./pages/Sustainability";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
@@ -30,11 +35,21 @@ import Settings from "./pages/Settings";
 import { toast } from "@/hooks/use-toast";
 
 // Create a client
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    },
+  },
+});
+
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+});
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister }}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -45,8 +60,8 @@ const App = () => {
               <Route path="/landing" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route 
-                path="/dashboard" 
+              <Route
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <MainLayout />
@@ -61,8 +76,11 @@ const App = () => {
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="equipment" element={<Equipment />} />
                 <Route path="weather" element={<Weather />} />
+                <Route path="sensors" element={<Sensors />} />
                 <Route path="market" element={<Market />} />
                 <Route path="reports" element={<Reports />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="sustainability" element={<Sustainability />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="community" element={<Community />} />
                 <Route path="farms" element={<FarmsList />} />
@@ -74,7 +92,7 @@ const App = () => {
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 };
 
