@@ -20,6 +20,8 @@ import {
   Settings,
   Activity,
   Building2,
+  ShoppingCart,
+  Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +42,10 @@ const menuItems = [
   { icon: Leaf, label: 'Sustainability', path: '/dashboard/sustainability' },
   { icon: Bell, label: 'Notifications', path: '/dashboard/notifications' },
   { icon: MessageSquare, label: 'Community', path: '/dashboard/community' },
+  // Cooperative Section
+  { icon: Users, label: 'Cooperative', path: '/dashboard/coop' },
+  { icon: ShoppingCart, label: 'Bulk Orders', path: '/dashboard/coop/orders' },
+  { icon: Package, label: 'Traceability', path: '/dashboard/coop/batches' },
 ];
 
 const userMenuItems = [

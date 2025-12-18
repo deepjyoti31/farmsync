@@ -32,6 +32,9 @@ import FarmsList from "./pages/FarmsList";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import OrgSettings from "./pages/OrgSettings";
+import CoopDashboard from "./pages/coop/CoopDashboard";
+import BulkOrdersList from "./pages/coop/BulkOrdersList";
+import BatchList from "./pages/coop/BatchList";
 import { toast } from "@/hooks/use-toast";
 import { I18nProvider } from "./components/providers/I18nProvider";
 import { useDirection } from "./hooks/useDirection";
@@ -86,6 +89,10 @@ const AppContent = () => {
         <Route path="profile" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
         <Route path="dashboard/settings" element={<OrgSettings />} />
+        {/* Cooperative Routes */}
+        <Route path="dashboard/coop" element={<CoopDashboard />} />
+        <Route path="dashboard/coop/orders" element={<BulkOrdersList />} />
+        <Route path="dashboard/coop/batches" element={<BatchList />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
