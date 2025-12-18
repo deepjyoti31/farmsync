@@ -35,6 +35,11 @@ import OrgSettings from "./pages/OrgSettings";
 import CoopDashboard from "./pages/coop/CoopDashboard";
 import BulkOrdersList from "./pages/coop/BulkOrdersList";
 import BatchList from "./pages/coop/BatchList";
+import FinanceHub from "./pages/finance/FinanceHub";
+import LoanList from "./pages/finance/LoanList";
+import InsuranceList from "./pages/finance/InsuranceList";
+import Compass from "./pages/compliance/Compass";
+import StandardDetail from "./pages/compliance/StandardDetail";
 import { toast } from "@/hooks/use-toast";
 import { I18nProvider } from "./components/providers/I18nProvider";
 import { useDirection } from "./hooks/useDirection";
@@ -93,6 +98,13 @@ const AppContent = () => {
         <Route path="dashboard/coop" element={<CoopDashboard />} />
         <Route path="dashboard/coop/orders" element={<BulkOrdersList />} />
         <Route path="dashboard/coop/batches" element={<BatchList />} />
+        {/* Financial Routes */}
+        <Route path="dashboard/finance" element={<FinanceHub />} />
+        <Route path="dashboard/finance/loans" element={<LoanList />} />
+        <Route path="dashboard/finance/insurance" element={<InsuranceList />} />
+        {/* Compliance Routes */}
+        <Route path="dashboard/compliance" element={<Compass />} />
+        <Route path="dashboard/compliance/:id" element={<StandardDetail />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

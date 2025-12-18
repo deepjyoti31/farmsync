@@ -22,6 +22,7 @@ import {
   Building2,
   ShoppingCart,
   Package,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +47,10 @@ const menuItems = [
   { icon: Users, label: 'Cooperative', path: '/dashboard/coop' },
   { icon: ShoppingCart, label: 'Bulk Orders', path: '/dashboard/coop/orders' },
   { icon: Package, label: 'Traceability', path: '/dashboard/coop/batches' },
+  // Finance Section
+  { icon: Landmark, label: 'Financial Services', path: '/dashboard/finance' },
+  // Compliance
+  { icon: Shield, label: 'Compass Compliance', path: '/dashboard/compliance' },
 ];
 
 const userMenuItems = [
