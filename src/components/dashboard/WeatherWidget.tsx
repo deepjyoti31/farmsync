@@ -74,14 +74,14 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
         if (error) throw error;
         return data as WeatherData;
       } catch (error) {
-        console.error('Error fetching weather:', error);
-        throw new Error('Failed to fetch weather data');
+        return null;
       }
     },
     enabled: !!farm && !!farm.gps_latitude && !!farm.gps_longitude,
     refetchInterval: 1000 * 60 * 30, // Refetch every 30 minutes
     refetchOnMount: true,
-    staleTime: 0 // Always fetch fresh data on mount
+    staleTime: 0, // Always fetch fresh data on mount
+    retry: false,
   });
 
   const handleRefresh = async () => {

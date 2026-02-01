@@ -163,7 +163,9 @@ const Dashboard = () => {
         .order('due_date', { ascending: true })
         .limit(5);
 
-      if (error) throw error;
+      if (error) {
+        return [];
+      }
 
       return (data || []).map(task => ({
         id: task.id,
@@ -198,10 +200,8 @@ const Dashboard = () => {
         .limit(5);
 
       if (error) {
-        console.error('Error fetching notifications:', error);
-        // If the table doesn't exist yet, return empty array without error
-        if (error.code === '42P01') return [];
-        throw error;
+        if (error.code === '42P01' || error.message?.includes('404')) return [];
+        return [];
       }
 
       return (data || []).map(notification => ({

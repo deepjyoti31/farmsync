@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, VisuallyHidden, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlusCircle, Pencil, Trash2, Loader2, Info, Rows3 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -189,7 +189,7 @@ const FarmsList = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => setEditingFarm(farm)}
+                              onClick={() => setEditingFarm(farm as unknown as Farm)}
                               title="Edit Farm"
                             >
                               <Pencil className="h-4 w-4" />
@@ -198,7 +198,7 @@ const FarmsList = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => setDeletingFarm(farm)}
+                              onClick={() => setDeletingFarm(farm as unknown as Farm)}
                               title="Delete Farm"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -219,6 +219,14 @@ const FarmsList = () => {
       {/* Add Farm Dialog */}
       <Dialog open={isAddFarmOpen} onOpenChange={setIsAddFarmOpen}>
         <DialogContent className="p-0 max-w-4xl">
+          <DialogHeader>
+            <VisuallyHidden>
+              <DialogTitle>Add New Farm</DialogTitle>
+            </VisuallyHidden>
+            <VisuallyHidden>
+              <DialogDescription>Add a new farm to your account</DialogDescription>
+            </VisuallyHidden>
+          </DialogHeader>
           <AddFarmForm
             onClose={() => setIsAddFarmOpen(false)}
             onSuccess={handleAddFarmSuccess}
@@ -229,6 +237,14 @@ const FarmsList = () => {
       {/* Edit Farm Dialog */}
       <Dialog open={!!editingFarm} onOpenChange={(open) => !open && setEditingFarm(null)}>
         <DialogContent className="p-0 max-w-4xl">
+          <DialogHeader>
+            <VisuallyHidden>
+              <DialogTitle>Edit Farm</DialogTitle>
+            </VisuallyHidden>
+            <VisuallyHidden>
+              <DialogDescription>Edit existing farm details</DialogDescription>
+            </VisuallyHidden>
+          </DialogHeader>
           {editingFarm && (
             <EditFarmForm
               farm={editingFarm}
@@ -274,6 +290,9 @@ const FarmsList = () => {
         <DialogContent className="p-0 max-w-md">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle>Add New Field</DialogTitle>
+            <DialogDescription>
+              Add a new field to your farm.
+            </DialogDescription>
           </DialogHeader>
           {addingFieldForFarmId && (
             <AddFieldForm

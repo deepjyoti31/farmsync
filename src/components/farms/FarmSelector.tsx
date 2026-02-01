@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, VisuallyHidden } from '@/components/ui/dialog';
 import AddFarmForm from './AddFarmForm';
 import { toast } from '@/hooks/use-toast';
 
@@ -121,6 +121,16 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({
 
       <Dialog open={isAddFarmOpen} onOpenChange={setIsAddFarmOpen}>
         <DialogContent className="p-0 max-w-4xl">
+          <DialogHeader>
+            <VisuallyHidden>
+              <DialogTitle>Add New Farm</DialogTitle>
+            </VisuallyHidden>
+            <VisuallyHidden>
+              <DialogDescription>
+                Form to add a new farm configuration.
+              </DialogDescription>
+            </VisuallyHidden>
+          </DialogHeader>
           <AddFarmForm
             onClose={() => setIsAddFarmOpen(false)}
             onSuccess={handleFarmAdded}

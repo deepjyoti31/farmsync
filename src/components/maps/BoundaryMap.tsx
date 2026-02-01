@@ -43,6 +43,18 @@ const BoundaryMap: React.FC<BoundaryMapProps> = ({
       zoom: initialZoom,
     });
 
+    // Handle missing images (like "in-state-4") to prevent console errors
+    map.current.on('styleimagemissing', (e) => {
+      const id = e.id;
+      if (!map.current?.hasImage(id)) {
+        // Create a 1x1 transparent image
+        const width = 1;
+        const height = 1;
+        const data = new Uint8Array(width * height * 4);
+        map.current?.addImage(id, { width, height, data });
+      }
+    });
+
     // Add navigation controls
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
