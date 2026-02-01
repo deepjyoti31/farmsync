@@ -2,29 +2,31 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Settings, LogOut } from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const UserMenu = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [userName, setUserName] = React.useState('User');
-  
+  const { t } = useTranslation();
+  const [userName, setUserName] = React.useState(t('layout.user_menu.default_user'));
+
   React.useEffect(() => {
     if (user) {
       const firstName = user.user_metadata?.first_name;
       const lastName = user.user_metadata?.last_name;
-      
+
       if (firstName || lastName) {
         setUserName([firstName, lastName].filter(Boolean).join(' '));
       } else if (user.email) {
@@ -32,23 +34,23 @@ const UserMenu = () => {
       }
     }
   }, [user]);
-  
+
   const handleLogout = async () => {
     try {
       await signOut();
       toast({
-        title: "Logged out successfully",
-        description: "Redirecting to login page...",
+        title: t('layout.user_menu.logout_success'),
+        description: t('layout.user_menu.redirecting'),
       });
-      
+
       // Redirect to login page after a short delay
       setTimeout(() => {
         navigate('/landing');
       }, 1500);
     } catch (error) {
       toast({
-        title: "Logout failed",
-        description: "There was an error logging out.",
+        title: t('layout.user_menu.logout_error'),
+        description: t('layout.user_menu.logout_error_desc'),
         variant: "destructive",
       });
     }
@@ -56,14 +58,14 @@ const UserMenu = () => {
 
   const getInitials = () => {
     if (!user) return 'U';
-    
+
     const firstName = user.user_metadata?.first_name || '';
     const lastName = user.user_metadata?.last_name || '';
-    
+
     if (firstName || lastName) {
       return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
     }
-    
+
     return user.email ? user.email.charAt(0).toUpperCase() : 'U';
   };
 
@@ -74,7 +76,7 @@ const UserMenu = () => {
   const handleSettingsClick = () => {
     navigate('/dashboard/settings');
   };
-  
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -88,20 +90,20 @@ const UserMenu = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuLabel>{t('layout.user_menu.my_account')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleProfileClick}>
           <User className="mr-2 h-4 w-4" />
-          <span>Profile</span>
+          <span>{t('layout.user_menu.profile')}</span>
         </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSettingsClick}>
           <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
+          <span>{t('layout.user_menu.settings')}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Logout</span>
+          <span>{t('layout.user_menu.logout')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

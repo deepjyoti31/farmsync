@@ -9,14 +9,15 @@ import FarmSelector from '@/components/farms/FarmSelector';
 import { MessageSquare, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
-  const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleOpenMessaging = () => {
     toast({
-      title: "Coming Soon",
-      description: "Messaging functionality will be available in a future update!",
+      title: t('layout.topbar.messaging.title'),
+      description: t('layout.topbar.messaging.description'),
     });
   };
 
@@ -31,6 +32,7 @@ const TopBar = ({ onMenuClick }: { onMenuClick?: () => void }) => {
         <FarmSelector
           selectedFarmId={null}
           onFarmChange={() => { }}
+          showAddButtonWhenEmpty={false}
         />
       </div>
 

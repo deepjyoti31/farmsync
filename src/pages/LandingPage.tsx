@@ -24,6 +24,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { useTranslation, Trans } from 'react-i18next';
 
 interface FeatureCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -67,75 +68,76 @@ const Testimonial = ({ quote, author, role, imageUrl }: { quote: string; author:
 );
 
 const LandingPage = () => {
+  const { t } = useTranslation();
   const features = [
     {
       icon: Tractor,
-      title: "Farm Management",
-      description: "Track fields, crops, and equipment with our intuitive platform designed for Indian farmers."
+      title: t('landing.features.items.farm_management.title'),
+      description: t('landing.features.items.farm_management.description')
     },
     {
       icon: Leaf,
-      title: "Crop Tracking",
-      description: "Monitor crop cycles and get insights on planting, irrigation, and harvest schedules."
+      title: t('landing.features.items.crop_tracking.title'),
+      description: t('landing.features.items.crop_tracking.description')
     },
     {
       icon: PieChart,
-      title: "Financial Insights",
-      description: "Log expenses, track income, and get detailed financial reports tailored for agriculture."
+      title: t('landing.features.items.financial_insights.title'),
+      description: t('landing.features.items.financial_insights.description')
     },
     {
       icon: CloudSun,
-      title: "Weather Integration",
-      description: "Receive local weather forecasts and alerts to plan your farming activities efficiently."
+      title: t('landing.features.items.weather_integration.title'),
+      description: t('landing.features.items.weather_integration.description')
     },
     {
       icon: BarChart2,
-      title: "Analytics Dashboard",
-      description: "Visual reports and analytics to understand your farm's performance and make better decisions."
+      title: t('landing.features.items.analytics.title'),
+      description: t('landing.features.items.analytics.description')
     },
     {
       icon: CalendarDays,
-      title: "Task Management",
-      description: "Plan and track all your farm activities with an easy-to-use calendar and reminder system."
+      title: t('landing.features.items.task_management.title'),
+      description: t('landing.features.items.task_management.description')
     },
     {
       icon: GanttChartSquare,
-      title: "Resource Planning",
-      description: "Optimize your resource allocation for maximum productivity and yield management."
+      title: t('landing.features.items.resource_planning.title'),
+      description: t('landing.features.items.resource_planning.description')
     },
     {
       icon: Users,
-      title: "Community Support",
-      description: "Connect with other farmers, share tips, and access expert agricultural advice."
+      title: t('landing.features.items.community.title'),
+      description: t('landing.features.items.community.description')
     }
   ];
 
   const testimonials = [
     {
-      quote: "FarmSync has transformed how I manage my crops. I've seen a 15% increase in yield since I started using it.",
+      quote: t('landing.testimonials.items.rajesh.quote'),
       author: "Rajesh Kumar",
-      role: "Rice Farmer, Bihar",
+      role: t('landing.testimonials.items.rajesh.role'),
       imageUrl: "/src/data/farmer1.jpg"
     },
     {
-      quote: "The financial tracking helps me understand where my money goes and how to optimize my farming operations.",
+      quote: t('landing.testimonials.items.sunita.quote'),
       author: "Sunita Patel",
-      role: "Vegetable Grower, Gujarat",
+      role: t('landing.testimonials.items.sunita.role'),
       imageUrl: "/src/data/farmer3.jpg"
     },
     {
-      quote: "As a small-scale farmer, I never thought I'd be able to use technology like this. It's easy and free!",
+      quote: t('landing.testimonials.items.vijay.quote'),
       author: "Vijay Singh",
-      role: "Mixed Farmer, Haryana",
+      role: t('landing.testimonials.items.vijay.role'),
       imageUrl: "/src/data/farmer2.jpg"
     }
   ];
 
   const screenshots = [
-    { src: "/src/data/dashboard.png", alt: "FarmSync Dashboard" },
-    { src: "/src/data/crop-management.png", alt: "Crop Management Interface" },
-    { src: "/src/data/weather-forecast.png", alt: "Weather Forecast Module" },
-    { src: "/src/data/financial-report.png", alt: "Financial Reports" }
+    { src: "/src/data/dashboard.png", alt: t('landing.screenshots.dashboard') },
+    { src: "/src/data/crop-management.png", alt: t('landing.screenshots.crop_management') },
+    { src: "/src/data/weather-forecast.png", alt: t('landing.screenshots.weather') },
+    { src: "/src/data/financial-report.png", alt: t('landing.screenshots.financial') }
   ];
 
   return (
@@ -155,17 +157,18 @@ const LandingPage = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl">
             <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-lg">
-              Smart Farming, <span className="text-primary">Reimagined</span>
+              <Trans i18nKey="landing.hero.title">
+                Smart Farming, <span className="text-primary">Reimagined</span>
+              </Trans>
             </h1>
             <p className="text-xl text-white/90 mb-8 drop-shadow-md md:text-2xl max-w-2xl">
-              FarmSync transforms agricultural management with cutting-edge technology,
-              delivering data-driven insights for modern farmers.
+              {t('landing.hero.subtitle')}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/signup">
                 <Button size="lg" className="w-full sm:w-auto gap-2 text-base bg-primary/90 hover:bg-primary">
-                  Get Started Free
+                  {t('landing.hero.get_started')}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -176,7 +179,7 @@ const LandingPage = () => {
               >
                 <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2 text-base bg-white/20 backdrop-blur-sm text-white border-white/40 hover:bg-white/30">
                   <Github className="h-4 w-4" />
-                  Star on GitHub
+                  {t('landing.hero.star_github')}
                 </Button>
               </a>
             </div>
@@ -192,9 +195,9 @@ const LandingPage = () => {
         <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-background to-transparent z-10"></div>
         <div className="container mx-auto px-4 mb-12 relative z-20">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">See FarmSync in Action</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('landing.screenshots.title')}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Take a look at our intuitive interface designed specifically for farmers
+              {t('landing.screenshots.subtitle')}
             </p>
           </div>
 
@@ -235,14 +238,13 @@ const LandingPage = () => {
 
       <section className="py-20 bg-muted/30 relative">
         <div className="absolute inset-0 bg-cover bg-center opacity-5"
-             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
         </div>
         <div className="container mx-auto px-4 relative">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything You Need to Manage Your Farm</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('landing.features.title')}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A complete suite of tools designed specifically for Indian agricultural needs,
-              available to everyone at no cost.
+              {t('landing.features.subtitle')}
             </p>
           </div>
 
@@ -261,7 +263,7 @@ const LandingPage = () => {
 
       <div className="h-32 md:h-40 relative overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center bg-fixed"
-             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
         </div>
         <div className="absolute inset-0 bg-primary/30 backdrop-blur-sm"></div>
       </div>
@@ -289,10 +291,9 @@ const LandingPage = () => {
             </div>
 
             <div className="md:w-1/2">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Why Is FarmSync Free?</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">{t('landing.why_free.title')}</h2>
               <p className="text-lg text-muted-foreground mb-8">
-                We believe that technology should empower all farmers, regardless of their size or resources.
-                FarmSync is open-source and will always remain free to use.
+                {t('landing.why_free.description')}
               </p>
 
               <div className="grid gap-6">
@@ -301,9 +302,9 @@ const LandingPage = () => {
                     <Globe className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Open for All</h3>
+                    <h3 className="text-xl font-semibold mb-2">{t('landing.why_free.items.open_for_all.title')}</h3>
                     <p className="text-muted-foreground">
-                      Available to every farmer across India, regardless of farm size or budget.
+                      {t('landing.why_free.items.open_for_all.description')}
                     </p>
                   </div>
                 </div>
@@ -313,9 +314,9 @@ const LandingPage = () => {
                     <Github className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Open Source</h3>
+                    <h3 className="text-xl font-semibold mb-2">{t('landing.why_free.items.open_source.title')}</h3>
                     <p className="text-muted-foreground">
-                      Completely open source and community-driven, ensuring transparency and continuous improvement.
+                      {t('landing.why_free.items.open_source.description')}
                     </p>
                   </div>
                 </div>
@@ -325,9 +326,9 @@ const LandingPage = () => {
                     <ShieldCheck className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold mb-2">Data Privacy</h3>
+                    <h3 className="text-xl font-semibold mb-2">{t('landing.why_free.items.data_privacy.title')}</h3>
                     <p className="text-muted-foreground">
-                      Your farm data belongs to you. We're committed to data privacy and security.
+                      {t('landing.why_free.items.data_privacy.description')}
                     </p>
                   </div>
                 </div>
@@ -339,13 +340,13 @@ const LandingPage = () => {
 
       <section className="py-20 bg-muted/30 relative">
         <div className="absolute inset-0 bg-cover bg-center opacity-5"
-             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535378620166-273708d44e4c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535378620166-273708d44e4c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
         </div>
         <div className="container mx-auto px-4 relative">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Trusted by Farmers Across India</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('landing.testimonials.title')}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              See how FarmSync has helped farmers improve their operations and increase productivity.
+              {t('landing.testimonials.subtitle')}
             </p>
           </div>
 
@@ -365,26 +366,25 @@ const LandingPage = () => {
 
       <section className="py-20 relative">
         <div className="absolute inset-0 bg-cover bg-center"
-             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
         </div>
         <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm"></div>
         <div className="container mx-auto px-4 relative">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto border border-white/20 shadow-xl">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">Ready to Transform Your Farming?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">{t('landing.cta.title')}</h2>
             <p className="text-lg mb-8 max-w-2xl mx-auto text-white/90">
-              Join thousands of farmers already using FarmSync to increase yields,
-              reduce costs, and manage their farms more efficiently.
+              {t('landing.cta.subtitle')}
             </p>
 
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link to="/signup">
                 <Button size="lg" className="w-full sm:w-auto bg-white text-primary hover:bg-white/90">
-                  Create Free Account
+                  {t('landing.cta.create_account')}
                 </Button>
               </Link>
               <Link to="/login">
                 <Button variant="outline" size="lg" className="w-full sm:w-auto border-white text-primary hover:bg-white/20">
-                  Log in
+                  {t('landing.cta.login')}
                 </Button>
               </Link>
             </div>
@@ -400,7 +400,7 @@ const LandingPage = () => {
                 <Leaf className="h-6 w-6" />
                 FarmSync
               </h2>
-              <p className="text-muted-foreground">Free forever. Open source.</p>
+              <p className="text-muted-foreground">{t('landing.footer.tagline')}</p>
             </div>
 
             <div className="flex gap-6">
@@ -413,16 +413,16 @@ const LandingPage = () => {
                 <Github className="h-5 w-5" />
               </a>
               <Link to="/login" className="text-muted-foreground hover:text-primary transition-colors">
-                Log in
+                {t('auth.login')}
               </Link>
               <Link to="/signup" className="text-muted-foreground hover:text-primary transition-colors">
-                Sign up
+                {t('auth.signup')}
               </Link>
             </div>
           </div>
 
           <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} FarmSync. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} FarmSync. {t('landing.footer.rights')}</p>
           </div>
         </div>
       </footer>

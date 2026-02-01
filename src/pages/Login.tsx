@@ -17,20 +17,22 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
-
-const loginSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  rememberMe: z.boolean().default(false),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { useTranslation } from 'react-i18next';
 
 const Login = () => {
+  const { t } = useTranslation();
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = React.useState(false);
-  
+
+  const loginSchema = z.object({
+    email: z.string().email({ message: t('auth.validation.email_invalid') }),
+    password: z.string().min(6, { message: t('auth.validation.password_length') }),
+    rememberMe: z.boolean().default(false),
+  });
+
+  type LoginFormValues = z.infer<typeof loginSchema>;
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -60,7 +62,7 @@ const Login = () => {
           <div className="mb-8">
             <Link to="/landing" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to home
+              {t('auth.back_to_home')}
             </Link>
           </div>
 
@@ -69,9 +71,9 @@ const Login = () => {
             <h1 className="text-2xl font-bold">FarmSync</h1>
           </div>
 
-          <h2 className="text-3xl font-bold mb-2">Welcome back</h2>
+          <h2 className="text-3xl font-bold mb-2">{t('auth.welcome_back')}</h2>
           <p className="text-muted-foreground mb-8">
-            Log in to your account to continue
+            {t('auth.login_subtitle')}
           </p>
 
           <Form {...form}>
@@ -81,12 +83,12 @@ const Login = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('auth.email')}</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="your@email.com" 
-                        type="email" 
-                        {...field} 
+                      <Input
+                        placeholder={t('auth.placeholders.email')}
+                        type="email"
+                        {...field}
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -100,12 +102,12 @@ const Login = () => {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t('auth.password')}</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="••••••••" 
-                        type="password" 
-                        {...field} 
+                      <Input
+                        placeholder={t('auth.placeholders.password')}
+                        type="password"
+                        {...field}
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -121,20 +123,20 @@ const Login = () => {
                   render={({ field }) => (
                     <FormItem className="flex items-center space-x-2 space-y-0">
                       <FormControl>
-                        <Checkbox 
-                          checked={field.value} 
-                          onCheckedChange={field.onChange} 
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
                           disabled={isLoading}
                         />
                       </FormControl>
                       <FormLabel className="text-sm font-normal cursor-pointer">
-                        Remember me
+                        {t('auth.remember_me')}
                       </FormLabel>
                     </FormItem>
                   )}
                 />
                 <a href="#" className="text-sm text-primary hover:underline">
-                  Forgot password?
+                  {t('auth.forgot_password')}
                 </a>
               </div>
 
@@ -142,10 +144,10 @@ const Login = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Logging in...
+                    {t('auth.logging_in')}
                   </>
                 ) : (
-                  "Log in"
+                  t('auth.login_button')
                 )}
               </Button>
             </form>
@@ -153,9 +155,9 @@ const Login = () => {
 
           <div className="mt-8 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              {t('auth.no_account')}{" "}
               <Link to="/signup" className="text-primary hover:underline">
-                Sign up
+                {t('auth.signup')}
               </Link>
             </p>
           </div>
@@ -167,10 +169,10 @@ const Login = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20">
           <div className="absolute inset-0 flex flex-col justify-center items-center p-12 text-center">
             <h2 className="text-3xl font-bold mb-4 max-w-md">
-              Empowering Farmers with Intelligent Farming Solutions
+              {t('auth.empowering_farmers')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-md">
-              Join thousands of farmers optimizing their operations and increasing productivity.
+              {t('auth.join_thousands')}
             </p>
           </div>
         </div>

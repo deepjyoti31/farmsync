@@ -21,8 +21,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Field, Farm, FieldCrop, Crop, Task, Notification } from '@/types';
+import { useTranslation } from 'react-i18next';
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
 
   // Fetch farms for the logged in user
@@ -286,7 +288,7 @@ const Dashboard = () => {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-bold">{t('dashboard.title')}</h1>
         <FarmSelector
           selectedFarmId={selectedFarmId}
           onFarmChange={setSelectedFarmId}
@@ -295,9 +297,9 @@ const Dashboard = () => {
 
       {farms.length === 0 ? (
         <Card className="p-8 text-center">
-          <CardTitle className="mb-4">Welcome to FarmSync</CardTitle>
+          <CardTitle className="mb-4">{t('dashboard.welcome.title')}</CardTitle>
           <CardDescription className="mb-6">
-            You don't have any farms yet. Add your first farm to get started managing your agricultural operations.
+            {t('dashboard.welcome.description')}
           </CardDescription>
         </Card>
       ) : (
@@ -305,33 +307,33 @@ const Dashboard = () => {
           <div className="md:col-span-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <StatsCard
-                title="Fields"
+                title={t('dashboard.stats.fields.title')}
                 value={fields.length.toString()}
-                description="Total fields"
+                description={t('dashboard.stats.fields.description')}
                 trend={fields.length > 0 ? "up" : "neutral"}
                 trendValue={fields.length > 0 ? fields.length.toString() : "0"}
                 icon={MapPin}
               />
               <StatsCard
-                title="Crops"
+                title={t('dashboard.stats.crops.title')}
                 value={activeCropsCount.toString()}
-                description="Currently growing"
+                description={t('dashboard.stats.crops.description')}
                 trend={cropsList.length > 0 ? "up" : "neutral"}
                 trendValue={cropsList.length.toString()}
                 icon={Sprout}
               />
               <StatsCard
-                title="Livestock"
+                title={t('dashboard.stats.livestock.title')}
                 value="0"
-                description="Total animals"
+                description={t('dashboard.stats.livestock.description')}
                 trend="neutral"
                 trendValue="0"
                 icon={Bird}
               />
               <StatsCard
-                title="Revenue"
+                title={t('dashboard.stats.revenue.title')}
                 value="₹0"
-                description="This month"
+                description={t('dashboard.stats.revenue.description')}
                 trend="neutral"
                 trendValue="0%"
                 icon={PiggyBank}
@@ -340,9 +342,9 @@ const Dashboard = () => {
 
             <Tabs defaultValue="overview" className="mb-6">
               <TabsList className="mb-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="crops">Crops</TabsTrigger>
-                <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                <TabsTrigger value="overview">{t('dashboard.tabs.overview')}</TabsTrigger>
+                <TabsTrigger value="crops">{t('dashboard.tabs.crops')}</TabsTrigger>
+                <TabsTrigger value="tasks">{t('dashboard.tabs.tasks')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview">
@@ -355,8 +357,8 @@ const Dashboard = () => {
               <TabsContent value="crops">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Crop Status</CardTitle>
-                    <CardDescription>Current status of your crops</CardDescription>
+                    <CardTitle>{t('dashboard.crop_status.title')}</CardTitle>
+                    <CardDescription>{t('dashboard.crop_status.description')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <CropStatus crops={cropsList} />
@@ -367,8 +369,8 @@ const Dashboard = () => {
               <TabsContent value="tasks">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Upcoming Tasks</CardTitle>
-                    <CardDescription>Tasks scheduled for the next 7 days</CardDescription>
+                    <CardTitle>{t('dashboard.upcoming_tasks.title')}</CardTitle>
+                    <CardDescription>{t('dashboard.upcoming_tasks.description')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <TaskList tasks={tasks} />
@@ -381,8 +383,8 @@ const Dashboard = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Activities</CardTitle>
-                <CardDescription>Latest updates from your farm</CardDescription>
+                <CardTitle>{t('dashboard.recent_activities.title')}</CardTitle>
+                <CardDescription>{t('dashboard.recent_activities.description')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <NotificationList notifications={notifications as Notification[]} />
@@ -391,8 +393,8 @@ const Dashboard = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Upcoming Tasks</CardTitle>
-                <CardDescription>Tasks scheduled for the next 7 days</CardDescription>
+                <CardTitle>{t('dashboard.upcoming_tasks.title')}</CardTitle>
+                <CardDescription>{t('dashboard.upcoming_tasks.description')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <TaskList tasks={tasks} />
@@ -404,5 +406,6 @@ const Dashboard = () => {
     </div>
   );
 };
+
 
 export default Dashboard;

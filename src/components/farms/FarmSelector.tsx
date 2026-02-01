@@ -18,9 +18,14 @@ import { toast } from '@/hooks/use-toast';
 interface FarmSelectorProps {
   selectedFarmId: string | null;
   onFarmChange: (farmId: string) => void;
+  showAddButtonWhenEmpty?: boolean;
 }
 
-const FarmSelector: React.FC<FarmSelectorProps> = ({ selectedFarmId, onFarmChange }) => {
+const FarmSelector: React.FC<FarmSelectorProps> = ({
+  selectedFarmId,
+  onFarmChange,
+  showAddButtonWhenEmpty = true
+}) => {
   const [isAddFarmOpen, setIsAddFarmOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -81,10 +86,12 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({ selectedFarmId, onFarmChang
           Loading farms...
         </Button>
       ) : farms.length === 0 ? (
-        <Button onClick={handleAddFarm}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Your First Farm
-        </Button>
+        showAddButtonWhenEmpty ? (
+          <Button onClick={handleAddFarm}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Your First Farm
+          </Button>
+        ) : null
       ) : (
         <>
           <DropdownMenu>

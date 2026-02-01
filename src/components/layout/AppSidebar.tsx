@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Home,
   Map,
@@ -27,40 +28,40 @@ import {
 import { cn } from '@/lib/utils';
 
 const menuItems = [
-  { icon: Home, label: 'Dashboard', path: '/dashboard' },
-  { icon: Landmark, label: 'Farms', path: '/dashboard/farms' },
-  { icon: Map, label: 'Fields', path: '/dashboard/fields' },
-  { icon: Sprout, label: 'Crops', path: '/dashboard/crops' },
-  { icon: Users, label: 'Livestock', path: '/dashboard/livestock' },
-  { icon: Warehouse, label: 'Inventory', path: '/dashboard/inventory' },
-  { icon: DollarSign, label: 'Finances', path: '/dashboard/finances' },
-  { icon: Tractor, label: 'Equipment', path: '/dashboard/equipment' },
-  { icon: Cloud, label: 'Weather', path: '/dashboard/weather' },
-  { icon: Activity, label: 'IoT & Sensors', path: '/dashboard/sensors' },
-  { icon: Store, label: 'Market', path: '/dashboard/market' },
-  { icon: LineChart, label: 'Reports', path: '/dashboard/reports' },
-  { icon: BarChart, label: 'Analytics', path: '/dashboard/analytics' },
-  { icon: Leaf, label: 'Sustainability', path: '/dashboard/sustainability' },
-  { icon: Bell, label: 'Notifications', path: '/dashboard/notifications' },
-  { icon: MessageSquare, label: 'Community', path: '/dashboard/community' },
+  { icon: Home, labelKey: 'nav.dashboard', path: '/dashboard' },
+  { icon: Landmark, labelKey: 'nav.farms', path: '/dashboard/farms' },
+  { icon: Map, labelKey: 'nav.fields', path: '/dashboard/fields' },
+  { icon: Sprout, labelKey: 'nav.crops', path: '/dashboard/crops' },
+  { icon: Users, labelKey: 'nav.livestock', path: '/dashboard/livestock' },
+  { icon: Warehouse, labelKey: 'nav.inventory', path: '/dashboard/inventory' },
+  { icon: DollarSign, labelKey: 'nav.finances', path: '/dashboard/finances' },
+  { icon: Tractor, labelKey: 'nav.equipment', path: '/dashboard/equipment' },
+  { icon: Cloud, labelKey: 'nav.weather', path: '/dashboard/weather' },
+  { icon: Activity, labelKey: 'nav.sensors', path: '/dashboard/sensors' },
+  { icon: Store, labelKey: 'nav.market', path: '/dashboard/market' },
+  { icon: LineChart, labelKey: 'nav.reports', path: '/dashboard/reports' },
+  { icon: BarChart, labelKey: 'nav.analytics', path: '/dashboard/analytics' },
+  { icon: Leaf, labelKey: 'nav.sustainability', path: '/dashboard/sustainability' },
+  { icon: Bell, labelKey: 'nav.notifications', path: '/dashboard/notifications' },
+  { icon: MessageSquare, labelKey: 'nav.community', path: '/dashboard/community' },
   // Cooperative Section
-  { icon: Users, label: 'Cooperative', path: '/dashboard/coop' },
-  { icon: ShoppingCart, label: 'Bulk Orders', path: '/dashboard/coop/orders' },
-  { icon: Package, label: 'Traceability', path: '/dashboard/coop/batches' },
+  { icon: Users, labelKey: 'nav.cooperative', path: '/dashboard/coop' },
+  { icon: ShoppingCart, labelKey: 'nav.bulk_orders', path: '/dashboard/coop/orders' },
+  { icon: Package, labelKey: 'nav.traceability', path: '/dashboard/coop/batches' },
   // Finance Section
-  { icon: Landmark, label: 'Financial Services', path: '/dashboard/finance' },
+  { icon: Landmark, labelKey: 'nav.financial_services', path: '/dashboard/finance' },
   // Compliance
-  { icon: Shield, label: 'Compass Compliance', path: '/dashboard/compliance' },
+  { icon: Shield, labelKey: 'nav.compliance', path: '/dashboard/compliance' },
 ];
 
 const userMenuItems = [
-  { icon: User, label: 'Profile', path: '/dashboard/profile' },
-  { icon: Building2, label: 'Org Settings', path: '/dashboard/settings' },
-  { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
+  { icon: User, labelKey: 'nav.profile', path: '/dashboard/profile' },
+  { icon: Settings, labelKey: 'nav.settings', path: '/dashboard/settings' },
 ];
 
 const AppSidebar = ({ onClose }: { onClose?: () => void }) => {
   const location = useLocation();
+  const { t } = useTranslation();
 
   return (
     <div className="bg-sidebar min-h-screen w-64 p-4 text-sidebar-foreground">
@@ -84,14 +85,14 @@ const AppSidebar = ({ onClose }: { onClose?: () => void }) => {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </Link>
             </li>
           ))}
         </ul>
 
         <div className="mt-8 pt-6 border-t border-sidebar-border">
-          <p className="px-4 mb-2 text-xs font-medium text-sidebar-foreground/60 uppercase">Account</p>
+          <p className="px-4 mb-2 text-xs font-medium text-sidebar-foreground/60 uppercase">{t('nav.account')}</p>
           <ul className="space-y-2">
             {userMenuItems.map((item) => (
               <li key={item.path}>
@@ -106,7 +107,7 @@ const AppSidebar = ({ onClose }: { onClose?: () => void }) => {
                   )}
                 >
                   <item.icon className="h-5 w-5" />
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                 </Link>
               </li>
             ))}

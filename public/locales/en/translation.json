@@ -3,6 +3,49 @@
         "name": "FarmSync",
         "tagline": "Modern Farm Management"
     },
+    "dashboard": {
+        "title": "Dashboard",
+        "welcome": {
+            "title": "Welcome to FarmSync",
+            "description": "You don't have any farms yet. Add your first farm to get started managing your agricultural operations."
+        },
+        "stats": {
+            "fields": {
+                "title": "Fields",
+                "description": "Total fields"
+            },
+            "crops": {
+                "title": "Crops",
+                "description": "Currently growing"
+            },
+            "livestock": {
+                "title": "Livestock",
+                "description": "Total animals"
+            },
+            "revenue": {
+                "title": "Revenue",
+                "description": "This month"
+            }
+        },
+        "tabs": {
+            "overview": "Overview",
+            "crops": "Crops",
+            "tasks": "Tasks"
+        },
+        "crop_status": {
+            "title": "Crop Status",
+            "description": "Current status of your crops"
+        },
+        "upcoming_tasks": {
+            "title": "Upcoming Tasks",
+            "description": "Tasks scheduled for the next 7 days"
+        },
+        "recent_activities": {
+            "title": "Recent Activities",
+            "description": "Latest updates from your farm"
+        },
+        "error_loading": "Error loading {{resource}}"
+    },
     "nav": {
         "dashboard": "Dashboard",
         "fields": "Fields",
@@ -20,7 +63,14 @@
         "community": "Community",
         "notifications": "Notifications",
         "settings": "Settings",
-        "profile": "Profile"
+        "profile": "Profile",
+        "account": "Account",
+        "farms": "Farms",
+        "cooperative": "Cooperative",
+        "bulk_orders": "Bulk Orders",
+        "traceability": "Traceability",
+        "financial_services": "Financial Services",
+        "compliance": "Compass Compliance"
     },
     "common": {
         "loading": "Loading...",
@@ -39,8 +89,168 @@
         "saved_successfully": "Saved successfully"
     },
     "auth": {
-        "login": "Login",
-        "signup": "Sign Up",
-        "logout": "Logout"
+        "login": "Log in",
+        "signup": "Sign up",
+        "logout": "Logout",
+        "welcome_back": "Welcome back",
+        "login_subtitle": "Log in to your account to continue",
+        "email": "Email",
+        "password": "Password",
+        "remember_me": "Remember me",
+        "forgot_password": "Forgot password?",
+        "login_button": "Log in",
+        "logging_in": "Logging in...",
+        "no_account": "Don't have an account?",
+        "create_account": "Create an account",
+        "base_create_account": "Create account",
+        "signup_subtitle": "Sign up to start managing your farm efficiently",
+        "first_name": "First Name",
+        "last_name": "Last Name",
+        "confirm_password": "Confirm Password",
+        "agree_terms": "I agree to the",
+        "terms": "terms of service",
+        "privacy": "privacy policy",
+        "and": "and",
+        "creating_account": "Creating account...",
+        "already_have_account": "Already have an account?",
+        "back_to_home": "Back to home",
+        "empowering_farmers": "Empowering Farmers with Intelligent Farming Solutions",
+        "join_thousands": "Join thousands of farmers optimizing their operations and increasing productivity.",
+        "welcome_farmsync": "Welcome to FarmSync",
+        "join_community": "Join our community of farmers and start optimizing your agricultural operations today.",
+        "validation": {
+            "email_invalid": "Please enter a valid email address",
+            "password_length": "Password must be at least 6 characters",
+            "first_name_length": "First name must be at least 2 characters",
+            "last_name_length": "Last name must be at least 2 characters",
+            "password_mismatch": "Passwords do not match",
+            "terms_required": "You must agree to the terms and conditions"
+        },
+        "placeholders": {
+            "email": "your@email.com",
+            "password": "••••••••",
+            "first_name": "First name",
+            "last_name": "Last name"
+        }
+    },
+    "landing": {
+        "hero": {
+            "title": "Smart Farming, <1>Reimagined</1>",
+            "subtitle": "FarmSync transforms agricultural management with cutting-edge technology, delivering data-driven insights for modern farmers.",
+            "get_started": "Get Started Free",
+            "star_github": "Star on GitHub"
+        },
+        "screenshots": {
+            "title": "See FarmSync in Action",
+            "subtitle": "Take a look at our intuitive interface designed specifically for farmers",
+            "dashboard": "FarmSync Dashboard",
+            "crop_management": "Crop Management Interface",
+            "weather": "Weather Forecast Module",
+            "financial": "Financial Reports"
+        },
+        "features": {
+            "title": "Everything You Need to Manage Your Farm",
+            "subtitle": "A complete suite of tools designed specifically for Indian agricultural needs, available to everyone at no cost.",
+            "items": {
+                "farm_management": {
+                    "title": "Farm Management",
+                    "description": "Track fields, crops, and equipment with our intuitive platform designed for Indian farmers."
+                },
+                "crop_tracking": {
+                    "title": "Crop Tracking",
+                    "description": "Monitor crop cycles and get insights on planting, irrigation, and harvest schedules."
+                },
+                "financial_insights": {
+                    "title": "Financial Insights",
+                    "description": "Log expenses, track income, and get detailed financial reports tailored for agriculture."
+                },
+                "weather_integration": {
+                    "title": "Weather Integration",
+                    "description": "Receive local weather forecasts and alerts to plan your farming activities efficiently."
+                },
+                "analytics": {
+                    "title": "Analytics Dashboard",
+                    "description": "Visual reports and analytics to understand your farm's performance and make better decisions."
+                },
+                "task_management": {
+                    "title": "Task Management",
+                    "description": "Plan and track all your farm activities with an easy-to-use calendar and reminder system."
+                },
+                "resource_planning": {
+                    "title": "Resource Planning",
+                    "description": "Optimize your resource allocation for maximum productivity and yield management."
+                },
+                "community": {
+                    "title": "Community Support",
+                    "description": "Connect with other farmers, share tips, and access expert agricultural advice."
+                }
+            }
+        },
+        "why_free": {
+            "title": "Why Is FarmSync Free?",
+            "description": "We believe that technology should empower all farmers, regardless of their size or resources. FarmSync is open-source and will always remain free to use.",
+            "growth": "<1>15% Growth</1> in average crop yield for FarmSync users",
+            "items": {
+                "open_for_all": {
+                    "title": "Open for All",
+                    "description": "Available to every farmer across India, regardless of farm size or budget."
+                },
+                "open_source": {
+                    "title": "Open Source",
+                    "description": "Completely open source and community-driven, ensuring transparency and continuous improvement."
+                },
+                "data_privacy": {
+                    "title": "Data Privacy",
+                    "description": "Your farm data belongs to you. We're committed to data privacy and security."
+                }
+            }
+        },
+        "testimonials": {
+            "title": "Trusted by Farmers Across India",
+            "subtitle": "See how FarmSync has helped farmers improve their operations and increase productivity.",
+            "items": {
+                "rajesh": {
+                    "quote": "FarmSync has transformed how I manage my crops. I've seen a 15% increase in yield since I started using it.",
+                    "role": "Rice Farmer, Bihar"
+                },
+                "sunita": {
+                    "quote": "The financial tracking helps me understand where my money goes and how to optimize my farming operations.",
+                    "role": "Vegetable Grower, Gujarat"
+                },
+                "vijay": {
+                    "quote": "As a small-scale farmer, I never thought I'd be able to use technology like this. It's easy and free!",
+                    "role": "Mixed Farmer, Haryana"
+                }
+            }
+        },
+        "cta": {
+            "title": "Ready to Transform Your Farming?",
+            "subtitle": "Join thousands of farmers already using FarmSync to increase yields, reduce costs, and manage their farms more efficiently.",
+            "create_account": "Create Free Account",
+            "login": "Log in"
+        },
+        "footer": {
+            "tagline": "Free forever. Open source.",
+            "rights": "All rights reserved."
+        }
+    },
+    "layout": {
+        "topbar": {
+            "messaging": {
+                "title": "Coming Soon",
+                "description": "Messaging functionality will be available in a future update!"
+            }
+        },
+        "user_menu": {
+            "my_account": "My Account",
+            "profile": "Profile",
+            "settings": "Settings",
+            "logout": "Logout",
+            "default_user": "User",
+            "logout_success": "Logged out successfully",
+            "redirecting": "Redirecting to login page...",
+            "logout_error": "Logout failed",
+            "logout_error_desc": "There was an error logging out."
+        }
     }
 }

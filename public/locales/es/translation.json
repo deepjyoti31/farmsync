@@ -3,6 +3,49 @@
         "name": "FarmSync",
         "tagline": "Gestión Agrícola Moderna"
     },
+    "dashboard": {
+        "title": "Tablero",
+        "welcome": {
+            "title": "Bienvenido a FarmSync",
+            "description": "Aún no tienes granjas. Agrega tu primera granja para comenzar a administrar tus operaciones agrícolas."
+        },
+        "stats": {
+            "fields": {
+                "title": "Campos",
+                "description": "Total de campos"
+            },
+            "crops": {
+                "title": "Cultivos",
+                "description": "Creciendo actualmente"
+            },
+            "livestock": {
+                "title": "Ganado",
+                "description": "Total de animales"
+            },
+            "revenue": {
+                "title": "Ingresos",
+                "description": "Este mes"
+            }
+        },
+        "tabs": {
+            "overview": "Vista General",
+            "crops": "Cultivos",
+            "tasks": "Tareas"
+        },
+        "crop_status": {
+            "title": "Estado del Cultivo",
+            "description": "Estado actual de sus cultivos"
+        },
+        "upcoming_tasks": {
+            "title": "Tareas Próximas",
+            "description": "Tareas programadas para los próximos 7 días"
+        },
+        "recent_activities": {
+            "title": "Actividades Recientes",
+            "description": "Últimas actualizaciones de su granja"
+        },
+        "error_loading": "Error al cargar {{resource}}"
+    },
     "nav": {
         "dashboard": "Tablero",
         "fields": "Campos",
@@ -20,7 +63,14 @@
         "community": "Comunidad",
         "notifications": "Notificaciones",
         "settings": "Configuración",
-        "profile": "Perfil"
+        "profile": "Perfil",
+        "account": "Cuenta",
+        "farms": "Granjas",
+        "cooperative": "Cooperativa",
+        "bulk_orders": "Pedidos a Granel",
+        "traceability": "Trazabilidad",
+        "financial_services": "Servicios Financieros",
+        "compliance": "Cumplimiento Compass"
     },
     "common": {
         "loading": "Cargando...",
@@ -41,6 +91,166 @@
     "auth": {
         "login": "Iniciar Sesión",
         "signup": "Registrarse",
-        "logout": "Cerrar Sesión"
+        "logout": "Cerrar Sesión",
+        "welcome_back": "Bienvenido de nuevo",
+        "login_subtitle": "Inicia sesión en tu cuenta para continuar",
+        "email": "Correo electrónico",
+        "password": "Contraseña",
+        "remember_me": "Recuérdame",
+        "forgot_password": "¿Olvidaste tu contraseña?",
+        "login_button": "Iniciar sesión",
+        "logging_in": "Iniciando sesión...",
+        "no_account": "¿No tienes una cuenta?",
+        "create_account": "Crear una cuenta",
+        "base_create_account": "Crear cuenta",
+        "signup_subtitle": "Regístrate para comenzar a administrar tu granja de manera eficiente",
+        "first_name": "Nombre",
+        "last_name": "Apellido",
+        "confirm_password": "Confirmar contraseña",
+        "agree_terms": "Acepto los",
+        "terms": "términos de servicio",
+        "privacy": "política de privacidad",
+        "and": "y",
+        "creating_account": "Creando cuenta...",
+        "already_have_account": "¿Ya tienes una cuenta?",
+        "back_to_home": "Volver al inicio",
+        "empowering_farmers": "Empoderando a los agricultores con soluciones agrícolas inteligentes",
+        "join_thousands": "Únete a miles de agricultores que optimizan sus operaciones y aumentan la productividad.",
+        "welcome_farmsync": "Bienvenido a FarmSync",
+        "join_community": "Únete a nuestra comunidad de agricultores y comienza a optimizar tus operaciones agrícolas hoy.",
+        "validation": {
+            "email_invalid": "Por favor ingrese una dirección de correo electrónico válida",
+            "password_length": "La contraseña debe tener al menos 6 caracteres",
+            "first_name_length": "El nombre debe tener al menos 2 caracteres",
+            "last_name_length": "El apellido debe tener al menos 2 caracteres",
+            "password_mismatch": "Las contraseñas no coinciden",
+            "terms_required": "Debes aceptar los términos y condiciones"
+        },
+        "placeholders": {
+            "email": "tu@correo.com",
+            "password": "••••••••",
+            "first_name": "Nombre",
+            "last_name": "Apellido"
+        }
+    },
+    "landing": {
+        "hero": {
+            "title": "Agricultura Inteligente, <1>Reimaginada</1>",
+            "subtitle": "FarmSync transforma la gestión agrícola con tecnología de vanguardia, ofreciendo información basada en datos para agricultores modernos.",
+            "get_started": "Empieza Gratis",
+            "star_github": "Estrella en GitHub"
+        },
+        "screenshots": {
+            "title": "Vea FarmSync en Acción",
+            "subtitle": "Echa un vistazo a nuestra interfaz intuitiva diseñada específicamente para agricultores",
+            "dashboard": "Tablero FarmSync",
+            "crop_management": "Interfaz de Gestión de Cultivos",
+            "weather": "Módulo de Pronóstico del Tiempo",
+            "financial": "Informes Financieros"
+        },
+        "features": {
+            "title": "Todo lo que Necesitas para Gestionar tu Granja",
+            "subtitle": "Un conjunto completo de herramientas diseñadas específicamente para las necesidades agrícolas, disponible para todos sin costo.",
+            "items": {
+                "farm_management": {
+                    "title": "Gestión Agrícola",
+                    "description": "Rastrea campos, cultivos y equipos con nuestra plataforma intuitiva diseñada para agricultores."
+                },
+                "crop_tracking": {
+                    "title": "Seguimiento de Cultivos",
+                    "description": "Monitorea los ciclos de cultivo y obtén información sobre la siembra, el riego y los calendarios de cosecha."
+                },
+                "financial_insights": {
+                    "title": "Información Financiera",
+                    "description": "Registra gastos, rastrea ingresos y obtén informes financieros detallados adaptados a la agricultura."
+                },
+                "weather_integration": {
+                    "title": "Integración Meteorológica",
+                    "description": "Recibe pronósticos meteorológicos locales y alertas para planificar tus actividades agrícolas de manera eficiente."
+                },
+                "analytics": {
+                    "title": "Tablero de Análisis",
+                    "description": "Informes visuales y análisis para comprender el rendimiento de tu granja y tomar mejores decisiones."
+                },
+                "task_management": {
+                    "title": "Gestión de Tareas",
+                    "description": "Planifica y rastrea todas tus actividades agrícolas con un calendario y sistema de recordatorios fácil de usar."
+                },
+                "resource_planning": {
+                    "title": "Planificación de Recursos",
+                    "description": "Optimiza tu asignación de recursos para obtener la máxima productividad y gestión del rendimiento."
+                },
+                "community": {
+                    "title": "Apoyo Comunitario",
+                    "description": "Conéctate con otros agricultores, comparte consejos y accede a asesoramiento agrícola experto."
+                }
+            }
+        },
+        "why_free": {
+            "title": "¿Por qué es FarmSync Gratis?",
+            "description": "Creemos que la tecnología debe empoderar a todos los agricultores, independientemente de su tamaño o recursos. FarmSync es de código abierto y siempre será de uso gratuito.",
+            "growth": "<1>15% Crecimiento</1> en el rendimiento promedio de los cultivos para usuarios de FarmSync",
+            "items": {
+                "open_for_all": {
+                    "title": "Abierto para Todos",
+                    "description": "Disponible para todos los agricultores de la India, independientemente del tamaño de la granja o el presupuesto."
+                },
+                "open_source": {
+                    "title": "Código Abierto",
+                    "description": "Completamente de código abierto e impulsado por la comunidad, garantizando transparencia y mejora continua."
+                },
+                "data_privacy": {
+                    "title": "Privacidad de Datos",
+                    "description": "Los datos de tu granja te pertenecen. Estamos comprometidos con la privacidad y seguridad de los datos."
+                }
+            }
+        },
+        "testimonials": {
+            "title": "Confiado por Agricultores en Toda la India",
+            "subtitle": "Vea cómo FarmSync ha ayudado a los agricultores a mejorar sus operaciones y aumentar la productividad.",
+            "items": {
+                "rajesh": {
+                    "quote": "FarmSync ha transformado cómo administro mis cultivos. He visto un aumento del 15% en el rendimiento desde que comencé a usarlo.",
+                    "role": "Agricultor de Arroz, Bihar"
+                },
+                "sunita": {
+                    "quote": "El seguimiento financiero me ayuda a entender a dónde va mi dinero y cómo optimizar mis operaciones agrícolas.",
+                    "role": "Productora de Verduras, Gujarat"
+                },
+                "vijay": {
+                    "quote": "Como pequeño agricultor, nunca pensé que podría usar tecnología como esta. ¡Es fácil y gratis!",
+                    "role": "Agricultor Mixto, Haryana"
+                }
+            }
+        },
+        "cta": {
+            "title": "¿Listo para Transformar tu Agricultura?",
+            "subtitle": "Únete a miles de agricultores que ya usan FarmSync para aumentar los rendimientos, reducir costos y administrar sus granjas de manera más eficiente.",
+            "create_account": "Crear Cuenta Gratis",
+            "login": "Iniciar Sesión"
+        },
+        "footer": {
+            "tagline": "Gratis para siempre. Código abierto.",
+            "rights": "Todos los derechos reservados."
+        }
+    },
+    "layout": {
+        "topbar": {
+            "messaging": {
+                "title": "Próximamente",
+                "description": "¡La funcionalidad de mensajería estará disponible en una actualización futura!"
+            }
+        },
+        "user_menu": {
+            "my_account": "Mi Cuenta",
+            "profile": "Perfil",
+            "settings": "Configuración",
+            "logout": "Cerrar Sesión",
+            "default_user": "Usuario",
+            "logout_success": "Sesión cerrada correctamente",
+            "redirecting": "Redirigiendo a la página de inicio de sesión...",
+            "logout_error": "Error al cerrar sesión",
+            "logout_error_desc": "Hubo un error al cerrar la sesión."
+        }
     }
 }

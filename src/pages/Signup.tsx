@@ -17,27 +17,29 @@ import {
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/contexts/AuthContext";
-
-const signupSchema = z.object({
-  firstName: z.string().min(2, { message: "First name must be at least 2 characters" }),
-  lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }),
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string(),
-  agreeTerms: z.boolean().refine(val => val === true, {
-    message: "You must agree to the terms and conditions"
-  })
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"]
-});
-
-type SignupFormValues = z.infer<typeof signupSchema>;
+import { useTranslation } from 'react-i18next';
 
 const Signup = () => {
+  const { t } = useTranslation();
   const { signUp } = useAuth();
   const [isLoading, setIsLoading] = React.useState(false);
-  
+
+  const signupSchema = z.object({
+    firstName: z.string().min(2, { message: t('auth.validation.first_name_length') }),
+    lastName: z.string().min(2, { message: t('auth.validation.last_name_length') }),
+    email: z.string().email({ message: t('auth.validation.email_invalid') }),
+    password: z.string().min(6, { message: t('auth.validation.password_length') }),
+    confirmPassword: z.string(),
+    agreeTerms: z.boolean().refine(val => val === true, {
+      message: t('auth.validation.terms_required')
+    })
+  }).refine(data => data.password === data.confirmPassword, {
+    message: t('auth.validation.password_mismatch'),
+    path: ["confirmPassword"]
+  });
+
+  type SignupFormValues = z.infer<typeof signupSchema>;
+
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -73,7 +75,7 @@ const Signup = () => {
           <div className="mb-8">
             <Link to="/landing" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to home
+              {t('auth.back_to_home')}
             </Link>
           </div>
 
@@ -82,9 +84,9 @@ const Signup = () => {
             <h1 className="text-2xl font-bold">FarmSync</h1>
           </div>
 
-          <h2 className="text-3xl font-bold mb-2">Create an account</h2>
+          <h2 className="text-3xl font-bold mb-2">{t('auth.create_account')}</h2>
           <p className="text-muted-foreground mb-8">
-            Sign up to start managing your farm efficiently
+            {t('auth.signup_subtitle')}
           </p>
 
           <Form {...form}>
@@ -95,11 +97,11 @@ const Signup = () => {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>{t('auth.first_name')}</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="First name" 
-                          {...field} 
+                        <Input
+                          placeholder={t('auth.placeholders.first_name')}
+                          {...field}
                           disabled={isLoading}
                         />
                       </FormControl>
@@ -113,11 +115,11 @@ const Signup = () => {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel>{t('auth.last_name')}</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Last name" 
-                          {...field} 
+                        <Input
+                          placeholder={t('auth.placeholders.last_name')}
+                          {...field}
                           disabled={isLoading}
                         />
                       </FormControl>
@@ -132,12 +134,12 @@ const Signup = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('auth.email')}</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="your@email.com" 
-                        type="email" 
-                        {...field} 
+                      <Input
+                        placeholder={t('auth.placeholders.email')}
+                        type="email"
+                        {...field}
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -151,12 +153,12 @@ const Signup = () => {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>{t('auth.password')}</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="••••••••" 
-                        type="password" 
-                        {...field} 
+                      <Input
+                        placeholder={t('auth.placeholders.password')}
+                        type="password"
+                        {...field}
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -170,12 +172,12 @@ const Signup = () => {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel>{t('auth.confirm_password')}</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="••••••••" 
-                        type="password" 
-                        {...field} 
+                      <Input
+                        placeholder={t('auth.placeholders.password')}
+                        type="password"
+                        {...field}
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -190,21 +192,21 @@ const Signup = () => {
                 render={({ field }) => (
                   <FormItem className="flex items-start space-x-2 space-y-0">
                     <FormControl>
-                      <Checkbox 
-                        checked={field.value} 
+                      <Checkbox
+                        checked={field.value}
                         onCheckedChange={field.onChange}
                         disabled={isLoading}
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel className="text-sm font-normal">
-                        I agree to the{" "}
+                        {t('auth.agree_terms')}{" "}
                         <a href="#" className="text-primary hover:underline">
-                          terms of service
+                          {t('auth.terms')}
                         </a>{" "}
-                        and{" "}
+                        {t('auth.and')}{" "}
                         <a href="#" className="text-primary hover:underline">
-                          privacy policy
+                          {t('auth.privacy')}
                         </a>
                       </FormLabel>
                       <FormMessage />
@@ -217,10 +219,10 @@ const Signup = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account...
+                    {t('auth.creating_account')}
                   </>
                 ) : (
-                  "Create account"
+                  t('auth.base_create_account')
                 )}
               </Button>
             </form>
@@ -228,9 +230,9 @@ const Signup = () => {
 
           <div className="mt-8 text-center">
             <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
+              {t('auth.already_have_account')}{" "}
               <Link to="/login" className="text-primary hover:underline">
-                Log in
+                {t('auth.login')}
               </Link>
             </p>
           </div>
@@ -242,10 +244,10 @@ const Signup = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20">
           <div className="absolute inset-0 flex flex-col justify-center items-center p-12 text-center">
             <h2 className="text-3xl font-bold mb-4 max-w-md">
-              Welcome to FarmSync
+              {t('auth.welcome_farmsync')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-md">
-              Join our community of farmers and start optimizing your agricultural operations today.
+              {t('auth.join_community')}
             </p>
           </div>
         </div>
