@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { farmRepository } from '@/services/data/FarmRepository';
+import { fieldRepository } from '@/services/data/FieldRepository';
 import { Farm } from '@/types';
 import { Loader2, MapPin, Calendar, Ruler, Map as MapIcon, Plus } from 'lucide-react';
 import BoundaryMap from '@/components/maps/BoundaryMap';
@@ -46,17 +47,9 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
 
   const { data: farm, isLoading } = useQuery({
     queryKey: ['farm-details', farmId],
-    queryFn: async () => {
+    queryFn: () => {
       if (!farmId) return null;
-
-      const { data, error } = await supabase
-        .from('farms')
-        .select('*')
-        .eq('id', farmId)
-        .single();
-
-      if (error) throw error;
-      return data as Farm;
+      return farmRepository.getById(farmId);
     },
     enabled: !!farmId && isOpen,
   });
@@ -64,16 +57,9 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
   // Query to get fields associated with this farm
   const { data: fields = [] } = useQuery({
     queryKey: ['farm-fields', farmId],
-    queryFn: async () => {
+    queryFn: () => {
       if (!farmId) return [];
-
-      const { data, error } = await supabase
-        .from('fields')
-        .select('id, name, area, area_unit')
-        .eq('farm_id', farmId);
-
-      if (error) throw error;
-      return data;
+      return fieldRepository.getByFarmId(farmId);
     },
     enabled: !!farmId && isOpen,
   });

@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Farm } from '@/types';
 import { Loader2, Plus, ChevronDown } from 'lucide-react';
@@ -14,6 +13,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, VisuallyHidden } from '@/components/ui/dialog';
 import AddFarmForm from './AddFarmForm';
 import { toast } from '@/hooks/use-toast';
+import { farmRepository } from '@/services/data/FarmRepository';
 
 interface FarmSelectorProps {
   selectedFarmId: string | null;
@@ -32,22 +32,10 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({
   const { data: farms = [], isLoading, error } = useQuery({
     queryKey: ['farms'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('farms')
-        .select('id, name, village, district, state');
-
-      if (error) throw error;
-
-      return (data || []).map((farm: any): Farm => ({
-        id: farm.id,
-        name: farm.name,
-        location: [farm.village, farm.district, farm.state].filter(Boolean).join(', '),
-        totalArea: 0, // Will be calculated from fields
-        areaUnit: 'acres',
-        fields: [],
-        user_id: '',
-        created_at: '',
-        updated_at: ''
+      const allFarms = await farmRepository.getAll();
+      return allFarms.map(farm => ({
+        ...farm,
+        location: farm.location || [farm.village, farm.district, farm.state].filter(Boolean).join(', ')
       }));
     },
   });
@@ -70,13 +58,15 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({
 
   const selectedFarm = farms.find(farm => farm.id === selectedFarmId);
 
-  if (error) {
-    toast({
-      title: 'Error',
-      description: (error as Error).message || 'Failed to load farms.',
-      variant: 'destructive',
-    });
-  }
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Error',
+        description: (error as Error).message || 'Failed to load farms.',
+        variant: 'destructive',
+      });
+    }
+  }, [error]);
 
   return (
     <div className="flex items-center space-x-2">
@@ -112,7 +102,6 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-
           <Button onClick={handleAddFarm} size="icon">
             <Plus className="h-4 w-4" />
           </Button>

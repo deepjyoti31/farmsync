@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { farmRepository } from '@/services/data/FarmRepository';
 import { toast } from '@/hooks/use-toast';
 import { Farm } from '@/types';
 import BoundaryMap from '@/components/maps/BoundaryMap';
@@ -59,7 +59,7 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
       village: farm.village || '',
       district: farm.district || '',
       state: farm.state || '',
-      areaUnit: farm.area_unit || 'acres',
+      areaUnit: farm.area_unit ||'acres',
     },
   });
 
@@ -155,23 +155,17 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
       // Use the pre-calculated center coordinates
       const [centerLat, centerLng] = centerCoordinates;
 
-      const { error } = await supabase
-        .from('farms')
-        .update({
-          name: data.name,
-          village: data.village || null,
-          district: data.district || null,
-          state: data.state || null,
-          total_area: calculatedArea,
-          area_unit: data.areaUnit,
-          gps_latitude: centerLat,
-          gps_longitude: centerLng,
-          boundaries: boundaries,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', farm.id);
-
-      if (error) throw error;
+      await farmRepository.update(farm.id, {
+        name: data.name,
+        village: data.village || null,
+        district: data.district || null,
+        state: data.state || null,
+        total_area: calculatedArea,
+        area_unit: data.areaUnit,
+        gps_latitude: centerLat,
+        gps_longitude: centerLng,
+        boundaries: boundaries,
+      });
 
       toast({
         title: 'Farm updated',

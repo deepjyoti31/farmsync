@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { farmRepository } from '@/services/data/FarmRepository';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -29,15 +29,7 @@ const FarmsList = () => {
 
   const { data: farms = [], isLoading } = useQuery({
     queryKey: ['farms'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('farms')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => farmRepository.getAll(),
   });
 
   const handleAddFarmSuccess = () => {
@@ -76,12 +68,7 @@ const FarmsList = () => {
 
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('farms')
-        .delete()
-        .eq('id', deletingFarm.id);
-
-      if (error) throw error;
+      await farmRepository.delete(deletingFarm.id);
 
       queryClient.invalidateQueries({ queryKey: ['farms'] });
       toast({

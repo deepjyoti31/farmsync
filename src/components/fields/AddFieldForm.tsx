@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FieldFormData, Farm } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { farmRepository } from '@/services/data/FarmRepository';
+import { fieldRepository } from '@/services/data/FieldRepository';
 import { toast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -48,23 +50,7 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
   // Fetch all farms
   const { data: farms = [], isLoading: isLoadingFarms } = useQuery({
     queryKey: ['farms'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('farms')
-        .select('id, name, village, district, state, area_unit');
-
-      if (error) throw error;
-
-      return (data || []).map((farm: any): Farm => ({
-        id: farm.id,
-        name: farm.name,
-        location: [farm.village, farm.district, farm.state].filter(Boolean).join(', '),
-        areaUnit: farm.area_unit || 'acres',
-        user_id: '',
-        created_at: '',
-        updated_at: ''
-      }));
-    },
+    queryFn: () => farmRepository.getAll(),
   });
 
   const form = useForm<FieldFormData & { farmId: string }>({
@@ -104,18 +90,14 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
     try {
       setIsSubmitting(true);
 
-      const { error } = await supabase
-        .from('fields')
-        .insert({
-          farm_id: data.farmId,
-          name: data.name,
-          area: data.area,
-          area_unit: data.areaUnit,
-          soil_type: data.soilType,
-          soil_ph: data.soilPH,
-        });
-
-      if (error) throw error;
+      await fieldRepository.create({
+        farm_id: data.farmId,
+        name: data.name,
+        area: data.area,
+        area_unit: data.areaUnit,
+        soil_type: data.soilType,
+        soil_ph: data.soilPH,
+      });
 
       toast({
         title: 'Field added',

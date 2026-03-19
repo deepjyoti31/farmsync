@@ -12,6 +12,8 @@ FarmSync is a comprehensive farm management application designed to streamline o
 - **UI Components**: shadcn/ui (based on Radix UI)
 - **Styling**: Tailwind CSS
 - **State Management**: React Query for server state
+- **Desktop Shell**: Tauri (Rust)
+- **Local Database**: SQLite (via `tauri-plugin-sql`)
 - **Routing**: React Router
 
 ### Backend
@@ -89,7 +91,14 @@ FarmSync is a comprehensive farm management application designed to streamline o
 - **Reports**: Data analysis and reporting
 - **Market Data**: Commodity price information
 - **Inventory Management**: Track farm inventory
-- **Equipment Management**: Manage farm equipment
+- **Infrastructure**: IoT registry and telemetry ingestion
+
+### 11. Local-First Desktop Architecture (Tauri)
+- **Native Desktop Shell**: Integrated Tauri to provide a standalone executable for Windows/macOS/Linux.
+- **SQLite Persistence**: Implemented `tauri-plugin-sql` for local data storage, bypassing the need for an internet connection.
+- **Repository Abstraction**: Refactored core modules (Farms, Fields) to use a Repository pattern, abstracting the source of truth (SQLite vs Supabase).
+- **Environment Switchboard**: Automated detection of Tauri/Web and Supabase keys to seamlessly switch between Local and Cloud modes.
+- **Browser Fallback**: Created a `localStorage` mock database for the web browser, ensuring "Local Mode" works even without a native SQLite driver.
 
 ## Database Schema
 
@@ -358,6 +367,18 @@ The application features a modern, responsive UI with:
   - **Selling**: Farmers can list produce (`marketplace_listings`) with photos and prices.
   - **Inquiries**: Direct messaging system for negotiation (`marketplace_inquiries`).
   - **Suppliers**: Directory of verified input providers (`suppliers`).
+
+### 17. Local-First Dashboard Stabilization
+- **Issue**: Initial Tauri integration showed multiple Supabase "Failed to Fetch" errors when running without environment variables, along with React rendering warnings.
+- **Solution**:
+  - Refactored `AuthContext`, `NotificationsDropdown`, and `FarmSelector` to suppress network calls in Local Mode.
+  - Implemented a `MockDatabase` in `SQLiteMigrations` to provide a functional fallback for browser-based testing.
+  - Fixed a critical React lifecycle warning in `FarmSelector` by moving `toast` calls into `useEffect`.
+  - Corrected the Tauri dev port mismatch (from `:5173` to `:8080`) to ensure reliable hot-reloading.
+- **Benefits**:
+  - Error-free development in both Desktop and Browser environments.
+  - Faster onboarding for local-only users.
+  - Improved application stability and UI performance.
 - **Benefits**:
   - Direct market access (higher margins).
   - Transparency in pricing.

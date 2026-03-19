@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getAppMode } from '@/utils/env';
 import { Bell, Info, AlertTriangle, AlertCircle, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +27,7 @@ const NotificationsDropdown = () => {
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      if (!user) return mockNotifications;
+      if (!user || getAppMode() === 'local') return mockNotifications;
       
       try {
         const { data, error } = await supabase
@@ -80,7 +81,7 @@ const NotificationsDropdown = () => {
   };
 
   const handleMarkAllAsRead = async () => {
-    if (!user) return;
+    if (!user || getAppMode() === 'local') return;
     
     try {
       const { error } = await supabase

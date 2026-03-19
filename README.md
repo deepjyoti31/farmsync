@@ -8,6 +8,7 @@ FarmSync is a comprehensive farm management application designed to streamline o
 
 - [Overview](#overview)
 - [Features](#features)
+- [Local-First Architecture](#local-first-architecture)
 - [Technologies Used](#technologies-used)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -81,6 +82,19 @@ FarmSync helps farmers manage all aspects of their farming operations through an
 - **Compliance Reports**: One-click generation of audit-ready PDF reports
 
 
+### Local-First Desktop Architecture
+- **Tauri Integration**: Native desktop shell with significantly smaller bundle sizes than Electron.
+- **Offline Reliability**: Uses a local SQLite database for data persistence when Supabase is unavailable.
+- **Smart Switchboard**: Automatically detects the environment and switches between Cloud (Supabase) and Local (SQLite) modes.
+- **Browser Fallback**: Includes a `localStorage` mock database to ensure the web version remains functional in local-first configurations.
+
+## Local-First Architecture
+
+FarmSync uses a "Switchboard" pattern to bridge the gap between Cloud (Supabase) and Local-First (Tauri/SQLite) operations. This architecture ensures that:
+1. **Desktop Users** get a fast, offline-capable experience using a native SQLite backend.
+2. **Web Users** continue to use Supabase for real-time collaboration and cloud storage.
+3. **Developers** can work interchangeably across environments without changing core business logic, thanks to a unified Repository abstraction.
+
 ## Technologies Used
 
 ### Frontend
@@ -89,6 +103,8 @@ FarmSync helps farmers manage all aspects of their farming operations through an
 - **UI Components**: shadcn/ui (based on Radix UI)
 - **Styling**: Tailwind CSS
 - **State Management**: React Query for server state
+- **Desktop Shell**: Tauri (Rust)
+- **Local Database**: SQLite (via `tauri-plugin-sql`)
 - **Routing**: React Router
 
 ### Backend
@@ -223,6 +239,15 @@ yarn dev
 ```
 
 The application will be available at `http://localhost:8080`
+
+### Running in Desktop Mode (Tauri)
+
+To run the native desktop application, ensure you have [Rust](https://www.rust-lang.org/tools/install) installed:
+
+```sh
+# Run in development mode
+npm run tauri dev
+```
 
 ## Deployment
 

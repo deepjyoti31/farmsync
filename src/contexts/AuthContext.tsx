@@ -4,6 +4,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { getAppMode } from '@/utils/env';
 
 import { Organization, OrganizationMember } from '@/types/rbac';
 
@@ -43,6 +44,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshOrganizations = async () => {
     if (!user) return;
     setIsLoadingOrganizations(true);
+    if (getAppMode() === 'local') {
+      const localOrg: Organization = {
+        id: 'local-org-id',
+        name: 'My Local Farm',
+        owner_id: user.id,
+        is_personal: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setOrganizations([localOrg]);
+      setCurrentOrganization(localOrg);
+      setUserRole('owner');
+      setIsLoadingOrganizations(false);
+      return;
+    }
+
     try {
       // Fetch organizations where the user is a member
       const { data: members, error } = await supabase
@@ -89,18 +106,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Update role when organization changes
   useEffect(() => {
     if (user && currentOrganization) {
-      const fetchRole = async () => {
-        const { data, error } = await supabase
-          .from('organization_members')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('organization_id', currentOrganization.id)
-          .single();
+        const fetchRole = async () => {
+          if (getAppMode() === 'local') {
+            setUserRole('owner');
+            return;
+          }
 
-        if (data) {
-          setUserRole(data.role);
-        }
-      };
+          const { data, error } = await supabase
+            .from('organization_members')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('organization_id', currentOrganization.id)
+            .single();
+
+          if (data) {
+            setUserRole(data.role);
+          }
+        };
 
       fetchRole();
     }
@@ -125,6 +147,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    if (getAppMode() === 'local') {
+      const localUser: User = {
+        id: 'local-desktop-user',
+        email: 'local@farmer.com',
+        app_metadata: {},
+        user_metadata: { first_name: 'Local', last_name: 'Farmer' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+      };
+      setSession({
+        access_token: 'local-token',
+        refresh_token: 'local-refresh',
+        expires_in: 3600,
+        token_type: 'bearer',
+        user: localUser,
+        expires_at: Math.floor(Date.now() / 1000) + 3600
+      } as Session);
+      setUser(localUser);
+      setLoading(false);
+      setIsInitialAuthCheck(false);
+      return;
+    }
+
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
@@ -139,14 +184,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [isInitialAuthCheck]);
 
+
   // Load organizations when user is set
   useEffect(() => {
     if (user) {
       refreshOrganizations();
+    } else if (getAppMode() === 'local') {
+      // Create a persistent local user for desktop
+      const localUser: User = {
+        id: 'local-desktop-user',
+        email: 'local@farmer.com',
+        app_metadata: {},
+        user_metadata: { first_name: 'Local', last_name: 'Farmer' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+      };
+      setUser(localUser);
+      setLoading(false);
+      
+      // Mock organization for local mode
+      const localOrg: Organization = {
+        id: 'local-org-id',
+        name: 'My Local Farm',
+        owner_id: 'local-desktop-user',
+        is_personal: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setOrganizations([localOrg]);
+      setCurrentOrganization(localOrg);
+      setUserRole('owner');
     }
   }, [user]);
 
   const signUp = async (email: string, password: string, metadata: { first_name: string; last_name: string }) => {
+    if (getAppMode() === 'local') {
+      toast({
+        title: "Local Mode Signup",
+        description: "Your local profile has been prepared. No email verification needed.",
+      });
+      
+      // Auto-set the local user to trigger the useEffect logic
+      const localUser: User = {
+        id: 'local-desktop-user',
+        email: email,
+        app_metadata: {},
+        user_metadata: metadata,
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+      };
+      setUser(localUser);
+      navigate('/dashboard');
+      return;
+    }
+    // Existing Supabase Logic...
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -173,6 +264,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
+    if (getAppMode() === 'local') {
+      const localUser: User = {
+        id: 'local-desktop-user',
+        email: email,
+        app_metadata: {},
+        user_metadata: { first_name: 'Local', last_name: 'Farmer' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString()
+      };
+      setUser(localUser);
+      toast({
+        title: "Success",
+        description: "Local session started.",
+      });
+      navigate('/dashboard');
+      return;
+    }
+    // Existing Supabase Logic...
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
