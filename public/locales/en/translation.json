@@ -70,7 +70,14 @@
         "bulk_orders": "Bulk Orders",
         "traceability": "Traceability",
         "financial_services": "Financial Services",
-        "compliance": "Compass Compliance"
+        "compliance": "Compass Compliance",
+        "sections": {
+            "operations": "Operations",
+            "resources": "Supply Chain & Resources",
+            "intelligence": "Intelligence",
+            "ecosystem": "Ecosystem & Market",
+            "admin": "Admin & Services"
+        }
     },
     "common": {
         "loading": "Loading...",
