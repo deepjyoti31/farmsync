@@ -41,6 +41,19 @@ BEGIN
     RAISE EXCEPTION 'FAIL: % (statement was allowed)', label;
 END $$;
 
+-- Runs a statement that must be rejected by a CHECK constraint.
+CREATE OR REPLACE FUNCTION pg_temp.expect_invalid(label TEXT, stmt TEXT) RETURNS VOID
+LANGUAGE plpgsql AS $$
+BEGIN
+    BEGIN
+        EXECUTE stmt;
+    EXCEPTION WHEN check_violation THEN
+        RAISE NOTICE 'ok: %', label;
+        RETURN;
+    END;
+    RAISE EXCEPTION 'FAIL: % (statement was allowed)', label;
+END $$;
+
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_temp TO authenticated;
 
 -- 1. Signing up creates a profile and a personal workspace -----------------------
@@ -110,7 +123,33 @@ SELECT pg_temp.expect_denied('viewer cannot add tasks',
 WITH changed AS (UPDATE public.tasks SET title = 'changed' RETURNING 1)
 SELECT pg_temp.expect('viewer updates affect no rows', (SELECT count(*) FROM changed), 0);
 
--- 5. Every public table has RLS enabled and at least one policy -----------------
+-- 5. Farm-level production entries and profile pictures ----------------------
+SET LOCAL request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000001';
+INSERT INTO public.livestock_production (farm_id, production_type, quantity, unit)
+    VALUES (:farm, 'eggs', 120, 'pieces');
+INSERT INTO public.livestock_production (livestock_id, production_type, quantity, unit)
+    SELECT id, 'milk', 4.5, 'litres' FROM public.livestock WHERE farm_id = :farm LIMIT 1;
+SELECT pg_temp.expect('per-animal production entries inherit the farm',
+    (SELECT count(*) FROM public.livestock_production WHERE farm_id = :farm), 2);
+INSERT INTO public.tasks (farm_id, title, recurrence) VALUES (:farm, 'Clean water troughs', 'weekly');
+SELECT pg_temp.expect_invalid('tasks reject an unknown recurrence',
+    format('INSERT INTO public.tasks (farm_id, title, recurrence) VALUES (%L, %L, %L)',
+           'dddddddd-0000-0000-0000-000000000004', 'x', 'fortnightly'));
+
+SET LOCAL request.jwt.claim.sub = 'bbbbbbbb-0000-0000-0000-000000000002';
+SELECT pg_temp.expect('viewer sees production entries', (SELECT count(*) FROM public.livestock_production), 2);
+SELECT pg_temp.expect_denied('viewer cannot log production',
+    format('INSERT INTO public.livestock_production (farm_id, production_type, quantity, unit) VALUES (%L, %L, 1, %L)',
+           'dddddddd-0000-0000-0000-000000000004', 'eggs', 'pieces'));
+
+INSERT INTO storage.objects (bucket_id, name) VALUES ('avatars', 'bbbbbbbb-0000-0000-0000-000000000002/avatar.png');
+SELECT pg_temp.expect('user can upload into own avatar folder',
+    (SELECT count(*) FROM storage.objects WHERE name LIKE 'bbbbbbbb-%'), 1);
+SELECT pg_temp.expect_denied('user cannot upload into another user''s avatar folder',
+    format('INSERT INTO storage.objects (bucket_id, name) VALUES (%L, %L)',
+           'avatars', 'aaaaaaaa-0000-0000-0000-000000000001/avatar.png'));
+
+-- 6. Every public table has RLS enabled and at least one policy -----------------
 RESET ROLE;
 SELECT pg_temp.expect('all public tables have RLS enabled',
     (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace

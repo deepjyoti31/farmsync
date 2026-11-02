@@ -1175,6 +1175,7 @@ export type Database = {
           id: string
           livestock_id: string
           medicine: string | null
+          next_due_date: string | null
           notes: string | null
           record_date: string
           record_type: string
@@ -1188,6 +1189,7 @@ export type Database = {
           id?: string
           livestock_id: string
           medicine?: string | null
+          next_due_date?: string | null
           notes?: string | null
           record_date?: string
           record_type: string
@@ -1201,6 +1203,7 @@ export type Database = {
           id?: string
           livestock_id?: string
           medicine?: string | null
+          next_due_date?: string | null
           notes?: string | null
           record_date?: string
           record_type?: string
@@ -1218,8 +1221,9 @@ export type Database = {
       livestock_production: {
         Row: {
           created_at: string
+          farm_id: string
           id: string
-          livestock_id: string
+          livestock_id: string | null
           notes: string | null
           production_date: string
           production_type: string
@@ -1228,8 +1232,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          farm_id: string
           id?: string
-          livestock_id: string
+          livestock_id?: string | null
           notes?: string | null
           production_date?: string
           production_type: string
@@ -1238,8 +1243,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          farm_id?: string
           id?: string
-          livestock_id?: string
+          livestock_id?: string | null
           notes?: string | null
           production_date?: string
           production_type?: string
@@ -1247,6 +1253,13 @@ export type Database = {
           unit?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "livestock_production_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "livestock_production_livestock_id_fkey"
             columns: ["livestock_id"]
@@ -1912,12 +1925,14 @@ export type Database = {
       tasks: {
         Row: {
           assigned_to: string | null
+          completed_at: string | null
           created_at: string
           description: string | null
           due_date: string | null
           farm_id: string
           id: string
           priority: string | null
+          recurrence: string
           related_id: string | null
           status: string | null
           task_type: string | null
@@ -1926,12 +1941,14 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
           farm_id: string
           id?: string
           priority?: string | null
+          recurrence?: string
           related_id?: string | null
           status?: string | null
           task_type?: string | null
@@ -1940,12 +1957,14 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
           farm_id?: string
           id?: string
           priority?: string | null
+          recurrence?: string
           related_id?: string | null
           status?: string | null
           task_type?: string | null
