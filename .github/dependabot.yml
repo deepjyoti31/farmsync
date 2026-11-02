@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      radix-ui:
+        patterns: ["@radix-ui/*"]
+      tanstack:
+        patterns: ["@tanstack/*"]
+      lint:
+        patterns: ["eslint*", "@eslint/*", "typescript-eslint", "globals"]
+    ignore:
+      # Major upgrades need manual migration work.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

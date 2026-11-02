@@ -1,0 +1,5 @@
+# Default reviewers for every change.
+* @deepjyoti31
+
+# Schema and security changes deserve an extra careful look.
+/supabase/ @deepjyoti31

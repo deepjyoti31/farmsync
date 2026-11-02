@@ -29,3 +29,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Build and test output
+dev-dist
+coverage
+*.tsbuildinfo
+
+# Supabase local state
+supabase/.temp
+supabase/.branches

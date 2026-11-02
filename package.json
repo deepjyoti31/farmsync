@@ -1,14 +1,28 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "farmsync",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
+  "description": "Open-source farm management platform: farms, fields, crops, livestock, finances, IoT sensors, cooperatives and compliance.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deepjyoti31/farmsync.git"
+  },
   "type": "module",
+  "engines": {
+    "node": ">=18.18"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "preview": "vite preview",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "db:types": "supabase gen types typescript --local > src/integrations/supabase/types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -89,6 +103,7 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^2.1.9"
   }
 }
