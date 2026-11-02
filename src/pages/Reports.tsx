@@ -45,6 +45,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getDateRange } from '@/lib/dateRanges';
+import { downloadCsv, toCsv } from '@/lib/csv';
 import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 
@@ -216,11 +217,44 @@ const Reports = () => {
   // Colors for charts
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   
+  // Export the data behind the active report tab as CSV.
   const downloadReport = () => {
-    toast({
-      title: "Report Export",
-      description: "Your report is being generated and will be available for download shortly.",
-    });
+    const today = new Date().toISOString().slice(0, 10);
+    let csv: string | null = null;
+
+    if (reportType === 'financial' && transactionsData.length > 0) {
+      csv = toCsv(
+        ['Date', 'Type', 'Category', 'Description', 'Amount', 'Payment method', 'Reference'],
+        transactionsData.map((t) => [
+          t.transaction_date,
+          t.type ?? t.financial_categories?.type,
+          t.financial_categories?.name,
+          t.description,
+          t.amount,
+          t.payment_method,
+          t.reference_number,
+        ]),
+      );
+    } else if (reportType === 'production' && fieldsData.length > 0) {
+      csv = toCsv(
+        ['Field', 'Area', 'Unit', 'Soil type', 'Soil pH'],
+        fieldsData.map((f) => [f.name, f.area, f.area_unit, f.soil_type, f.soil_ph]),
+      );
+    } else if (reportType === 'equipment' && equipmentData.length > 0) {
+      csv = toCsv(
+        ['Name', 'Type', 'Manufacturer', 'Model', 'Status', 'Purchase date', 'Purchase price', 'Last maintenance', 'Next maintenance'],
+        equipmentData.map((e) => [
+          e.name, e.equipment_type, e.manufacturer, e.model, e.status,
+          e.purchase_date, e.purchase_price, e.last_maintenance_date, e.next_maintenance_date,
+        ]),
+      );
+    }
+
+    if (!csv) {
+      toast({ title: "Nothing to export", description: "There is no data for this report yet." });
+      return;
+    }
+    downloadCsv(`farmsync-${reportType}-report-${today}.csv`, csv);
   };
   
   return (
