@@ -5,6 +5,7 @@
     },
     "nav": {
         "dashboard": "Tableau de bord",
+        "tasks": "Tâches",
         "fields": "Champs",
         "crops": "Cultures",
         "livestock": "Bétail",

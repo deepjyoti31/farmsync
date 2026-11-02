@@ -24,6 +24,7 @@ import {
   ShoppingCart,
   Package,
   Shield,
+  ListChecks,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +33,7 @@ const navigationSections = [
     titleKey: 'nav.sections.operations',
     items: [
       { icon: Home, labelKey: 'nav.dashboard', path: '/dashboard' },
+      { icon: ListChecks, labelKey: 'nav.tasks', path: '/dashboard/tasks' },
       { icon: Landmark, labelKey: 'nav.farms', path: '/dashboard/farms' },
       { icon: Map, labelKey: 'nav.fields', path: '/dashboard/fields' },
       { icon: Sprout, labelKey: 'nav.crops', path: '/dashboard/crops' },

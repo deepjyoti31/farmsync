@@ -17,7 +17,8 @@ import {
   Bird,
   Loader2
 } from "lucide-react";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { setTaskCompleted } from '@/components/tasks/taskApi';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Field, Farm, FieldCrop, Crop, Task, Notification } from '@/types';
@@ -26,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 const Dashboard = () => {
   const { t } = useTranslation();
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Fetch farms for the logged in user
   const {
@@ -146,13 +148,13 @@ const Dashboard = () => {
     enabled: !!selectedFarmId,
   });
 
-  // Fetch tasks for the selected farm
+  // Upcoming open tasks for the selected farm
   const {
-    data: tasks = [],
+    data: taskRows = [],
     isLoading: isLoadingTasks,
     error: tasksError
   } = useQuery({
-    queryKey: ['tasks', selectedFarmId],
+    queryKey: ['tasks', selectedFarmId, 'upcoming'],
     queryFn: async () => {
       if (!selectedFarmId) return [];
 
@@ -160,26 +162,37 @@ const Dashboard = () => {
         .from('tasks')
         .select('*')
         .eq('farm_id', selectedFarmId)
-        .order('due_date', { ascending: true })
+        .neq('status', 'completed')
+        .order('due_date', { ascending: true, nullsFirst: false })
         .limit(5);
 
-      if (error) {
-        return [];
-      }
-
-      return (data || []).map(task => ({
-        id: task.id,
-        title: task.title,
-        description: task.description || '',
-        dueDate: task.due_date,
-        priority: task.priority || 'medium',
-        status: task.status || 'pending',
-        assignedTo: task.assigned_to || '',
-        completed: task.status === 'completed'
-      }));
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!selectedFarmId,
   });
+
+  const tasks: Task[] = taskRows.map(task => ({
+    id: task.id,
+    title: task.title,
+    description: task.description || '',
+    dueDate: task.due_date,
+    priority: task.priority || 'medium',
+    status: task.status || 'pending',
+    assignedTo: task.assigned_to || '',
+    completed: task.status === 'completed'
+  }));
+
+  const handleToggleTask = async (taskId: string, completed: boolean) => {
+    const task = taskRows.find(t => t.id === taskId);
+    if (!task) return;
+    try {
+      await setTaskCompleted(task, completed);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (e) {
+      toast({ title: 'Could not update task', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
 
   // Fetch notifications
   const {
@@ -373,7 +386,7 @@ const Dashboard = () => {
                     <CardDescription>{t('dashboard.upcoming_tasks.description')}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <TaskList tasks={tasks} />
+                    <TaskList tasks={tasks} onToggle={handleToggleTask} />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -397,7 +410,7 @@ const Dashboard = () => {
                 <CardDescription>{t('dashboard.upcoming_tasks.description')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <TaskList tasks={tasks} />
+                <TaskList tasks={tasks} onToggle={handleToggleTask} />
               </CardContent>
             </Card>
           </div>
