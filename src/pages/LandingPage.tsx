@@ -1,429 +1,259 @@
 import React from 'react';
-import { Button } from "@/components/ui/button";
-import {
-  Tractor,
-  Leaf,
-  PieChart,
-  CloudSun,
-  Users,
-  ShieldCheck,
-  Globe,
-  ArrowRight,
-  Github,
-  BarChart2,
-  CalendarDays,
-  GanttChartSquare,
-  ArrowDownCircle
-} from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent } from "@/components/ui/card";
+import { useTranslation } from 'react-i18next';
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { useTranslation, Trans } from 'react-i18next';
+  Code2,
+  Languages,
+  ListChecks,
+  Map,
+  Package,
+  PawPrint,
+  ShieldCheck,
+  Sprout,
+  Store,
+  CloudSun,
+  Wallet,
+  WifiOff,
+  Github,
+  type LucideIcon,
+} from 'lucide-react';
+import BrandMark from '@/components/common/BrandMark';
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
-interface FeatureCardProps {
-  icon: React.ComponentType<{ className?: string }>;
+const REPO = 'https://github.com/deepjyoti31/farmsync';
+
+interface Feature {
+  icon: LucideIcon;
+  key: string;
   title: string;
-  description: string;
+  body: string;
+  beta?: boolean;
 }
 
-const FeatureCard = ({
-  icon: Icon,
-  title,
-  description
-}: FeatureCardProps) => (
-  <Card className="border border-border/50 h-full transition-all duration-200 hover:shadow-md hover:border-primary/20 overflow-hidden group">
-    <CardContent className="pt-6 p-6">
-      <div className="mb-4 bg-primary/10 w-12 h-12 flex items-center justify-center rounded-lg transition-all duration-300 group-hover:bg-primary/20">
-        <Icon className="h-6 w-6 text-primary" />
-      </div>
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
-    </CardContent>
-  </Card>
-);
+const features: Feature[] = [
+  { icon: Map, key: 'fields', title: 'Farms and fields', body: 'Draw boundaries on a satellite map. Area and GPS centre are worked out for you; add soil type and pH.' },
+  { icon: ListChecks, key: 'tasks', title: 'Tasks', body: 'Assign work to your team. Repeating jobs reschedule themselves and late ones raise an alert.' },
+  { icon: Sprout, key: 'crops', title: 'Crops', body: 'Plan and follow each planting from sowing to harvest, then record what came in.' },
+  { icon: PawPrint, key: 'livestock', title: 'Livestock', body: 'Animal register, health records with vaccination reminders, milk and egg production.', beta: true },
+  { icon: Package, key: 'inventory', title: 'Inventory and equipment', body: 'Low stock and expiry warnings; machine service history and what is due next.' },
+  { icon: Wallet, key: 'finances', title: 'Finances', body: 'Income and expenses by category, with profit and loss you can export.' },
+  { icon: CloudSun, key: 'weather', title: 'Weather and sensors', body: 'Five-day forecast per farm. Connect soil and water sensors and chart readings live.', beta: true },
+  { icon: Store, key: 'market', title: 'Market', body: 'Mandi price board, produce listings, buyer inquiries and a supplier directory.', beta: true },
+  { icon: ShieldCheck, key: 'compliance', title: 'Sustainability and compliance', body: 'Input and water logs, audit-ready PDF and CSV, automatic checks for banned inputs.', beta: true },
+];
 
-const Testimonial = ({ quote, author, role, imageUrl }: { quote: string; author: string; role: string; imageUrl?: string }) => (
-  <div className="bg-muted/50 rounded-xl p-6 border border-border/50 h-full">
-    <p className="italic text-muted-foreground mb-6 text-lg">&ldquo;{quote}&rdquo;</p>
-    <div className="flex items-center">
-      <div className="bg-primary/20 w-12 h-12 rounded-full flex items-center justify-center mr-3 overflow-hidden">
-        {imageUrl ? (
-          <img src={imageUrl} alt={author} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-primary font-medium text-lg">{author.charAt(0)}</span>
-        )}
+const reasons = [
+  { icon: WifiOff, key: 'offline', title: 'Works on a weak signal', body: 'Install it on your phone. Records you have opened stay available when the connection drops.' },
+  { icon: Languages, key: 'local', title: 'Your units, your language', body: 'Hectares, acres or bigha; quintals or tonnes. English, Hindi, Spanish, French, Chinese and Arabic, with right-to-left layout.' },
+  { icon: ShieldCheck, key: 'free', title: 'Free, for good', body: 'MIT licensed and community built. No per-acre pricing, no lock-in, and your farm data stays yours.' },
+];
+
+const roles = [
+  { key: 'owner', title: 'Owner', body: 'Everything, including deleting the farm' },
+  { key: 'admin', title: 'Admin', body: 'Manage people, fields and records' },
+  { key: 'editor', title: 'Editor', body: 'Add and change day-to-day records' },
+  { key: 'viewer', title: 'Viewer', body: 'Read only, for advisers and family' },
+];
+
+/** Miniature, decorative picture of the Today screen for the hero. */
+const ProductPreview = () => (
+  <div aria-hidden="true" className="flex min-w-0 flex-[1_1_480px] gap-3.5 rounded-t-[20px] bg-background p-4 pb-0 text-foreground">
+    <div className="hidden w-[120px] shrink-0 flex-col gap-2 rounded-t-xl bg-sidebar p-3 sm:flex">
+      <span className="h-2.5 w-[70px] rounded bg-harvest" />
+      <span className="h-6 rounded-md bg-sidebar-primary" />
+      {[80, 60, 75, 55, 70, 50].map((w) => (
+        <span key={w} className="h-2 rounded bg-sidebar-border" style={{ width: `${w}%` }} />
+      ))}
+    </div>
+    <div className="flex min-w-0 flex-1 flex-col gap-3">
+      <span className="font-display text-[22px] font-bold">Good morning, Asha</span>
+      <div className="flex gap-2.5">
+        <div className="surface flex flex-1 flex-col gap-2 rounded-xl p-3">
+          <span className="text-[13px] font-bold">Due today</span>
+          {['Top-dress mustard', 'Irrigate potato beds'].map((x) => (
+            <span key={x} className="flex items-center gap-2 text-xs">
+              <span className="h-3.5 w-3.5 rounded border-2 border-input" />
+              {x}
+            </span>
+          ))}
+          <span className="flex items-center gap-2 text-xs text-muted-foreground line-through">
+            <span className="h-3.5 w-3.5 rounded bg-primary" />
+            Check drip lines
+          </span>
+        </div>
+        <div className="surface flex flex-1 flex-col gap-1 rounded-xl p-3">
+          <span className="text-xs text-muted-foreground">This month</span>
+          <span className="font-display text-2xl font-bold">₹26,550</span>
+          <span className="mt-1.5 flex h-2 gap-0.5">
+            <span className="flex-[48] rounded-s-sm bg-chart-income" />
+            <span className="flex-[22] rounded-e-sm bg-chart-expense" />
+          </span>
+        </div>
       </div>
-      <div>
-        <p className="font-medium">{author}</p>
-        <p className="text-sm text-muted-foreground">{role}</p>
-      </div>
+      <svg viewBox="0 0 400 150" className="block h-auto w-full rounded-t-xl bg-[#EEF1E8]">
+        <polygon points="10,10 130,6 136,70 14,74" fill="#D5DED3" stroke="#fff" strokeWidth="3" />
+        <polygon points="138,6 260,4 266,68 142,70" fill="#2E7D4F" stroke="#fff" strokeWidth="3" />
+        <polygon points="268,4 392,10 386,74 272,68" fill="#2E7D4F" stroke="#fff" strokeWidth="3" />
+        <polygon points="14,80 140,76 144,150 18,150" fill="#EFE7D6" stroke="#fff" strokeWidth="3" />
+        <polygon points="148,76 270,74 266,150 150,150" fill="#2E7D4F" stroke="#fff" strokeWidth="3" />
+        <polygon points="276,74 386,80 382,150 272,150" fill="#E39B34" stroke="#fff" strokeWidth="3" />
+      </svg>
     </div>
   </div>
 );
 
 const LandingPage = () => {
   const { t } = useTranslation();
-  const features = [
-    {
-      icon: Tractor,
-      title: t('landing.features.items.farm_management.title'),
-      description: t('landing.features.items.farm_management.description')
-    },
-    {
-      icon: Leaf,
-      title: t('landing.features.items.crop_tracking.title'),
-      description: t('landing.features.items.crop_tracking.description')
-    },
-    {
-      icon: PieChart,
-      title: t('landing.features.items.financial_insights.title'),
-      description: t('landing.features.items.financial_insights.description')
-    },
-    {
-      icon: CloudSun,
-      title: t('landing.features.items.weather_integration.title'),
-      description: t('landing.features.items.weather_integration.description')
-    },
-    {
-      icon: BarChart2,
-      title: t('landing.features.items.analytics.title'),
-      description: t('landing.features.items.analytics.description')
-    },
-    {
-      icon: CalendarDays,
-      title: t('landing.features.items.task_management.title'),
-      description: t('landing.features.items.task_management.description')
-    },
-    {
-      icon: GanttChartSquare,
-      title: t('landing.features.items.resource_planning.title'),
-      description: t('landing.features.items.resource_planning.description')
-    },
-    {
-      icon: Users,
-      title: t('landing.features.items.community.title'),
-      description: t('landing.features.items.community.description')
-    }
-  ];
-
-  const testimonials = [
-    {
-      quote: t('landing.testimonials.items.rajesh.quote'),
-      author: "Rajesh Kumar",
-      role: t('landing.testimonials.items.rajesh.role'),
-      imageUrl: "/src/data/farmer1.jpg"
-    },
-    {
-      quote: t('landing.testimonials.items.sunita.quote'),
-      author: "Sunita Patel",
-      role: t('landing.testimonials.items.sunita.role'),
-      imageUrl: "/src/data/farmer3.jpg"
-    },
-    {
-      quote: t('landing.testimonials.items.vijay.quote'),
-      author: "Vijay Singh",
-      role: t('landing.testimonials.items.vijay.role'),
-      imageUrl: "/src/data/farmer2.jpg"
-    }
-  ];
-
-  const screenshots = [
-    { src: "/src/data/dashboard.png", alt: t('landing.screenshots.dashboard') },
-    { src: "/src/data/crop-management.png", alt: t('landing.screenshots.crop_management') },
-    { src: "/src/data/weather-forecast.png", alt: t('landing.screenshots.weather') },
-    { src: "/src/data/financial-report.png", alt: t('landing.screenshots.financial') }
-  ];
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      <section className="relative h-screen flex items-center">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: "url('/src/data/hero-section.jpg')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
-        </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="bg-sidebar text-sidebar-foreground">
+        <header className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-7 gap-y-3 px-4 py-5 sm:px-8">
+          <Link to="/landing" className="text-sidebar-foreground" aria-label="FarmSync">
+            <BrandMark nameClassName="text-[21px]" />
+          </Link>
+          <nav aria-label={t('site.nav.label', 'Site')} className="flex flex-[1_1_280px] flex-wrap gap-x-6 text-[15px]">
+            <a href="#features" className="py-2.5 text-[#D3DED6] hover:text-white">{t('site.nav.features', 'Features')}</a>
+            <a href="#teams" className="py-2.5 text-[#D3DED6] hover:text-white">{t('site.nav.teams', 'Teams and co-ops')}</a>
+            <a href="#selfhost" className="py-2.5 text-[#D3DED6] hover:text-white">{t('site.nav.selfhost', 'Self-host')}</a>
+          </nav>
+          <div className="flex items-center gap-2 [&_button]:border-sidebar-border [&_button]:bg-transparent [&_button]:text-sidebar-foreground [&_button:hover]:bg-sidebar-accent">
+            <LanguageSwitcher />
+          </div>
+          <Link to="/login" className="px-1.5 py-2.5 font-semibold text-sidebar-foreground hover:text-white">
+            {t('landing.cta.login')}
+          </Link>
+          <Link to="/signup" className="flex h-11 items-center rounded-[10px] bg-harvest px-[18px] font-bold text-harvest-foreground hover:bg-harvest/90">
+            {t('site.start', 'Start free')}
+          </Link>
+        </header>
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 text-white drop-shadow-lg">
-              <Trans i18nKey="landing.hero.title">
-                Smart Farming, <span className="text-primary">Reimagined</span>
-              </Trans>
+        <section className="mx-auto flex max-w-[1200px] flex-wrap items-end gap-12 px-4 pt-10 sm:px-8 sm:pt-14">
+          <div className="flex flex-[1_1_440px] flex-col gap-5 pb-14 sm:pb-[72px]">
+            <span className="self-start rounded-full border border-sidebar-border px-3 py-1.5 font-mono text-xs uppercase tracking-[0.08em] text-[#B8C9BC]">
+              {t('site.hero.eyebrow', 'Open source · MIT licensed')}
+            </span>
+            <h1 className="text-[44px] font-bold leading-[0.98] tracking-[-0.03em] sm:text-[60px] lg:text-[72px]">
+              {t('site.hero.title_a', 'Farm records that work')} <span className="text-harvest">{t('site.hero.title_b', 'where you farm.')}</span>
             </h1>
-            <p className="text-xl text-white/90 mb-8 drop-shadow-md md:text-2xl max-w-2xl">
-              {t('landing.hero.subtitle')}
+            <p className="max-w-[520px] text-lg leading-relaxed text-[#D3DED6] sm:text-[19px]">
+              {t(
+                'site.hero.body',
+                'Map fields, plan crops, look after animals, track money and harvests. One app for every farm, from two bigha to a whole cooperative.',
+              )}
             </p>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto gap-2 text-base bg-primary/90 hover:bg-primary">
-                  {t('landing.hero.get_started')}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/signup" className="flex h-[54px] items-center rounded-xl bg-harvest px-6 text-[17px] font-bold text-harvest-foreground hover:bg-harvest/90">
+                {t('landing.hero.get_started')}
               </Link>
-              <a
-                href="https://github.com/deepjyoti31/farmsync"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="outline" size="lg" className="w-full sm:w-auto gap-2 text-base bg-white/20 backdrop-blur-sm text-white border-white/40 hover:bg-white/30">
-                  <Github className="h-4 w-4" />
-                  {t('landing.hero.star_github')}
-                </Button>
+              <a href="#selfhost" className="flex h-[54px] items-center gap-2.5 rounded-xl border border-[#3C5A46] px-[22px] text-[17px] font-semibold text-sidebar-foreground hover:bg-sidebar-accent">
+                <Code2 className="h-[18px] w-[18px]" aria-hidden="true" />
+                {t('site.hero.selfhost', 'Self-host it')}
               </a>
             </div>
           </div>
-        </div>
-
-        <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <ArrowDownCircle className="h-10 w-10 text-white" />
-        </div>
-      </section>
-
-      <section className="py-20 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-background to-transparent z-10"></div>
-        <div className="container mx-auto px-4 mb-12 relative z-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('landing.screenshots.title')}</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {t('landing.screenshots.subtitle')}
-            </p>
-          </div>
-
-          <div className="max-w-5xl mx-auto">
-            <Carousel className="w-full">
-              <CarouselContent>
-                {screenshots.map((screenshot, index) => (
-                  <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/1">
-                    <div className="p-2">
-                      <Card className="overflow-hidden border-2 border-border/30 shadow-lg">
-                        <div className="aspect-video relative overflow-hidden bg-muted">
-                          <img
-                            src={screenshot.src}
-                            alt={screenshot.alt}
-                            className="object-cover w-full h-full"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = "https://images.unsplash.com/photo-1535378620166-273708d44e4c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80";
-                            }}
-                          />
-                        </div>
-                        <CardContent className="p-4">
-                          <p className="text-center font-medium">{screenshot.alt}</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <div className="hidden md:block">
-                <CarouselPrevious className="left-2" />
-                <CarouselNext className="right-2" />
-              </div>
-            </Carousel>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-muted/30 relative">
-        <div className="absolute inset-0 bg-cover bg-center opacity-5"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
-        </div>
-        <div className="container mx-auto px-4 relative">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('landing.features.title')}</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {t('landing.features.subtitle')}
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <div className="h-32 md:h-40 relative overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center bg-fixed"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
-        </div>
-        <div className="absolute inset-0 bg-primary/30 backdrop-blur-sm"></div>
+          <ProductPreview />
+        </section>
       </div>
 
-      <section className="py-20 relative">
-        <div className="absolute top-1/2 right-0 w-96 h-96 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl"></div>
-
-        <div className="container mx-auto px-4 relative">
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            <div className="md:w-1/2 relative">
-              <div className="aspect-square rounded-2xl overflow-hidden shadow-xl">
-                <img
-                  src="/src/data/farmer.jpg"
-                  alt="Farmer using FarmSync app"
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <div className="absolute -bottom-6 -right-6 bg-white rounded-xl p-4 shadow-lg max-w-xs hidden md:block">
-                <p className="flex items-center text-sm">
-                  <span className="text-primary font-bold mr-2">15% Growth</span>
-                  in average crop yield for FarmSync users
-                </p>
-              </div>
-            </div>
-
-            <div className="md:w-1/2">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">{t('landing.why_free.title')}</h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                {t('landing.why_free.description')}
-              </p>
-
-              <div className="grid gap-6">
-                <div className="flex gap-4 items-start">
-                  <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center shrink-0">
-                    <Globe className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">{t('landing.why_free.items.open_for_all.title')}</h3>
-                    <p className="text-muted-foreground">
-                      {t('landing.why_free.items.open_for_all.description')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-start">
-                  <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center shrink-0">
-                    <Github className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">{t('landing.why_free.items.open_source.title')}</h3>
-                    <p className="text-muted-foreground">
-                      {t('landing.why_free.items.open_source.description')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-start">
-                  <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center shrink-0">
-                    <ShieldCheck className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">{t('landing.why_free.items.data_privacy.title')}</h3>
-                    <p className="text-muted-foreground">
-                      {t('landing.why_free.items.data_privacy.description')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <section aria-label={t('site.why', 'Why FarmSync')} className="mx-auto grid max-w-[1200px] grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-8 px-4 pb-6 pt-16 sm:px-8">
+        {reasons.map((r) => (
+          <div key={r.key} className="flex flex-col gap-2.5">
+            <span className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-sidebar text-harvest">
+              <r.icon className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <h2 className="text-2xl font-bold">{t(`site.reasons.${r.key}.title`, r.title)}</h2>
+            <p className="text-base leading-relaxed text-[#34453A] dark:text-muted-foreground">{t(`site.reasons.${r.key}.body`, r.body)}</p>
           </div>
+        ))}
+      </section>
+
+      <section id="features" aria-labelledby="features-h" className="mx-auto flex max-w-[1200px] flex-col gap-7 px-4 py-14 sm:px-8">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 id="features-h" className="max-w-[640px] text-[36px] font-bold leading-[1.05] tracking-[-0.02em] sm:text-[44px]">
+            {t('site.features.title', 'Everything a working farm keeps track of')}
+          </h2>
+          <p className="max-w-[360px] text-[15px] leading-normal text-muted-foreground">
+            {t('site.features.beta_note', 'Beta means it works end to end with known gaps, listed openly in the roadmap.')}
+          </p>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+          {features.map((f) => (
+            <article key={f.key} className="surface flex flex-col gap-2.5 p-[22px]">
+              <div className="flex items-center justify-between">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-leaf-tint text-primary">
+                  <f.icon className="h-[22px] w-[22px]" aria-hidden="true" />
+                </span>
+                <Badge variant={f.beta ? 'warning' : 'default'}>{f.beta ? t('site.beta', 'Beta') : t('site.stable', 'Stable')}</Badge>
+              </div>
+              <h3 className="text-[21px] font-bold">{t(`site.features.${f.key}.title`, f.title)}</h3>
+              <p className="text-[15px] leading-relaxed text-[#34453A] dark:text-muted-foreground">{t(`site.features.${f.key}.body`, f.body)}</p>
+            </article>
+          ))}
         </div>
       </section>
 
-      <section className="py-20 bg-muted/30 relative">
-        <div className="absolute inset-0 bg-cover bg-center opacity-5"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535378620166-273708d44e4c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
-        </div>
-        <div className="container mx-auto px-4 relative">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('landing.testimonials.title')}</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {t('landing.testimonials.subtitle')}
+      <section id="teams" aria-labelledby="teams-h" className="mx-auto max-w-[1200px] px-4 pb-14 pt-6 sm:px-8">
+        <div className="flex flex-wrap items-center gap-10 rounded-3xl bg-harvest p-8 text-harvest-foreground sm:p-12">
+          <div className="flex flex-[1_1_360px] flex-col gap-4">
+            <h2 id="teams-h" className="text-[36px] font-bold leading-[1.05] tracking-[-0.02em] sm:text-[44px]">
+              {t('site.teams.title', 'Built for families, teams and cooperatives')}
+            </h2>
+            <p className="text-[17px] leading-relaxed">
+              {t(
+                'site.teams.body',
+                'Give each person the access they need, enforced in the database. Co-ops see member farms, the crop mix, bulk input orders and produce batches for traceability.',
+              )}
             </p>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {testimonials.map((testimonial, index) => (
-              <Testimonial
-                key={index}
-                quote={testimonial.quote}
-                author={testimonial.author}
-                role={testimonial.role}
-                imageUrl={testimonial.imageUrl}
-              />
+          <ul className="flex flex-[1_1_340px] flex-col rounded-[18px] bg-card p-2 text-foreground">
+            {roles.map((r, i) => (
+              <li key={r.key} className={cn('flex items-center gap-3 p-3', i < roles.length - 1 && 'border-b border-muted')}>
+                <Badge variant="secondary" className="w-16 justify-center">{t(`site.roles.${r.key}.title`, r.title)}</Badge>
+                <span className="text-sm text-[#34453A] dark:text-muted-foreground">{t(`site.roles.${r.key}.body`, r.body)}</span>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       </section>
 
-      <section className="py-20 relative">
-        <div className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80')" }}>
-        </div>
-        <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm"></div>
-        <div className="container mx-auto px-4 relative">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 md:p-12 text-center max-w-4xl mx-auto border border-white/20 shadow-xl">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">{t('landing.cta.title')}</h2>
-            <p className="text-lg mb-8 max-w-2xl mx-auto text-white/90">
-              {t('landing.cta.subtitle')}
-            </p>
-
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto bg-white text-primary hover:bg-white/90">
-                  {t('landing.cta.create_account')}
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto border-white text-primary hover:bg-white/20">
-                  {t('landing.cta.login')}
-                </Button>
-              </Link>
-            </div>
+      <section id="selfhost" aria-labelledby="selfhost-h" className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-10 px-4 pb-[72px] pt-6 sm:px-8">
+        <div className="flex flex-[1_1_360px] flex-col gap-4">
+          <h2 id="selfhost-h" className="text-[36px] font-bold leading-[1.05] tracking-[-0.02em] sm:text-[44px]">
+            {t('site.selfhost.title', 'Your data, on your server if you like')}
+          </h2>
+          <p className="text-[17px] leading-relaxed text-[#34453A] dark:text-muted-foreground">
+            {t('site.selfhost.body', 'FarmSync runs on a free Supabase project and any static host. Fork it, translate it, add the crops your region grows. Pull requests are welcome.')}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <a href={REPO} className="flex h-[50px] items-center gap-2 rounded-xl bg-sidebar px-5 font-semibold text-white hover:bg-sidebar/90">
+              <Github className="h-[18px] w-[18px]" aria-hidden="true" />
+              {t('landing.hero.star_github')}
+            </a>
+            <a href={`${REPO}/blob/main/docs/getting-started.md`} className="flex h-[50px] items-center rounded-xl border border-[#C9D1C5] px-5 font-semibold hover:bg-accent dark:border-input">
+              {t('site.selfhost.guide', 'Getting started guide')}
+            </a>
           </div>
         </div>
+        <pre className="min-w-0 flex-[1_1_420px] overflow-x-auto rounded-[18px] bg-sidebar p-6 font-mono text-sm leading-[1.8] text-[#D3DED6]">
+          <span className="text-sidebar-muted"># get the code</span>
+          {'\n'}git clone {REPO}.git{'\n'}cd farmsync && npm install{'\n\n'}
+          <span className="text-sidebar-muted"># point it at your Supabase project</span>
+          {'\n'}npx supabase db push{'\n\n'}
+          <span className="text-harvest">npm run dev</span>
+        </pre>
       </section>
 
-      <footer className="bg-muted/70 py-12 border-t border-border">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="mb-6 md:mb-0">
-              <h2 className="text-2xl font-bold text-primary flex items-center gap-2">
-                <Leaf className="h-6 w-6" />
-                FarmSync
-              </h2>
-              <p className="text-muted-foreground">{t('landing.footer.tagline')}</p>
-            </div>
-
-            <div className="flex gap-6">
-              <a
-                href="https://github.com/deepjyoti31/farmsync"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Github className="h-5 w-5" />
-              </a>
-              <Link to="/login" className="text-muted-foreground hover:text-primary transition-colors">
-                {t('auth.login')}
-              </Link>
-              <Link to="/signup" className="text-muted-foreground hover:text-primary transition-colors">
-                {t('auth.signup')}
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} FarmSync. {t('landing.footer.rights')}</p>
-          </div>
+      <footer className="border-t">
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-7 gap-y-3 px-4 py-7 text-sm text-muted-foreground sm:px-8">
+          <BrandMark nameClassName="text-lg text-foreground" />
+          <span>{t('landing.footer.tagline')}</span>
+          <a href={`${REPO}/blob/main/docs/roadmap.md`} className="py-2.5 hover:text-foreground">{t('site.footer.roadmap', 'Roadmap')}</a>
+          <a href={`${REPO}/blob/main/CONTRIBUTING.md`} className="py-2.5 hover:text-foreground">{t('site.footer.contributing', 'Contributing')}</a>
+          <a href={`${REPO}/blob/main/SECURITY.md`} className="py-2.5 hover:text-foreground">{t('site.footer.security', 'Security')}</a>
+          <span className="ms-auto">© {new Date().getFullYear()} FarmSync · MIT</span>
         </div>
       </footer>
     </div>

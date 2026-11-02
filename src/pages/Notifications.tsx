@@ -211,10 +211,10 @@ const Notifications = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="mx-auto w-full max-w-4xl">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Notifications</h1>
+          <h1 className="page-title">Notifications</h1>
           <p className="text-muted-foreground">Stay updated with important events and alerts</p>
         </div>
         

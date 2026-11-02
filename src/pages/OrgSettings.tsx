@@ -100,10 +100,10 @@ const OrgSettings = () => {
     }
 
     return (
-        <div className="container mx-auto p-6 max-w-4xl space-y-6">
+        <div className="mx-auto w-full max-w-4xl space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold">Organization Settings</h1>
+                    <h1 className="page-title">Organization Settings</h1>
                     <p className="text-muted-foreground">{currentOrganization.name}</p>
                 </div>
             </div>

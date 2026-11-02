@@ -81,7 +81,7 @@ const Livestock = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Livestock Management</h1>
+          <h1 className="page-title">Livestock</h1>
           <p className="text-muted-foreground mt-1">
             Track and manage all your farm animals, their health, and productivity.
           </p>

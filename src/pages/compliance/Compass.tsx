@@ -30,9 +30,9 @@ const Compass = () => {
     };
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="space-y-6">
             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold flex items-center gap-3">
+                <h1 className="page-title flex items-center gap-3">
                     <ShieldCheck className="h-8 w-8 text-primary" />
                     Compass
                 </h1>

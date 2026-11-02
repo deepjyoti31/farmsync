@@ -261,7 +261,7 @@ const Reports = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Farm Reports</h1>
+          <h1 className="page-title">Farm Reports</h1>
           <p className="text-muted-foreground mt-1">
             View and analyze your farm's performance data
           </p>

@@ -107,11 +107,11 @@ const NotificationsDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button variant="outline" size="icon" className="relative" aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}>
+          <Bell className="h-5 w-5" strokeWidth={1.8} />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 text-xs flex items-center justify-center">
-              {unreadCount}
+            <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-harvest px-1 font-mono text-[11px] font-medium text-harvest-foreground ring-2 ring-card">
+              {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </Button>

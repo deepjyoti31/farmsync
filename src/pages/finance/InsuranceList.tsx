@@ -24,10 +24,10 @@ const InsuranceList = () => {
     });
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold">Insurance</h1>
+                    <h1 className="page-title">Insurance</h1>
                     <p className="text-muted-foreground">Risk protection for your farm</p>
                 </div>
                 <Button variant="outline" disabled title="Online quotes are coming soon">

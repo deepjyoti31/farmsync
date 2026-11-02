@@ -92,14 +92,17 @@ const CreateOrgDialog: React.FC<CreateOrgDialogProps> = ({ children, open: contr
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                {children || (
-                    <Button variant="outline" className="w-full justify-start gap-2">
-                        <Plus className="h-4 w-4" />
-                        <span>Create Organization</span>
-                    </Button>
-                )}
-            </DialogTrigger>
+            {/* When the parent controls `open` it supplies its own way in, so no trigger is drawn. */}
+            {(!isControlled || children) && (
+                <DialogTrigger asChild>
+                    {children || (
+                        <Button variant="outline" className="w-full justify-start gap-2">
+                            <Plus className="h-4 w-4" />
+                            <span>Create Organization</span>
+                        </Button>
+                    )}
+                </DialogTrigger>
+            )}
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Create Organization</DialogTitle>

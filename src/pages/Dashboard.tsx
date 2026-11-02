@@ -1,424 +1,341 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import StatsCard from "@/components/dashboard/StatsCard";
-import FarmSelector from "@/components/farms/FarmSelector";
-import WeatherWidget from "@/components/dashboard/WeatherWidget";
-import QuickLinks from "@/components/dashboard/QuickLinks";
-import TaskList from "@/components/dashboard/TaskList";
-import NotificationList from "@/components/dashboard/NotificationList";
-import CropStatus from "@/components/dashboard/CropStatus";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Tractor,
-  MapPin,
-  Sprout,
-  PiggyBank,
-  Bird,
-  Loader2
-} from "lucide-react";
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { setTaskCompleted } from '@/components/tasks/taskApi';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { Field, Farm, FieldCrop, Crop, Task, Notification } from '@/types';
 import { useTranslation } from 'react-i18next';
+import { addDays, format, startOfDay, startOfMonth } from 'date-fns';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useFarmMembers } from '@/hooks/useFarmMembers';
+import { toast } from '@/hooks/use-toast';
+import PageHeader from '@/components/common/PageHeader';
+import FarmSelector from '@/components/farms/FarmSelector';
+import AddFarmForm from '@/components/farms/AddFarmForm';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, VisuallyHidden } from '@/components/ui/dialog';
+import WeatherWidget from '@/components/dashboard/WeatherWidget';
+import DueToday from '@/components/dashboard/DueToday';
+import FieldsGlance, { type GlanceField } from '@/components/dashboard/FieldsGlance';
+import SeasonProgress, { type SeasonRow } from '@/components/dashboard/SeasonProgress';
+import SetupChecklist from '@/components/dashboard/SetupChecklist';
+import { KpiTile, MandiToday, MoneyThisMonth, NeedsAttention } from '@/components/dashboard/SideCards';
+import { setTaskCompleted, type TaskRow } from '@/components/tasks/taskApi';
+import { attentionItems, cropProgress, fieldStage, greetingKey, monthTotals } from '@/lib/dashboard';
+import { animalLabel, upcomingHealthDue } from '@/lib/livestockRecords';
+import { summarizeCommodities, toMarketPrice } from '@/lib/marketPrices';
+import { dueState } from '@/lib/tasks';
+
+const FARM_KEY = 'farmsync.dashboard.farm';
+
+const readStoredFarm = () => {
+  try {
+    return localStorage.getItem(FARM_KEY);
+  } catch {
+    return null;
+  }
+};
 
 const Dashboard = () => {
-  const { t } = useTranslation();
-  const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
+  const { t, i18n } = useTranslation();
+  const { user, currentOrganization } = useAuth();
   const queryClient = useQueryClient();
+  const [selectedFarmId, setSelectedFarmId] = useState<string | null>(readStoredFarm);
+  const [addFarmOpen, setAddFarmOpen] = useState(false);
 
-  // Fetch farms for the logged in user
-  const {
-    data: farms = [],
-    isLoading: isLoadingFarms,
-    error: farmsError
-  } = useQuery({
-    queryKey: ['farms'],
+  const now = new Date();
+
+  const { data: farms = [], isLoading: loadingFarms } = useQuery({
+    queryKey: ['farms', 'dashboard'],
     queryFn: async () => {
-      const { data: userFarms, error } = await supabase
-        .from('farms')
-        .select('*');
-
+      const { data, error } = await supabase.from('farms').select('id, name, village, district, state');
       if (error) throw error;
-
-      // Transform the data to match our Farm type
-      return (userFarms || []).map((farm: any): Farm => ({
-        id: farm.id,
-        name: farm.name,
-        location: farm.address || '',
-        village: farm.village,
-        district: farm.district,
-        state: farm.state,
-        totalArea: farm.total_area,
-        total_area: farm.total_area,
-        areaUnit: farm.area_unit,
-        area_unit: farm.area_unit,
-        fields: [], // We'll fetch fields separately
-        user_id: farm.user_id,
-        gps_latitude: farm.gps_latitude,
-        gps_longitude: farm.gps_longitude,
-        created_at: farm.created_at,
-        updated_at: farm.updated_at
-      }));
+      return data ?? [];
     },
   });
 
-  // Set the first farm as selected if none is selected
+  // Fall back to the first farm when nothing (or a farm that is gone) is selected.
   useEffect(() => {
-    if (farms.length > 0 && !selectedFarmId) {
-      setSelectedFarmId(farms[0].id);
+    if (loadingFarms) return;
+    if (farms.length > 0 && !farms.some((f) => f.id === selectedFarmId)) setSelectedFarmId(farms[0].id);
+  }, [farms, loadingFarms, selectedFarmId]);
+
+  useEffect(() => {
+    if (!selectedFarmId) return;
+    try {
+      localStorage.setItem(FARM_KEY, selectedFarmId);
+    } catch {
+      /* storage can be unavailable in private windows */
     }
-  }, [farms, selectedFarmId]);
+  }, [selectedFarmId]);
 
-  // Fetch fields for the selected farm
-  const {
-    data: fields = [],
-    isLoading: isLoadingFields,
-    error: fieldsError
-  } = useQuery({
-    queryKey: ['fields', selectedFarmId],
+  const farmId = farms.some((f) => f.id === selectedFarmId) ? selectedFarmId : null;
+  const enabled = !!farmId;
+
+  const { data: fields = [], isLoading: loadingFields } = useQuery({
+    queryKey: ['fields', farmId, 'dashboard'],
+    enabled,
     queryFn: async () => {
-      if (!selectedFarmId) return [];
-
-      const { data, error } = await supabase
-        .from('fields')
-        .select('*, farm:farm_id(name)')
-        .eq('farm_id', selectedFarmId);
-
+      const { data, error } = await supabase.from('fields').select('id, name, area, area_unit, boundaries').eq('farm_id', farmId!).order('name');
       if (error) throw error;
-
-      // Transform the data to match our Field type
-      return (data || []).map((field: any): Field => ({
-        id: field.id,
-        name: field.name,
-        area: field.area,
-        areaUnit: field.area_unit,
-        area_unit: field.area_unit,
-        location: '',
-        soilType: field.soil_type || '',
-        soil_type: field.soil_type || '',
-        soilPH: field.soil_ph || 0,
-        soil_ph: field.soil_ph || 0,
-        images: [],
-        crops: [], // We'll fetch crops separately
-        farm_id: field.farm_id,
-        farm_name: field.farm?.name || '',
-        created_at: field.created_at,
-        updated_at: field.updated_at
-      }));
+      return data ?? [];
     },
-    enabled: !!selectedFarmId,
   });
 
-  // Fetch crops data
-  const {
-    data: fieldCrops = [],
-    isLoading: isLoadingCrops,
-    error: cropsError
-  } = useQuery({
-    queryKey: ['field_crops', selectedFarmId],
+  const fieldIds = fields.map((f) => f.id);
+  const { data: plantings = [] } = useQuery({
+    queryKey: ['field_crops', farmId, fieldIds.join(',')],
+    enabled: enabled && fieldIds.length > 0,
     queryFn: async () => {
-      if (!selectedFarmId) return [];
-
-      // First get all fields for this farm
-      const { data: fieldData, error: fieldError } = await supabase
-        .from('fields')
-        .select('id')
-        .eq('farm_id', selectedFarmId);
-
-      if (fieldError) throw fieldError;
-      if (!fieldData || fieldData.length === 0) return [];
-
-      const fieldIds = fieldData.map(field => field.id);
-
-      // Then get all field_crops that link to these fields
-      const { data: fieldCropsData, error: cropError } = await supabase
+      const { data, error } = await supabase
         .from('field_crops')
-        .select(`
-          *,
-          crop:crops(*)
-        `)
+        .select('id, field_id, name, planting_date, expected_harvest_date, actual_harvest_date, status, crop:crops(name, variety)')
         .in('field_id', fieldIds);
-
-      if (cropError) throw cropError;
-      return fieldCropsData || [];
+      if (error) throw error;
+      return data ?? [];
     },
-    enabled: !!selectedFarmId,
   });
 
-  // Upcoming open tasks for the selected farm
-  const {
-    data: taskRows = [],
-    isLoading: isLoadingTasks,
-    error: tasksError
-  } = useQuery({
-    queryKey: ['tasks', selectedFarmId, 'upcoming'],
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks', farmId, 'today'],
+    enabled,
     queryFn: async () => {
-      if (!selectedFarmId) return [];
-
+      const soon = format(addDays(new Date(), 3), 'yyyy-MM-dd');
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .eq('farm_id', selectedFarmId)
-        .neq('status', 'completed')
+        .eq('farm_id', farmId!)
+        .or(`and(status.neq.completed,due_date.lte.${soon}),completed_at.gte.${startOfDay(new Date()).toISOString()}`)
         .order('due_date', { ascending: true, nullsFirst: false })
-        .limit(5);
-
+        .limit(8);
       if (error) throw error;
-      return data || [];
+      return (data ?? []) as TaskRow[];
     },
-    enabled: !!selectedFarmId,
   });
 
-  const tasks: Task[] = taskRows.map(task => ({
-    id: task.id,
-    title: task.title,
-    description: task.description || '',
-    dueDate: task.due_date,
-    priority: task.priority || 'medium',
-    status: task.status || 'pending',
-    assignedTo: task.assigned_to || '',
-    completed: task.status === 'completed'
-  }));
+  const { data: animalCount = 0 } = useQuery({
+    queryKey: ['livestock', farmId, 'count'],
+    enabled,
+    queryFn: async () => {
+      const { count } = await supabase.from('livestock').select('id', { count: 'exact', head: true }).eq('farm_id', farmId!);
+      return count ?? 0;
+    },
+  });
 
-  const handleToggleTask = async (taskId: string, completed: boolean) => {
-    const task = taskRows.find(t => t.id === taskId);
-    if (!task) return;
+  const { data: money } = useQuery({
+    queryKey: ['financial_transactions', farmId, 'month', format(now, 'yyyy-MM')],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('financial_transactions')
+        .select('amount, type')
+        .eq('farm_id', farmId!)
+        .gte('transaction_date', format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+      if (error) return monthTotals([]);
+      return monthTotals(data ?? []);
+    },
+  });
+
+  const { data: attention = [] } = useQuery({
+    queryKey: ['attention', farmId],
+    enabled,
+    queryFn: async () => {
+      const [stock, equipment, health] = await Promise.all([
+        supabase.from('inventory').select('name, quantity, minimum_stock, unit, expiry_date').eq('farm_id', farmId!),
+        supabase.from('equipment').select('name, next_maintenance_date').eq('farm_id', farmId!),
+        supabase
+          .from('livestock_health_records')
+          .select('id, livestock_id, record_type, record_date, next_due_date, livestock!inner(farm_id, tag_id, breed, livestock_type:livestock_types(name))')
+          .eq('livestock.farm_id', farmId!)
+          .order('record_date', { ascending: false })
+          .limit(200),
+      ]);
+      const due = upcomingHealthDue(health.data ?? []).map(({ record, daysUntilDue }) => ({
+        label: animalLabel(record.livestock as Parameters<typeof animalLabel>[0]),
+        recordType: record.record_type.charAt(0).toUpperCase() + record.record_type.slice(1),
+        daysUntilDue,
+      }));
+      return attentionItems({ stock: stock.data ?? [], equipment: equipment.data ?? [], health: due });
+    },
+  });
+
+  const { data: prices = [] } = useQuery({
+    queryKey: ['market_data', 'dashboard'],
+    staleTime: 1000 * 60 * 30,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('market_data').select('*').order('price_date', { ascending: false }).limit(300);
+      if (error) return [];
+      return summarizeCommodities((data ?? []).map(toMarketPrice), 4);
+    },
+  });
+
+  const { data: teamSize = 1 } = useQuery({
+    queryKey: ['organization_members', currentOrganization?.id, 'count'],
+    enabled: !!currentOrganization?.id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('organization_members')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('organization_id', currentOrganization!.id);
+      return count ?? 1;
+    },
+  });
+
+  const { data: members = [] } = useFarmMembers(farmId);
+  const memberNames = useMemo(() => new Map(members.map((m) => [m.id, m.name])), [members]);
+
+  const handleToggle = async (task: TaskRow, completed: boolean) => {
     try {
       await setTaskCompleted(task, completed);
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     } catch (e) {
-      toast({ title: 'Could not update task', description: (e as Error).message, variant: 'destructive' });
+      toast({ title: t('today.due.error', 'Could not update the task'), description: (e as Error).message, variant: 'destructive' });
     }
   };
 
-  // Fetch notifications
-  const {
-    data: notifications = [],
-    isLoading: isLoadingNotifications,
-    error: notificationsError
-  } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
+  const plantingsByField = useMemo(() => {
+    const map = new Map<string, typeof plantings>();
+    for (const p of plantings) map.set(p.field_id, [...(map.get(p.field_id) ?? []), p]);
+    return map;
+  }, [plantings]);
 
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+  const cropName = (p: (typeof plantings)[number]) => p.crop?.name || p.name || t('today.season.crop', 'Crop');
 
-      if (error) {
-        if (error.code === '42P01' || error.message?.includes('404')) return [];
-        return [];
-      }
+  const seasonRows: SeasonRow[] = plantings
+    .map((p) => ({ p, progress: cropProgress(p, now) }))
+    .filter(({ progress }) => progress.stage !== 'harvested')
+    .sort((a, b) => b.progress.percent - a.progress.percent)
+    .slice(0, 5)
+    .map(({ p, progress }) => {
+      const field = fields.find((f) => f.id === p.field_id);
+      return {
+        id: p.id,
+        name: [cropName(p), p.crop?.variety].filter(Boolean).join(' · '),
+        where: field ? `${field.name} · ${field.area} ${field.area_unit}` : '',
+        plantingDate: p.planting_date,
+        expectedHarvest: p.expected_harvest_date,
+        progress,
+      };
+    });
 
-      return (data || []).map(notification => ({
-        id: notification.id,
-        title: notification.title,
-        message: notification.message,
-        type: notification.type,
-        read: notification.read,
-        date: notification.created_at,
-        createdAt: notification.created_at
-      }));
-    },
+  const glanceFields: GlanceField[] = fields.map((f) => {
+    const list = plantingsByField.get(f.id) ?? [];
+    const live = list
+      .map((p) => ({ p, prog: cropProgress(p, now) }))
+      .filter(({ prog }) => prog.stage !== 'harvested')
+      .sort((a, b) => b.prog.percent - a.prog.percent)[0];
+    const summary = live
+      ? live.prog.stage === 'planned'
+        ? `${cropName(live.p)} · ${t('today.fields.planned', 'Planned').toLowerCase()}`
+        : `${cropName(live.p)} · ${t('today.season.day', { day: live.prog.day, defaultValue: 'Day {{day}}' }).toLowerCase()}`
+      : t('today.fields.empty', 'Nothing planted');
+    return { id: f.id, name: f.name, area: f.area, areaUnit: f.area_unit, boundaries: f.boundaries, stage: fieldStage(list, now), summary };
   });
 
-  // Convert field_crops to the format expected by CropStatus component
-  const cropsList = fieldCrops.map((fieldCrop) => {
-    return {
-      id: fieldCrop.id,
-      name: fieldCrop.crop?.name || 'Unknown Crop',
-      variety: fieldCrop.crop?.variety || '',
-      status: fieldCrop.status || 'planned',
-      plantingDate: fieldCrop.planting_date,
-      harvestDate: fieldCrop.expected_harvest_date || '',
-      fieldId: fieldCrop.field_id
-    } as Crop;
+  const stages = plantings.map((p) => cropProgress(p, now).stage);
+  const growing = stages.filter((s) => s === 'growing' || s === 'ready').length;
+  const planned = stages.filter((s) => s === 'planned').length;
+  const totalArea = fields.reduce((s, f) => s + (Number(f.area) || 0), 0);
+  const areaUnit = fields[0]?.area_unit ?? '';
+  const openTasks = tasks.filter((task) => task.status !== 'completed');
+  const dueNow = openTasks.filter((task) => ['overdue', 'today'].includes(dueState(task.due_date))).length;
+  const late = openTasks.filter((task) => dueState(task.due_date) === 'overdue').length;
+
+  const firstName = (user?.user_metadata?.first_name as string | undefined) || user?.email?.split('@')[0] || '';
+  const part = greetingKey(now);
+  const greeting = t(`today.greeting.${part}`, {
+    name: firstName,
+    defaultValue: { morning: 'Good morning, {{name}}', afternoon: 'Good afternoon, {{name}}', evening: 'Good evening, {{name}}' }[part],
   });
+  const dateLabel = now.toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' });
+  const currentFarm = farms.find((f) => f.id === farmId);
 
-  // Handle errors
-  useEffect(() => {
-    if (farmsError) {
-      toast({
-        title: 'Error loading farms',
-        description: (farmsError as Error).message,
-        variant: 'destructive',
-      });
-    }
+  const subline = !farmId
+    ? t('today.sub_new', "Let's get your farm on the map.")
+    : dueNow === 0
+      ? t('today.sub_clear', 'Nothing is due today.')
+      : late > 0
+        ? t('today.sub_due_late', { count: dueNow, late, defaultValue: '{{count}} things to do today, {{late}} of them late.' })
+        : t('today.sub_due', { count: dueNow, defaultValue: '{{count}} things to do today.' });
 
-    if (fieldsError) {
-      toast({
-        title: 'Error loading fields',
-        description: (fieldsError as Error).message,
-        variant: 'destructive',
-      });
-    }
+  const needsSetup = !!farmId && !loadingFields && (fields.length === 0 || plantings.length === 0);
 
-    if (cropsError) {
-      toast({
-        title: 'Error loading crops',
-        description: (cropsError as Error).message,
-        variant: 'destructive',
-      });
-    }
-
-    if (tasksError) {
-      toast({
-        title: 'Error loading tasks',
-        description: (tasksError as Error).message,
-        variant: 'destructive',
-      });
-    }
-
-    if (notificationsError) {
-      toast({
-        title: 'Error loading notifications',
-        description: (notificationsError as Error).message,
-        variant: 'destructive',
-      });
-    }
-  }, [farmsError, fieldsError, cropsError, tasksError, notificationsError]);
-
-  const isLoading = isLoadingFarms || isLoadingFields || isLoadingCrops || isLoadingTasks || isLoadingNotifications;
-
-  if (isLoading) {
+  if (loadingFarms) {
     return (
-      <div className="flex items-center justify-center h-[50vh]">
+      <div className="flex h-[50vh] items-center justify-center" role="status" aria-label={t('common.loading')}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Calculate active crops count
-  const activeCropsCount = cropsList.filter(c => c.status === 'growing' || c.status === 'planted').length;
-
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold">{t('dashboard.title')}</h1>
-        <FarmSelector
-          selectedFarmId={selectedFarmId}
-          onFarmChange={setSelectedFarmId}
-        />
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        className="mb-0"
+        eyebrow={[dateLabel, currentFarm?.name].filter(Boolean).join(' · ')}
+        title={farms.length === 0 ? t('today.welcome', { name: firstName, defaultValue: 'Welcome to FarmSync, {{name}}' }) : greeting}
+        description={subline}
+        actions={farms.length > 0 ? <FarmSelector selectedFarmId={farmId} onFarmChange={setSelectedFarmId} /> : undefined}
+      />
 
       {farms.length === 0 ? (
-        <Card className="p-8 text-center">
-          <CardTitle className="mb-4">{t('dashboard.welcome.title')}</CardTitle>
-          <CardDescription className="mb-6">
-            {t('dashboard.welcome.description')}
-          </CardDescription>
-        </Card>
+        <SetupChecklist hasFarm={false} hasFields={false} hasCrops={false} hasTeam={teamSize > 1} onAddFarm={() => setAddFarmOpen(true)} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatsCard
-                title={t('dashboard.stats.fields.title')}
-                value={fields.length.toString()}
-                description={t('dashboard.stats.fields.description')}
-                trend={fields.length > 0 ? "up" : "neutral"}
-                trendValue={fields.length > 0 ? fields.length.toString() : "0"}
-                icon={MapPin}
-              />
-              <StatsCard
-                title={t('dashboard.stats.crops.title')}
-                value={activeCropsCount.toString()}
-                description={t('dashboard.stats.crops.description')}
-                trend={cropsList.length > 0 ? "up" : "neutral"}
-                trendValue={cropsList.length.toString()}
-                icon={Sprout}
-              />
-              <StatsCard
-                title={t('dashboard.stats.livestock.title')}
-                value="0"
-                description={t('dashboard.stats.livestock.description')}
-                trend="neutral"
-                trendValue="0"
-                icon={Bird}
-              />
-              <StatsCard
-                title={t('dashboard.stats.revenue.title')}
-                value="₹0"
-                description={t('dashboard.stats.revenue.description')}
-                trend="neutral"
-                trendValue="0%"
-                icon={PiggyBank}
-              />
+        <>
+          {needsSetup && (
+            <SetupChecklist compact hasFarm hasFields={fields.length > 0} hasCrops={plantings.length > 0} hasTeam={teamSize > 1} onAddFarm={() => setAddFarmOpen(true)} />
+          )}
+
+          <WeatherWidget farmId={farmId} />
+
+          <div className="flex flex-wrap items-start gap-6">
+            <div className="flex min-w-0 flex-[2_1_560px] flex-col gap-6">
+              <DueToday tasks={tasks} memberNames={memberNames} onToggle={handleToggle} />
+              {fields.length > 0 && <FieldsGlance fields={glanceFields} />}
+              <SeasonProgress rows={seasonRows} />
             </div>
 
-            <Tabs defaultValue="overview" className="mb-6">
-              <TabsList className="mb-4">
-                <TabsTrigger value="overview">{t('dashboard.tabs.overview')}</TabsTrigger>
-                <TabsTrigger value="crops">{t('dashboard.tabs.crops')}</TabsTrigger>
-                <TabsTrigger value="tasks">{t('dashboard.tabs.tasks')}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <WeatherWidget farmId={selectedFarmId} />
-                  <QuickLinks />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="crops">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t('dashboard.crop_status.title')}</CardTitle>
-                    <CardDescription>{t('dashboard.crop_status.description')}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <CropStatus crops={cropsList} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="tasks">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t('dashboard.upcoming_tasks.title')}</CardTitle>
-                    <CardDescription>{t('dashboard.upcoming_tasks.description')}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <TaskList tasks={tasks} onToggle={handleToggleTask} />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+            <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-6">
+              <div className="grid grid-cols-2 gap-3">
+                <KpiTile
+                  label={t('dashboard.stats.fields.title')}
+                  value={String(fields.length)}
+                  note={totalArea > 0 ? `${Math.round(totalArea * 10) / 10} ${areaUnit}` : undefined}
+                />
+                <KpiTile
+                  label={t('today.kpi.growing', 'Crops growing')}
+                  value={String(growing)}
+                  note={planned > 0 ? t('today.kpi.planned', { count: planned, defaultValue: '{{count}} planned' }) : undefined}
+                />
+                <KpiTile label={t('dashboard.stats.livestock.title')} value={String(animalCount)} note={t('dashboard.stats.livestock.description')} />
+                <KpiTile label={t('today.kpi.open', 'Open tasks')} value={String(openTasks.length)} note={t('today.kpi.next_days', 'today and next 3 days')} />
+              </div>
+              {money && <MoneyThisMonth totals={money} monthLabel={now.toLocaleDateString(i18n.language, { month: 'long' })} />}
+              <NeedsAttention items={attention} />
+              <MandiToday prices={prices} />
+            </div>
           </div>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('dashboard.recent_activities.title')}</CardTitle>
-                <CardDescription>{t('dashboard.recent_activities.description')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <NotificationList notifications={notifications as Notification[]} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('dashboard.upcoming_tasks.title')}</CardTitle>
-                <CardDescription>{t('dashboard.upcoming_tasks.description')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TaskList tasks={tasks} onToggle={handleToggleTask} />
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        </>
       )}
+
+      <Dialog open={addFarmOpen} onOpenChange={setAddFarmOpen}>
+        <DialogContent className="max-w-4xl p-0">
+          <DialogHeader>
+            <VisuallyHidden>
+              <DialogTitle>{t('today.setup.add_farm', 'Add your farm')}</DialogTitle>
+            </VisuallyHidden>
+            <VisuallyHidden>
+              <DialogDescription>{t('today.setup.farm_detail', 'Name, village and total area')}</DialogDescription>
+            </VisuallyHidden>
+          </DialogHeader>
+          <AddFarmForm
+            onClose={() => setAddFarmOpen(false)}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['farms'] });
+              setAddFarmOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
-
 
 export default Dashboard;

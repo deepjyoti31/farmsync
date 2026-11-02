@@ -38,10 +38,10 @@ const LoanList = () => {
         .reduce((sum, l) => sum + Number(l.amount), 0);
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold">Loans</h1>
+                    <h1 className="page-title">Loans</h1>
                     <p className="text-muted-foreground">Manage your working capital</p>
                 </div>
                 <Button disabled title="Loan applications are coming soon">

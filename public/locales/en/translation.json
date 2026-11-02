@@ -4,7 +4,7 @@
         "tagline": "Modern Farm Management"
     },
     "dashboard": {
-        "title": "Dashboard",
+        "title": "Today",
         "welcome": {
             "title": "Welcome to FarmSync",
             "description": "You don't have any farms yet. Add your first farm to get started managing your agricultural operations."
@@ -47,7 +47,7 @@
         "error_loading": "Error loading {{resource}}"
     },
     "nav": {
-        "dashboard": "Dashboard",
+        "dashboard": "Today",
         "tasks": "Tasks",
         "fields": "Fields",
         "crops": "Crops",
@@ -56,7 +56,7 @@
         "inventory": "Inventory",
         "equipment": "Equipment",
         "weather": "Weather",
-        "sensors": "IoT & Sensors",
+        "sensors": "Sensors",
         "market": "Market",
         "reports": "Reports",
         "analytics": "Analytics",
@@ -70,15 +70,16 @@
         "cooperative": "Cooperative",
         "bulk_orders": "Bulk Orders",
         "traceability": "Traceability",
-        "financial_services": "Financial Services",
-        "compliance": "Compass Compliance",
+        "financial_services": "Loans and insurance",
+        "compliance": "Compliance",
         "sections": {
-            "operations": "Operations",
-            "resources": "Supply Chain & Resources",
-            "intelligence": "Intelligence",
-            "ecosystem": "Ecosystem & Market",
-            "admin": "Admin & Services"
-        }
+            "operations": "Farm",
+            "resources": "Supplies and money",
+            "intelligence": "Insights",
+            "ecosystem": "Network",
+            "admin": "Services"
+        },
+        "organization": "Organization"
     },
     "common": {
         "loading": "Loading...",
@@ -139,6 +140,13 @@
             "password": "••••••••",
             "first_name": "First name",
             "last_name": "Last name"
+        },
+        "panel": {
+            "free": "Free and open source, in six languages",
+            "label": "About FarmSync",
+            "offline": "Look up your records in the field, even on a weak signal",
+            "title": "Your farm's records, in your pocket.",
+            "units": "Hectares, acres or bigha; quintals or tonnes"
         }
     },
     "landing": {
@@ -260,5 +268,239 @@
             "logout_error": "Logout failed",
             "logout_error_desc": "There was an error logging out."
         }
+    },
+    "notfound": {
+        "body": "We could not find",
+        "code": "Error 404",
+        "home": "Go to Today",
+        "title": "This page is not on the map"
+    },
+    "shell": {
+        "due_count": "{{count}} due",
+        "jump_to": "Jump to…",
+        "main_menu": "Main menu",
+        "no_match": "Nothing matches that.",
+        "offline": "Offline · viewing saved data",
+        "offline_body": "Pages and records you opened before are still here. Saving changes needs a connection, so try again when the signal returns.",
+        "offline_short": "Offline. You can still view what was loaded; saving needs a connection.",
+        "offline_title": "You're offline.",
+        "online": "Online",
+        "open_menu": "Open menu",
+        "record": {
+            "label": "Record",
+            "title": "What do you want to record?"
+        },
+        "search_menu": "Search the menu",
+        "skip": "Skip to content"
+    },
+    "site": {
+        "beta": "Beta",
+        "features": {
+            "beta_note": "Beta means it works end to end with known gaps, listed openly in the roadmap.",
+            "compliance": {
+                "body": "Input and water logs, audit-ready PDF and CSV, automatic checks for banned inputs.",
+                "title": "Sustainability and compliance"
+            },
+            "crops": {
+                "body": "Plan and follow each planting from sowing to harvest, then record what came in.",
+                "title": "Crops"
+            },
+            "fields": {
+                "body": "Draw boundaries on a satellite map. Area and GPS centre are worked out for you; add soil type and pH.",
+                "title": "Farms and fields"
+            },
+            "finances": {
+                "body": "Income and expenses by category, with profit and loss you can export.",
+                "title": "Finances"
+            },
+            "inventory": {
+                "body": "Low stock and expiry warnings; machine service history and what is due next.",
+                "title": "Inventory and equipment"
+            },
+            "livestock": {
+                "body": "Animal register, health records with vaccination reminders, milk and egg production.",
+                "title": "Livestock"
+            },
+            "market": {
+                "body": "Mandi price board, produce listings, buyer inquiries and a supplier directory.",
+                "title": "Market"
+            },
+            "tasks": {
+                "body": "Assign work to your team. Repeating jobs reschedule themselves and late ones raise an alert.",
+                "title": "Tasks"
+            },
+            "title": "Everything a working farm keeps track of",
+            "weather": {
+                "body": "Five-day forecast per farm. Connect soil and water sensors and chart readings live.",
+                "title": "Weather and sensors"
+            }
+        },
+        "footer": {
+            "contributing": "Contributing",
+            "roadmap": "Roadmap",
+            "security": "Security"
+        },
+        "hero": {
+            "body": "Map fields, plan crops, look after animals, track money and harvests. One app for every farm, from two bigha to a whole cooperative.",
+            "eyebrow": "Open source · MIT licensed",
+            "selfhost": "Self-host it",
+            "title_a": "Farm records that work",
+            "title_b": "where you farm."
+        },
+        "nav": {
+            "features": "Features",
+            "label": "Site",
+            "selfhost": "Self-host",
+            "teams": "Teams and co-ops"
+        },
+        "reasons": {
+            "free": {
+                "body": "MIT licensed and community built. No per-acre pricing, no lock-in, and your farm data stays yours.",
+                "title": "Free, for good"
+            },
+            "local": {
+                "body": "Hectares, acres or bigha; quintals or tonnes. English, Hindi, Spanish, French, Chinese and Arabic, with right-to-left layout.",
+                "title": "Your units, your language"
+            },
+            "offline": {
+                "body": "Install it on your phone. Records you have opened stay available when the connection drops.",
+                "title": "Works on a weak signal"
+            }
+        },
+        "roles": {
+            "admin": {
+                "body": "Manage people, fields and records",
+                "title": "Admin"
+            },
+            "editor": {
+                "body": "Add and change day-to-day records",
+                "title": "Editor"
+            },
+            "owner": {
+                "body": "Everything, including deleting the farm",
+                "title": "Owner"
+            },
+            "viewer": {
+                "body": "Read only, for advisers and family",
+                "title": "Viewer"
+            }
+        },
+        "selfhost": {
+            "body": "FarmSync runs on a free Supabase project and any static host. Fork it, translate it, add the crops your region grows. Pull requests are welcome.",
+            "guide": "Getting started guide",
+            "title": "Your data, on your server if you like"
+        },
+        "stable": "Stable",
+        "start": "Start free",
+        "teams": {
+            "body": "Give each person the access they need, enforced in the database. Co-ops see member farms, the crop mix, bulk input orders and produce batches for traceability.",
+            "title": "Built for families, teams and cooperatives"
+        },
+        "why": "Why FarmSync"
+    },
+    "today": {
+        "attention": {
+            "expiry": "Expiry",
+            "health": "Animal health",
+            "none": "Stock, machines and animals all look fine for the next two weeks.",
+            "service": "Service",
+            "stock": "Low stock",
+            "title": "Needs attention"
+        },
+        "due": {
+            "add": "Add a task",
+            "all": "All tasks",
+            "done": "Done",
+            "error": "Could not update the task",
+            "late": "{{count}} late",
+            "none": "Nothing due. Enjoy the quiet, or plan the week ahead.",
+            "open": "{{count}} open",
+            "overdue": "Late",
+            "title": "Due today and next",
+            "today": "Today"
+        },
+        "fields": {
+            "empty": "Nothing planted",
+            "growing": "Growing",
+            "legend": "Legend",
+            "map_label": "Map of your fields coloured by crop stage",
+            "open": "Open map",
+            "planned": "Planned",
+            "ready": "Ready to harvest",
+            "title": "Fields at a glance"
+        },
+        "greeting": {
+            "afternoon": "Good afternoon, {{name}}",
+            "evening": "Good evening, {{name}}",
+            "morning": "Good morning, {{name}}"
+        },
+        "kpi": {
+            "growing": "Crops growing",
+            "next_days": "today and next 3 days",
+            "open": "Open tasks",
+            "planned": "{{count}} planned"
+        },
+        "mandi": {
+            "down": "down",
+            "title": "Mandi prices",
+            "unit": "latest, per quintal",
+            "up": "up"
+        },
+        "money": {
+            "expenses": "Expenses",
+            "income": "Income",
+            "net": "Net",
+            "title": "{{month}} so far"
+        },
+        "season": {
+            "bar": "{{name}} season",
+            "crop": "Crop",
+            "day": "Day {{day}}",
+            "day_of": "Day {{day}} of {{total}}",
+            "harvest_now": "Harvest window is open",
+            "harvest_on": "Harvest from {{date}}",
+            "no_harvest_date": "Add an expected harvest date",
+            "none": "No crops in the ground. Plan a planting to follow it here.",
+            "not_sown": "Not sown yet",
+            "plan": "Crop plan",
+            "sowing": "Sowing {{date}}",
+            "title": "Season progress"
+        },
+        "setup": {
+            "add_farm": "Add your farm",
+            "body": "Most people finish in about ten minutes. You can skip any step and come back to it.",
+            "crops": "Add what is planted",
+            "crops_detail": "Crop, variety and sowing date per field",
+            "done": "Done",
+            "farm": "Add your farm",
+            "farm_detail": "Name, village and total area",
+            "fields": "Draw your fields on the map",
+            "fields_detail": "Area and GPS centre are worked out for you",
+            "team": "Invite your team",
+            "team_detail": "Owner, admin, editor or viewer",
+            "title": "Set up your farm in four steps",
+            "title_more": "Finish setting up"
+        },
+        "sub_clear": "Nothing is due today.",
+        "sub_due": "{{count}} things to do today.",
+        "sub_due_late": "{{count}} things to do today, {{late}} of them late.",
+        "sub_new": "Let's get your farm on the map.",
+        "weather": {
+            "forecast": "Forecast",
+            "humidity": "Humidity",
+            "label": "Weather",
+            "loading": "Getting the forecast…",
+            "no_gps": "Draw your farm on the map, or add its GPS location, to see local weather.",
+            "none": "No forecast yet",
+            "rain": "Rain",
+            "rain_tip": "You may be able to skip the irrigation before it.",
+            "refresh": "Try again",
+            "retry": "The forecast service did not answer. Try again in a moment.",
+            "wind": "Wind",
+            "rain_title": "Rain likely on {{day}} ({{chance}}%)",
+            "high": "High",
+            "low": "low"
+        },
+        "welcome": "Welcome to FarmSync, {{name}}"
     }
 }

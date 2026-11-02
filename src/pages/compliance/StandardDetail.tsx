@@ -67,14 +67,14 @@ const StandardDetail = () => {
     if (!standard) return <div className="p-8">Standard not found</div>;
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="space-y-6">
             <Button variant="ghost" onClick={() => navigate('/dashboard/compliance')} className="mb-4">
                 <ArrowLeft className="h-4 w-4 mr-2" /> Back to Compass
             </Button>
 
             <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                    <h1 className="text-3xl font-bold">{standard.name}</h1>
+                    <h1 className="page-title">{standard.name}</h1>
                     <div className="flex gap-2">
                         <Badge>{standard.version}</Badge>
                         <Badge variant="outline">{standard.authority}</Badge>

@@ -24,12 +24,25 @@ export default defineConfig(({ mode }) => ({
         // PDF generation needs a connection anyway; skip ~1 MB of rarely used code on install.
         globIgnores: ['**/pdf-*.js', '**/pdf-extras-*.js', '**/complianceReportPdf-*.js'],
         navigateFallback: '/index.html',
+        // Keep the brand fonts available offline after the first visit.
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts',
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       manifest: {
         name: 'FarmSync',
         short_name: 'FarmSync',
         description: 'Comprehensive Farm Management Application',
-        theme_color: '#f3f4f6',
+        theme_color: '#11261A',
+        background_color: '#F4F5F0',
         icons: [
           {
             src: '/pwa-192x192.png',

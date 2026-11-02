@@ -1,87 +1,121 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * FarmSync design language: "Field Ledger".
+ * Dark forest ink on a pale sage ground, field green for actions,
+ * harvest amber as the accent. Every text pair meets 4.5:1.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Ground and ink */
+    --background: 72 20% 95%; /* #F4F5F0 page ground */
+    --foreground: 141 30% 11%; /* #14251A ink */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 141 30% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 141 30% 11%;
 
-    --primary: 142 43% 42%;
-    --primary-foreground: 210 40% 98%;
+    /* Field green: primary actions and links */
+    --primary: 141 55% 27%; /* #1F6B3A */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 25 36% 47%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Quiet filled surface (segmented tracks, secondary buttons) */
+    --secondary: 90 16% 90%; /* #E6EAE2 */
+    --secondary-foreground: 141 30% 11%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 86 18% 92%; /* #ECEFE8 */
+    --muted-foreground: 136 9% 34%; /* #4F5E53 */
 
-    --accent: 45 100% 51%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Hover and selected rows */
+    --accent: 120 25% 95%; /* #F0F6F0 */
+    --accent-foreground: 141 30% 11%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 3 71% 41%; /* #B3261E */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142 43% 42%;
+    --border: 87 14% 87%; /* #DFE3DA */
+    --input: 130 8% 69%; /* #A9B5AB */
+    --ring: 141 55% 27%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem; /* 10px controls; cards use rounded-2xl */
 
-    --sidebar-background: 142 43% 42%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 142 43% 32%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 142 43% 52%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 142 43% 32%;
-    --sidebar-ring: 45 100% 51%;
+    /* Brand accents used by the components */
+    --harvest: 36 80% 57%; /* #E9A23B */
+    --harvest-foreground: 146 38% 11%;
+    --leaf: 145 46% 34%; /* #2E7D4F */
+    --leaf-tint: 125 30% 92%; /* #E3F0E4 */
+    --warning: 36 100% 27%; /* #8A5300 */
+    --warning-tint: 41 85% 91%; /* #FCEFD2 */
+    --info: 212 63% 33%; /* #1F4F8A */
+    --info-tint: 214 56% 94%; /* #E6EEF8 */
+    --rust: 20 77% 31%; /* #8A3A12 */
+    --rust-tint: 23 80% 91%; /* #FBE4D5 */
+
+    /* Sidebar: dark forest */
+    --sidebar-background: 146 38% 11%; /* #11261A */
+    --sidebar-foreground: 129 18% 92%; /* #E8EFE9 */
+    --sidebar-muted: 136 13% 66%; /* #9DB3A3 */
+    --sidebar-primary: 125 30% 93%; /* active item #E9F2EA */
+    --sidebar-primary-foreground: 146 38% 11%;
+    --sidebar-accent: 143 35% 15%; /* hover #183222 */
+    --sidebar-accent-foreground: 129 18% 92%;
+    --sidebar-border: 143 24% 22%; /* #2A4434 */
+    --sidebar-ring: 36 80% 57%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 146 30% 7%;
+    --foreground: 129 18% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 146 28% 10%;
+    --card-foreground: 129 18% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 146 28% 10%;
+    --popover-foreground: 129 18% 92%;
 
-    --primary: 142 43% 42%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 142 45% 48%;
+    --primary-foreground: 146 38% 8%;
 
-    --secondary: 25 36% 47%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 146 20% 16%;
+    --secondary-foreground: 129 18% 92%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 146 20% 14%;
+    --muted-foreground: 136 12% 68%;
 
-    --accent: 45 100% 51%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 146 25% 16%;
+    --accent-foreground: 129 18% 92%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 3 65% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142 43% 52%;
+    --border: 146 18% 20%;
+    --input: 146 15% 32%;
+    --ring: 142 45% 48%;
 
-    --sidebar-background: 142 43% 32%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 142 43% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 142 43% 22%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 142 43% 22%;
-    --sidebar-ring: 45 100% 51%;
+    --harvest: 36 80% 57%;
+    --harvest-foreground: 146 38% 8%;
+    --leaf: 145 40% 52%;
+    --leaf-tint: 145 30% 16%;
+    --warning: 38 85% 66%;
+    --warning-tint: 36 40% 16%;
+    --info: 212 70% 72%;
+    --info-tint: 212 35% 17%;
+    --rust: 20 80% 70%;
+    --rust-tint: 20 40% 17%;
+
+    --sidebar-background: 146 38% 6%;
+    --sidebar-foreground: 129 18% 92%;
+    --sidebar-muted: 136 13% 66%;
+    --sidebar-primary: 125 30% 93%;
+    --sidebar-primary-foreground: 146 38% 11%;
+    --sidebar-accent: 143 35% 12%;
+    --sidebar-accent-foreground: 129 18% 92%;
+    --sidebar-border: 143 24% 18%;
+    --sidebar-ring: 36 80% 57%;
   }
 }
 
@@ -90,7 +124,46 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "ss01";
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tight;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Small uppercase label, used above page titles and in panels */
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.06em] text-muted-foreground;
+  }
+
+  /* Page title used at the top of every app screen */
+  .page-title {
+    @apply font-display text-[32px] font-bold leading-[1.1] tracking-[-0.02em] text-foreground md:text-[40px];
+  }
+
+  /* Flat card surface: 1px line, no shadow */
+  .surface {
+    @apply rounded-2xl border bg-card text-card-foreground;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }

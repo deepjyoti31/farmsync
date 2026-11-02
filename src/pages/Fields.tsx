@@ -59,7 +59,7 @@ const Fields = () => {
   // Show loading state while initializing
   if (isInitializing || isLoadingFarms) {
     return (
-      <div className="container mx-auto p-6 max-w-7xl">
+      <div className="w-full">
         <div className="flex items-center justify-center h-[50vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -68,9 +68,9 @@ const Fields = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="w-full">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold">Field Management</h1>
+        <h1 className="page-title">Fields</h1>
         <FarmSelector
           selectedFarmId={selectedFarmId}
           onFarmChange={setSelectedFarmId}
