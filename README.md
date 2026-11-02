@@ -35,9 +35,10 @@ FarmSync is designed the other way round:
 | Area | What you can do | Status |
 | --- | --- | --- |
 | Farms and fields | Draw farm boundaries on a satellite map, with automatic area and GPS centre; manage fields and soil data | Stable |
-| Crops | Plan and track plantings through planted, growing and harvested; record harvest quantities | Stable |
-| Livestock | Register animals by type, breed, tag and status | Beta |
-| Inventory and equipment | Stock levels with low-stock and expiry warnings; equipment register | Stable |
+| Tasks | Assign work to your team, repeating jobs that reschedule themselves, overdue alerts | Stable |
+| Crops | Plan and track plantings through planted, growing and harvested; crop calendar; record harvest quantities | Stable |
+| Livestock | Animal register, health records with vaccination reminders, milk and egg production tracking | Beta |
+| Inventory and equipment | Stock levels with low-stock and expiry warnings; equipment register with service history and due dates | Stable |
 | Finances | Income and expense tracking by category; profit and loss charts | Stable |
 | Weather | Current conditions and 5-day forecast for each farm | Stable |
 | IoT sensors | Register devices, ingest readings over HTTPS, chart live telemetry | Beta |
@@ -46,7 +47,7 @@ FarmSync is designed the other way round:
 | Community | Discussion forums and expert tips | Beta |
 | Cooperatives | Member farms, crop mix, bulk input orders, produce batches for traceability | Beta |
 | Financial services | Loan and insurance records, indicative credit score | Beta |
-| Sustainability and compliance | Input and water logs, CSV export for audits, automated banned-input checks | Beta |
+| Sustainability and compliance | Input and water logs, audit-ready PDF and CSV exports, automated banned-input checks | Beta |
 
 "Beta" means the feature works end to end but has known gaps listed in the [roadmap](docs/roadmap.md).
 

@@ -19,7 +19,11 @@ export function toCsv(headers: string[], rows: CsvValue[][]): string {
 /** Trigger a browser download of CSV text. */
 export function downloadCsv(filename: string, csv: string): void {
   // The BOM makes Excel open UTF-8 (e.g. Hindi product names) correctly.
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  downloadBlob(filename, new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+}
+
+/** Trigger a browser download of any generated file. */
+export function downloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

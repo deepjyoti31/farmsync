@@ -5,6 +5,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## Unreleased
 
+### Added
+
+- **Tasks page** (`/dashboard/tasks`): create, edit, assign and delete tasks; repeating tasks (daily, weekly, monthly, yearly) schedule their next occurrence when completed; overdue and due-today highlighting. Dashboard task checkboxes now complete tasks.
+- **Livestock health records**: vaccinations, deworming, treatments and check-ups per animal, with a next-due date and a "due in the next two weeks" reminder panel.
+- **Livestock production**: log milk, eggs, wool, weight or honey for one animal or the whole herd or flock, with 7 and 30 day totals and a daily chart.
+- **Crop calendar** on the Crops page: month view of sowing, expected harvest and actual harvest dates, with an agenda list for phones.
+- **Equipment maintenance**: log services (optionally recording the cost as a farm expense), schedule the next service, see overdue and due-soon machines, and browse the service history.
+- **Audit report PDF** on the Sustainability page: input and water summaries, full logs and a declaration block for inspectors. jsPDF loads only when a report is downloaded.
+- **Profile pictures**: upload a JPG, PNG or WebP (up to 2 MB) to a per-user folder in the new `avatars` storage bucket.
+- Migration `20261102120000_tasks_livestock_records_avatars.sql`.
+
+### Fixed
+
+- Deleting a machine from the equipment table did nothing.
+- Dashboard tasks without a due date showed as 1 January 1970, and dates could display a day early in timezones west of UTC.
+- The Crops table now shows the planting's own name when it is not linked to a catalogue crop.
+
 ## 0.2.0 - 2026-11-02
 
 A stabilisation release: the modules added in 0.1 now work end to end against a freshly migrated database.

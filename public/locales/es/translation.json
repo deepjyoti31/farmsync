@@ -48,6 +48,7 @@
     },
     "nav": {
         "dashboard": "Tablero",
+        "tasks": "Tareas",
         "fields": "Campos",
         "crops": "Cultivos",
         "livestock": "Ganado",

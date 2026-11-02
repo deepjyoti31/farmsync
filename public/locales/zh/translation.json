@@ -5,6 +5,7 @@
     },
     "nav": {
         "dashboard": "仪表板",
+        "tasks": "任务",
         "fields": "田地",
         "crops": "作物",
         "livestock": "牲畜",

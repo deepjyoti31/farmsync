@@ -22,6 +22,7 @@ const Signup = lazy(() => import("./pages/Signup"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Tasks = lazy(() => import("./pages/Tasks"));
 const FarmsList = lazy(() => import("./pages/FarmsList"));
 const Fields = lazy(() => import("./pages/Fields"));
 const Crops = lazy(() => import("./pages/Crops"));
@@ -81,6 +82,7 @@ const AppContent = () => {
         >
           {/* Child paths are relative to /dashboard */}
           <Route index element={<Dashboard />} />
+          <Route path="tasks" element={<Tasks />} />
           <Route path="farms" element={<FarmsList />} />
           <Route path="fields" element={<Fields />} />
           <Route path="crops" element={<Crops />} />
