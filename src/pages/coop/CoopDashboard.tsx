@@ -6,6 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Users, Map as MapIcon, Package, ShoppingCart } from 'lucide-react';
 import { CoopStats } from '@/types/coop';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { toHectares } from '@/lib/yieldAnalytics';
 
 const CoopDashboard = () => {
     const { currentOrganization } = useAuth();
@@ -16,6 +19,8 @@ const CoopDashboard = () => {
     useEffect(() => {
         if (currentOrganization) {
             loadStats();
+        } else {
+            setLoading(false);
         }
     }, [currentOrganization]);
 
@@ -33,10 +38,14 @@ const CoopDashboard = () => {
             // Note: This requires the 'farms' table to have 'organization_id' populated via previous steps
             const { data: farms } = await supabase
                 .from('farms')
-                .select('total_area')
+                .select('total_area, area_unit')
                 .eq('organization_id', currentOrganization.id);
 
-            const totalArea = farms?.reduce((sum, farm) => sum + (farm.total_area || 0), 0) || 0;
+            // Farms may record area in acres, hectares or bigha; normalise to hectares.
+            const totalArea = farms?.reduce(
+                (sum, farm) => sum + (toHectares(Number(farm.total_area || 0), farm.area_unit || 'acres') ?? 0),
+                0,
+            ) || 0;
 
             // 3. Active Batches
             const { count: batchCount } = await supabase
@@ -59,13 +68,21 @@ const CoopDashboard = () => {
                 openOrders: orderCount || 0
             });
 
-            // Dummy Distribution Data for chart (Real data would aggregate from field_crops)
-            setCropDistribution([
-                { name: 'Wheat', value: 400 },
-                { name: 'Corn', value: 300 },
-                { name: 'Soy', value: 300 },
-                { name: 'Rice', value: 200 },
-            ]);
+            // Current plantings across all member farms, counted by crop
+            const { data: plantings } = await supabase
+                .from('field_crops')
+                .select('name, crops(name), fields!inner(farms!inner(organization_id))')
+                .eq('fields.farms.organization_id', currentOrganization.id)
+                .in('status', ['planned', 'planted', 'growing']);
+
+            const counts = new Map<string, number>();
+            for (const p of plantings || []) {
+                const name = p.crops?.name ?? p.name ?? 'Other';
+                counts.set(name, (counts.get(name) ?? 0) + 1);
+            }
+            setCropDistribution(
+                Array.from(counts, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
+            );
 
         } catch (error) {
             console.error('Error loading coop stats:', error);
@@ -85,6 +102,14 @@ const CoopDashboard = () => {
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold">Cooperative Dashboard</h1>
                 <p className="text-muted-foreground">Overview for {currentOrganization?.name}</p>
+                <div className="flex gap-2 pt-2">
+                    <Button asChild variant="outline" size="sm">
+                        <Link to="/dashboard/coop/orders"><ShoppingCart className="h-4 w-4 mr-2" />Bulk Orders</Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                        <Link to="/dashboard/coop/batches"><Package className="h-4 w-4 mr-2" />Produce Batches</Link>
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -130,9 +155,14 @@ const CoopDashboard = () => {
                 <Card className="col-span-1">
                     <CardHeader>
                         <CardTitle>Crop Distribution</CardTitle>
-                        <CardDescription>Estimated aggregate crop types across member farms</CardDescription>
+                        <CardDescription>Active plantings across member farms</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[300px]">
+                        {cropDistribution.length === 0 ? (
+                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                                No active plantings on member farms yet.
+                            </div>
+                        ) : (
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
@@ -152,6 +182,7 @@ const CoopDashboard = () => {
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>
+                        )}
                     </CardContent>
                 </Card>
 

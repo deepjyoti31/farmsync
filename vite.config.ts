@@ -16,7 +16,13 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png'],
+      workbox: {
+        // Mapbox GL alone is ~1.7 MB minified, so allow larger chunks to be precached.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,json}'],
+        navigateFallback: '/index.html',
+      },
       manifest: {
         name: 'FarmSync',
         short_name: 'FarmSync',
@@ -46,6 +52,23 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  build: {
+    // Mapbox GL is a single large library that cannot be split further.
+    chunkSizeWarningLimit: 1800,
+    rollupOptions: {
+      output: {
+        // Group large, rarely changing libraries into their own long-cached chunks.
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          supabase: ["@supabase/supabase-js"],
+          query: ["@tanstack/react-query", "@tanstack/react-query-persist-client", "@tanstack/query-sync-storage-persister"],
+          charts: ["recharts"],
+          mapbox: ["mapbox-gl", "@mapbox/mapbox-gl-draw"],
+          i18n: ["i18next", "react-i18next", "i18next-browser-languagedetector", "i18next-http-backend"],
+        },
+      },
     },
   },
 }));

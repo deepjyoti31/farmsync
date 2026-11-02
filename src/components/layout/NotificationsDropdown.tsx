@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
-import { notifications as mockNotifications } from '@/data/mockData';
 import { useNavigate } from 'react-router-dom';
 
 const NotificationsDropdown = () => {
@@ -26,8 +25,8 @@ const NotificationsDropdown = () => {
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      if (!user) return mockNotifications;
-      
+      if (!user) return [];
+
       try {
         const { data, error } = await supabase
           .from('notifications')
@@ -38,10 +37,10 @@ const NotificationsDropdown = () => {
         
         if (error) throw error;
         
-        return data.length > 0 ? data : mockNotifications;
+        return data;
       } catch (error) {
         console.error('Error fetching notifications:', error);
-        return mockNotifications;
+        return [];
       }
     },
     enabled: !!user,

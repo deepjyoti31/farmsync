@@ -10,7 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { generateDeviceApiKey, metricLabel, toTelemetrySeries } from '@/lib/telemetry';
+
+const SERIES_COLORS = ['#2563eb', '#16a34a', '#d97706', '#9333ea'];
 
 type Device = {
     id: string;
@@ -19,11 +22,6 @@ type Device = {
     api_key: string;
     is_active: boolean;
     farm_id: string;
-};
-
-type TelemetryData = {
-    timestamp: string;
-    data: any;
 };
 
 const Sensors = () => {
@@ -41,15 +39,26 @@ const Sensors = () => {
         },
     });
 
-    // Mock Telemetry Data (Since we don't have real devices sending data yet)
-    const mockData = [
-        { time: '08:00', temp: 22, humidity: 60 },
-        { time: '09:00', temp: 23, humidity: 58 },
-        { time: '10:00', temp: 25, humidity: 55 },
-        { time: '11:00', temp: 27, humidity: 52 },
-        { time: '12:00', temp: 28, humidity: 50 },
-        { time: '13:00', temp: 29, humidity: 48 },
-    ];
+    const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+    const activeDeviceId = selectedDeviceId ?? devices?.[0]?.id ?? null;
+    const activeDevice = devices?.find((d) => d.id === activeDeviceId);
+
+    // Latest readings for the selected device, refreshed every minute
+    const { data: telemetry, isLoading: isLoadingTelemetry } = useQuery({
+        queryKey: ['telemetry', activeDeviceId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('telemetry')
+                .select('timestamp, data')
+                .eq('device_id', activeDeviceId!)
+                .order('timestamp', { ascending: false })
+                .limit(50);
+            if (error) throw error;
+            return toTelemetrySeries(data || []);
+        },
+        enabled: !!activeDeviceId,
+        refetchInterval: 60_000,
+    });
 
     const handleAddDevice = async () => {
         try {
@@ -66,7 +75,7 @@ const Sensors = () => {
                 return;
             }
 
-            const apiKey = 'dev_' + Math.random().toString(36).substr(2, 9);
+            const apiKey = generateDeviceApiKey();
 
             const { error } = await supabase.from('devices').insert({
                 name: newDeviceName,
@@ -97,7 +106,7 @@ const Sensors = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">loT & Sensors</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">IoT & Sensors</h1>
                     <p className="text-muted-foreground">Manage your hardware devices and monitor real-time telemetry.</p>
                 </div>
                 <Dialog open={isAddingDevice} onOpenChange={setIsAddingDevice}>
@@ -154,8 +163,8 @@ const Sensors = () => {
                         <Signal className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{devices?.length || 0}</div>
-                        <p className="text-xs text-muted-foreground">Online and transmitting</p>
+                        <div className="text-2xl font-bold">{devices?.filter((d) => d.is_active).length || 0}</div>
+                        <p className="text-xs text-muted-foreground">of {devices?.length || 0} registered</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -179,21 +188,55 @@ const Sensors = () => {
                     <h2 className="text-xl font-semibold">Device Telemetry</h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card className="col-span-1">
-                            <CardHeader>
-                                <CardTitle>Temperature & Humidity</CardTitle>
-                                <CardDescription>Real-time readings from Weather Station</CardDescription>
+                            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+                                <div>
+                                    <CardTitle>Live Readings</CardTitle>
+                                    <CardDescription>Last 50 readings from {activeDevice?.name ?? 'device'}</CardDescription>
+                                </div>
+                                <Select value={activeDeviceId ?? undefined} onValueChange={setSelectedDeviceId}>
+                                    <SelectTrigger className="w-[180px]" aria-label="Device">
+                                        <SelectValue placeholder="Select device" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {devices?.map((d) => (
+                                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </CardHeader>
                             <CardContent className="h-[300px]">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={mockData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="time" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Line type="monotone" dataKey="temp" stroke="#8884d8" name="Temp (°C)" />
-                                        <Line type="monotone" dataKey="humidity" stroke="#82ca9d" name="Humidity (%)" />
-                                    </LineChart>
-                                </ResponsiveContainer>
+                                {isLoadingTelemetry ? (
+                                    <div className="flex h-full items-center justify-center text-muted-foreground">Loading readings...</div>
+                                ) : !telemetry || telemetry.metrics.length === 0 ? (
+                                    <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+                                        <Signal className="h-8 w-8 opacity-50" />
+                                        <p className="font-medium text-foreground">No readings received yet</p>
+                                        <p>
+                                            Send JSON to the <code className="font-mono">ingest-telemetry</code> function with
+                                            the device API key in the <code className="font-mono">x-device-api-key</code> header.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={telemetry.points}>
+                                            <CartesianGrid strokeDasharray="3 3" />
+                                            <XAxis dataKey="time" />
+                                            <YAxis />
+                                            <Tooltip />
+                                            <Legend />
+                                            {telemetry.metrics.map((metric, i) => (
+                                                <Line
+                                                    key={metric}
+                                                    type="monotone"
+                                                    dataKey={metric}
+                                                    stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                                                    name={metricLabel(metric)}
+                                                    dot={false}
+                                                />
+                                            ))}
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -224,15 +267,15 @@ const Sensors = () => {
                                                 </div>
                                                 <div>
                                                     <p className="font-medium">{device.name}</p>
-                                                    <p className="text-sm text-muted-foreground capitalize">{device.type.replace('_', ' ')}</p>
+                                                    <p className="text-sm text-muted-foreground capitalize">{device.type.replace(/_/g, ' ')}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="flex items-center gap-2 text-sm text-green-600">
-                                                    <div className="h-2 w-2 rounded-full bg-green-600" />
-                                                    Active
+                                                <div className={`flex items-center gap-2 text-sm ${device.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
+                                                    <div className={`h-2 w-2 rounded-full ${device.is_active ? 'bg-green-600' : 'bg-muted-foreground'}`} />
+                                                    {device.is_active ? 'Active' : 'Inactive'}
                                                 </div>
-                                                <p className="text-xs text-muted-foreground mt-1 font-mono">ID: ...{device.id.substr(-4)}</p>
+                                                <p className="text-xs text-muted-foreground mt-1 font-mono">ID: ...{device.id.slice(-4)}</p>
                                             </div>
                                         </div>
                                     ))}

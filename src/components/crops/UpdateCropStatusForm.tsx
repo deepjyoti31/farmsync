@@ -10,7 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
+import { HARVEST_UNITS } from '@/lib/yieldAnalytics';
 
 interface UpdateCropStatusFormProps {
   cropId: string;
@@ -23,6 +25,9 @@ const UpdateCropStatusForm: React.FC<UpdateCropStatusFormProps> = ({
 }) => {
   const [status, setStatus] = useState<string>(currentStatus);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [harvestQuantity, setHarvestQuantity] = useState('');
+  const [harvestUnit, setHarvestUnit] = useState<string>('quintal');
+  const isHarvesting = status === 'harvested' && currentStatus !== 'harvested';
   const queryClient = useQueryClient();
 
   const handleStatusChange = (value: string) => {
@@ -38,18 +43,41 @@ const UpdateCropStatusForm: React.FC<UpdateCropStatusFormProps> = ({
       return;
     }
 
+    const quantity = Number(harvestQuantity);
+    if (isHarvesting && harvestQuantity !== '' && (!Number.isFinite(quantity) || quantity <= 0)) {
+      toast({
+        title: "Invalid quantity",
+        description: "Enter a harvested quantity greater than zero, or leave it blank.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsUpdating(true);
+      const today = new Date().toISOString().split('T')[0];
+      const recordHarvest = isHarvesting && harvestQuantity !== '';
 
       const { error } = await supabase
         .from('field_crops')
-        .update({ 
+        .update({
           status,
+          ...(isHarvesting ? { actual_harvest_date: today } : {}),
+          ...(recordHarvest ? { yield_amount: quantity, yield_unit: harvestUnit } : {}),
           updated_at: new Date().toISOString()
         })
         .eq('id', cropId);
 
       if (error) throw error;
+
+      // Harvest records feed the yield charts in Analytics.
+      if (recordHarvest) {
+        const { error: harvestError } = await supabase
+          .from('harvests')
+          .insert({ field_crop_id: cropId, quantity, unit: harvestUnit, harvest_date: today });
+        if (harvestError) throw harvestError;
+        queryClient.invalidateQueries({ queryKey: ['analytics_yield'] });
+      }
 
       // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['field_crops'] });
@@ -86,8 +114,8 @@ const UpdateCropStatusForm: React.FC<UpdateCropStatusFormProps> = ({
             <SelectItem value="failed">Failed</SelectItem>
           </SelectContent>
         </Select>
-        <Button 
-          onClick={handleSubmit} 
+        <Button
+          onClick={handleSubmit}
           disabled={isUpdating || status === currentStatus}
         >
           {isUpdating ? (
@@ -100,6 +128,31 @@ const UpdateCropStatusForm: React.FC<UpdateCropStatusFormProps> = ({
           )}
         </Button>
       </div>
+      {isHarvesting && (
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            min="0"
+            step="any"
+            inputMode="decimal"
+            placeholder="Quantity harvested"
+            aria-label="Quantity harvested"
+            className="w-[180px]"
+            value={harvestQuantity}
+            onChange={(e) => setHarvestQuantity(e.target.value)}
+          />
+          <Select value={harvestUnit} onValueChange={setHarvestUnit}>
+            <SelectTrigger className="w-[120px]" aria-label="Harvest unit">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {HARVEST_UNITS.map((unit) => (
+                <SelectItem key={unit} value={unit}>{unit}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
     </div>
   );
 };

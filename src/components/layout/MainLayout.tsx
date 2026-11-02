@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import AppSidebar from './AppSidebar';
 import TopBar from './TopBar';
+import PageLoader from '@/components/common/PageLoader';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
@@ -27,7 +28,9 @@ const MainLayout = () => {
         <TopBar onMenuClick={() => setOpen(true)} />
 
         <main className="flex-grow p-4 md:p-6 bg-muted/20 overflow-x-hidden">
-          <Outlet />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

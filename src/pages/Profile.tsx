@@ -71,9 +71,9 @@ const Profile = () => {
       form.reset({
         firstName: profile.first_name || '',
         lastName: profile.last_name || '',
-        phone: profile.phone || '',
+        phone: profile.phone_number || '',
       });
-      setAvatarUrl(profile.profile_image_url);
+      setAvatarUrl(profile.avatar_url);
     } else if (user) {
       // Fallback to user metadata if profile doesn't exist
       form.reset({
@@ -107,7 +107,7 @@ const Profile = () => {
           .update({
             first_name: data.firstName,
             last_name: data.lastName || null,
-            phone: data.phone || null,
+            phone_number: data.phone || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', user.id);
@@ -121,7 +121,7 @@ const Profile = () => {
             id: user.id,
             first_name: data.firstName,
             last_name: data.lastName || null,
-            phone: data.phone || null,
+            phone_number: data.phone || null,
           });
         
         updateError = error;

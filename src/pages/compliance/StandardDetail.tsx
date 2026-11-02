@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, PlayCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ComplianceStandard, ComplianceRule } from '@/types/compliance';
-import { runMockAudit } from '@/lib/complianceEngine';
+import { runAudit, type RuleResult } from '@/lib/complianceEngine';
 import { toast } from '@/hooks/use-toast';
 
 const StandardDetail = () => {
@@ -16,6 +16,8 @@ const StandardDetail = () => {
     const [standard, setStandard] = useState<ComplianceStandard | null>(null);
     const [rules, setRules] = useState<ComplianceRule[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isAuditing, setIsAuditing] = useState(false);
+    const [results, setResults] = useState<Record<string, RuleResult>>({});
 
     useEffect(() => {
         if (id) loadData();
@@ -35,20 +37,30 @@ const StandardDetail = () => {
         }
     };
 
-    const handleRunAudit = () => {
-        toast({
-            title: "Running Audit...",
-            description: "Validating latest farm logs against rules.",
-        });
+    // Check every rule against the products recorded in the input log
+    // (RLS limits this to farms the user can access).
+    const handleRunAudit = async () => {
+        setIsAuditing(true);
+        try {
+            const { data, error } = await supabase.from('sustainability_logs').select('product_name');
+            if (error) throw error;
 
-        // Simulate checking
-        setTimeout(() => {
+            const audit = runAudit(rules, (data || []).map((l) => l.product_name));
+            setResults(Object.fromEntries(audit.map((r) => [r.ruleId, r])));
+
+            const failed = audit.filter((r) => r.status === 'fail').length;
+            const manual = audit.filter((r) => r.status === 'manual').length;
             toast({
-                title: "Audit Complete",
-                description: "No critical violations found. 1 Warning.",
-                variant: "default"
+                title: failed > 0 ? `${failed} rule${failed === 1 ? '' : 's'} failed` : "Audit complete",
+                description: `${audit.length - failed - manual} passed, ${failed} failed, ${manual} need manual review.`,
+                variant: failed > 0 ? "destructive" : "default",
             });
-        }, 1500);
+        } catch (e) {
+            console.error(e);
+            toast({ title: "Audit failed", description: "Could not read input logs.", variant: "destructive" });
+        } finally {
+            setIsAuditing(false);
+        }
     };
 
     if (loading) return <div className="p-8">Loading...</div>;
@@ -69,9 +81,9 @@ const StandardDetail = () => {
                     </div>
                     <p className="text-muted-foreground mt-2 max-w-2xl">{standard.description}</p>
                 </div>
-                <Button onClick={handleRunAudit} size="lg">
+                <Button onClick={handleRunAudit} size="lg" disabled={isAuditing || rules.length === 0}>
                     <PlayCircle className="h-5 w-5 mr-2" />
-                    Runs Compliance Check
+                    {isAuditing ? 'Checking...' : 'Run Compliance Check'}
                 </Button>
             </div>
 
@@ -89,10 +101,18 @@ const StandardDetail = () => {
                                 </Badge>
                             </div>
                         </CardHeader>
-                        <CardContent className="pb-4">
+                        <CardContent className="pb-4 space-y-2">
                             <div className="text-xs font-mono bg-muted p-2 rounded">
                                 Logic: {JSON.stringify(rule.validation_logic)}
                             </div>
+                            {results[rule.id] && (
+                                <div className="flex items-center gap-2 text-sm">
+                                    <Badge variant={results[rule.id].status === 'fail' ? 'destructive' : results[rule.id].status === 'pass' ? 'default' : 'outline'}>
+                                        {results[rule.id].status === 'manual' ? 'Manual review' : results[rule.id].status}
+                                    </Badge>
+                                    <span className="text-muted-foreground">{results[rule.id].detail}</span>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 ))}

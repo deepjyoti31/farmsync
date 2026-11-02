@@ -9,83 +9,321 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      crop_activities: {
+      app_screenshots: {
         Row: {
-          activity_date: string
-          activity_type: string
           created_at: string
-          field_crop_id: string
+          description: string | null
+          display_order: number | null
           id: string
-          notes: string | null
-          quantity: number | null
-          unit: string | null
+          image_url: string
+          is_featured: boolean | null
+          title: string
+          updated_at: string
         }
         Insert: {
-          activity_date: string
-          activity_type: string
           created_at?: string
-          field_crop_id: string
+          description?: string | null
+          display_order?: number | null
           id?: string
-          notes?: string | null
-          quantity?: number | null
-          unit?: string | null
+          image_url: string
+          is_featured?: boolean | null
+          title: string
+          updated_at?: string
         }
         Update: {
-          activity_date?: string
-          activity_type?: string
           created_at?: string
-          field_crop_id?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          is_featured?: boolean | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      batch_contributions: {
+        Row: {
+          batch_id: string
+          created_at: string | null
+          harvest_id: string | null
+          id: string
+          notes: string | null
+          quantity: number
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string | null
+          harvest_id?: string | null
           id?: string
           notes?: string | null
-          quantity?: number | null
-          unit?: string | null
+          quantity: number
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string | null
+          harvest_id?: string | null
+          id?: string
+          notes?: string | null
+          quantity?: number
         }
         Relationships: [
           {
-            foreignKeyName: "crop_activities_field_crop_id_fkey"
-            columns: ["field_crop_id"]
+            foreignKeyName: "batch_contributions_batch_id_fkey"
+            columns: ["batch_id"]
             isOneToOne: false
-            referencedRelation: "field_crops"
+            referencedRelation: "produce_batches"
             referencedColumns: ["id"]
           },
         ]
       }
+      bulk_order_items: {
+        Row: {
+          bulk_order_id: string
+          id: string
+          product_name: string
+          unit: string
+          unit_price: number
+        }
+        Insert: {
+          bulk_order_id: string
+          id?: string
+          product_name: string
+          unit: string
+          unit_price: number
+        }
+        Update: {
+          bulk_order_id?: string
+          id?: string
+          product_name?: string
+          unit?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_order_items_bulk_order_id_fkey"
+            columns: ["bulk_order_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_orders: {
+        Row: {
+          created_at: string | null
+          deadline: string
+          id: string
+          organization_id: string
+          status: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          deadline: string
+          id?: string
+          organization_id: string
+          status?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          deadline?: string
+          id?: string
+          organization_id?: string
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_orders_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_audits: {
+        Row: {
+          farm_id: string
+          generated_at: string | null
+          id: string
+          results: Json
+          severity_score: number | null
+        }
+        Insert: {
+          farm_id: string
+          generated_at?: string | null
+          id?: string
+          results: Json
+          severity_score?: number | null
+        }
+        Update: {
+          farm_id?: string
+          generated_at?: string | null
+          id?: string
+          results?: Json
+          severity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_audits_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_rules: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          rule_description: string
+          severity: string | null
+          standard_id: string
+          validation_logic: Json
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          rule_description: string
+          severity?: string | null
+          standard_id: string
+          validation_logic: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          rule_description?: string
+          severity?: string | null
+          standard_id?: string
+          validation_logic?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_rules_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_standards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_standards: {
+        Row: {
+          authority: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          version: string | null
+        }
+        Insert: {
+          authority?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          version?: string | null
+        }
+        Update: {
+          authority?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       crops: {
         Row: {
-          created_at: string
+          created_at: string | null
           description: string | null
           growing_duration: number | null
           growing_season: string | null
           id: string
+          image_url: string | null
           name: string
-          updated_at: string
+          updated_at: string | null
           variety: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           growing_duration?: number | null
           growing_season?: string | null
           id?: string
+          image_url?: string | null
           name: string
-          updated_at?: string
+          updated_at?: string | null
           variety?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           growing_duration?: number | null
           growing_season?: string | null
           id?: string
+          image_url?: string | null
           name?: string
-          updated_at?: string
+          updated_at?: string | null
           variety?: string | null
         }
         Relationships: []
       }
+      devices: {
+        Row: {
+          api_key: string
+          configuration: Json | null
+          created_at: string
+          external_id: string | null
+          farm_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          type: string
+        }
+        Insert: {
+          api_key: string
+          configuration?: Json | null
+          created_at?: string
+          external_id?: string | null
+          farm_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          type: string
+        }
+        Update: {
+          api_key?: string
+          configuration?: Json | null
+          created_at?: string
+          external_id?: string | null
+          farm_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment: {
         Row: {
-          created_at: string
+          created_at: string | null
           equipment_type: string
           farm_id: string
           id: string
@@ -97,11 +335,11 @@ export type Database = {
           notes: string | null
           purchase_date: string | null
           purchase_price: number | null
-          status: string
-          updated_at: string
+          status: string | null
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           equipment_type: string
           farm_id: string
           id?: string
@@ -113,11 +351,11 @@ export type Database = {
           notes?: string | null
           purchase_date?: string | null
           purchase_price?: number | null
-          status: string
-          updated_at?: string
+          status?: string | null
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           equipment_type?: string
           farm_id?: string
           id?: string
@@ -129,10 +367,59 @@ export type Database = {
           notes?: string | null
           purchase_date?: string | null
           purchase_price?: number | null
-          status?: string
-          updated_at?: string
+          status?: string | null
+          updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "equipment_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_maintenance: {
+        Row: {
+          cost: number | null
+          created_at: string | null
+          equipment_id: string
+          id: string
+          maintenance_date: string
+          maintenance_type: string
+          notes: string | null
+          performed_by: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string | null
+          equipment_id: string
+          id?: string
+          maintenance_date: string
+          maintenance_type: string
+          notes?: string | null
+          performed_by?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string | null
+          equipment_id?: string
+          id?: string
+          maintenance_date?: string
+          maintenance_type?: string
+          notes?: string | null
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_maintenance_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expert_tips: {
         Row: {
@@ -167,100 +454,153 @@ export type Database = {
         }
         Relationships: []
       }
+      farm_subscriptions: {
+        Row: {
+          created_at: string | null
+          farm_id: string
+          id: string
+          standard_id: string
+          start_date: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          farm_id: string
+          id?: string
+          standard_id: string
+          start_date?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          farm_id?: string
+          id?: string
+          standard_id?: string
+          start_date?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farm_subscriptions_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farm_subscriptions_standard_id_fkey"
+            columns: ["standard_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_standards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       farms: {
         Row: {
-          address: string | null
           area_unit: string | null
-          country: string | null
-          created_at: string
+          boundaries: Json | null
+          created_at: string | null
           district: string | null
           gps_latitude: number | null
           gps_longitude: number | null
           id: string
+          location: string | null
           name: string
+          organization_id: string | null
           state: string | null
           total_area: number | null
-          updated_at: string
+          updated_at: string | null
           user_id: string
           village: string | null
-          boundaries: Json | null
         }
         Insert: {
-          address?: string | null
           area_unit?: string | null
-          country?: string | null
-          created_at?: string
+          boundaries?: Json | null
+          created_at?: string | null
           district?: string | null
           gps_latitude?: number | null
           gps_longitude?: number | null
           id?: string
+          location?: string | null
           name: string
+          organization_id?: string | null
           state?: string | null
           total_area?: number | null
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
           village?: string | null
-          boundaries?: Json | null
         }
         Update: {
-          address?: string | null
           area_unit?: string | null
-          country?: string | null
-          created_at?: string
+          boundaries?: Json | null
+          created_at?: string | null
           district?: string | null
           gps_latitude?: number | null
           gps_longitude?: number | null
           id?: string
+          location?: string | null
           name?: string
+          organization_id?: string | null
           state?: string | null
           total_area?: number | null
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
           village?: string | null
-          boundaries?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "farms_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       field_crops: {
         Row: {
           actual_harvest_date: string | null
-          created_at: string
-          crop_id: string
+          created_at: string | null
+          crop_id: string | null
           expected_harvest_date: string | null
           field_id: string
           id: string
+          name: string | null
           notes: string | null
           planting_date: string
           status: string | null
-          updated_at: string
+          updated_at: string | null
           yield_amount: number | null
           yield_unit: string | null
         }
         Insert: {
           actual_harvest_date?: string | null
-          created_at?: string
-          crop_id: string
+          created_at?: string | null
+          crop_id?: string | null
           expected_harvest_date?: string | null
           field_id: string
           id?: string
+          name?: string | null
           notes?: string | null
           planting_date: string
           status?: string | null
-          updated_at?: string
+          updated_at?: string | null
           yield_amount?: number | null
           yield_unit?: string | null
         }
         Update: {
           actual_harvest_date?: string | null
-          created_at?: string
-          crop_id?: string
+          created_at?: string | null
+          crop_id?: string | null
           expected_harvest_date?: string | null
           field_id?: string
           id?: string
+          name?: string | null
           notes?: string | null
           planting_date?: string
           status?: string | null
-          updated_at?: string
+          updated_at?: string | null
           yield_amount?: number | null
           yield_unit?: string | null
         }
@@ -281,77 +621,48 @@ export type Database = {
           },
         ]
       }
-      field_images: {
-        Row: {
-          caption: string | null
-          created_at: string
-          field_id: string
-          id: string
-          image_url: string
-        }
-        Insert: {
-          caption?: string | null
-          created_at?: string
-          field_id: string
-          id?: string
-          image_url: string
-        }
-        Update: {
-          caption?: string | null
-          created_at?: string
-          field_id?: string
-          id?: string
-          image_url?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "field_images_field_id_fkey"
-            columns: ["field_id"]
-            isOneToOne: false
-            referencedRelation: "fields"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       fields: {
         Row: {
           area: number
-          area_unit: string | null
-          created_at: string
+          area_unit: string
+          boundaries: Json | null
+          created_at: string | null
           farm_id: string
-          gps_latitude: number | null
-          gps_longitude: number | null
           id: string
+          images: string[] | null
+          location: string | null
           name: string
           soil_ph: number | null
           soil_type: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           area: number
-          area_unit?: string | null
-          created_at?: string
+          area_unit: string
+          boundaries?: Json | null
+          created_at?: string | null
           farm_id: string
-          gps_latitude?: number | null
-          gps_longitude?: number | null
           id?: string
+          images?: string[] | null
+          location?: string | null
           name: string
           soil_ph?: number | null
           soil_type?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           area?: number
-          area_unit?: string | null
-          created_at?: string
+          area_unit?: string
+          boundaries?: Json | null
+          created_at?: string | null
           farm_id?: string
-          gps_latitude?: number | null
-          gps_longitude?: number | null
           id?: string
+          images?: string[] | null
+          location?: string | null
           name?: string
           soil_ph?: number | null
           soil_type?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -365,64 +676,70 @@ export type Database = {
       }
       financial_categories: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
           name: string
           type: string
-          updated_at: string
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           name: string
           type: string
-          updated_at?: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           name?: string
           type?: string
-          updated_at?: string
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
       financial_transactions: {
         Row: {
           amount: number
-          category_id: string
-          created_at: string
+          category_id: string | null
+          created_at: string | null
           description: string | null
           farm_id: string
           id: string
           payment_method: string | null
           reference_number: string | null
           transaction_date: string
-          updated_at: string
+          type: string | null
+          updated_at: string | null
         }
         Insert: {
           amount: number
-          category_id: string
-          created_at?: string
+          category_id?: string | null
+          created_at?: string | null
           description?: string | null
           farm_id: string
           id?: string
           payment_method?: string | null
           reference_number?: string | null
           transaction_date: string
-          updated_at?: string
+          type?: string | null
+          updated_at?: string | null
         }
         Update: {
           amount?: number
-          category_id?: string
-          created_at?: string
+          category_id?: string | null
+          created_at?: string | null
           description?: string | null
           farm_id?: string
           id?: string
           payment_method?: string | null
           reference_number?: string | null
           transaction_date?: string
-          updated_at?: string
+          type?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -441,67 +758,38 @@ export type Database = {
           },
         ]
       }
-      forum_comments: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          post_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          post_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          post_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "forum_comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "forum_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       forum_posts: {
         Row: {
           content: string
-          created_at: string
+          created_at: string | null
           forum_id: string
           id: string
+          image_url: string | null
+          likes_count: number | null
           title: string
-          updated_at: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           content: string
-          created_at?: string
+          created_at?: string | null
           forum_id: string
           id?: string
+          image_url?: string | null
+          likes_count?: number | null
           title: string
-          updated_at?: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           content?: string
-          created_at?: string
+          created_at?: string | null
           forum_id?: string
           id?: string
+          image_url?: string | null
+          likes_count?: number | null
           title?: string
-          updated_at?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -512,35 +800,177 @@ export type Database = {
             referencedRelation: "forums"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "forum_posts_user_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       forums: {
         Row: {
-          created_at: string
+          created_at: string | null
           description: string | null
           id: string
           title: string
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           title: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           id?: string
           title?: string
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
+      harvests: {
+        Row: {
+          created_at: string
+          field_crop_id: string
+          harvest_date: string
+          id: string
+          notes: string | null
+          quality_rating: number | null
+          quantity: number
+          revenue: number | null
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          field_crop_id: string
+          harvest_date?: string
+          id?: string
+          notes?: string | null
+          quality_rating?: number | null
+          quantity: number
+          revenue?: number | null
+          unit: string
+        }
+        Update: {
+          created_at?: string
+          field_crop_id?: string
+          harvest_date?: string
+          id?: string
+          notes?: string | null
+          quality_rating?: number | null
+          quantity?: number
+          revenue?: number | null
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "harvests_field_crop_id_fkey"
+            columns: ["field_crop_id"]
+            isOneToOne: false
+            referencedRelation: "field_crops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_claims: {
+        Row: {
+          amount_requested: number
+          claim_date: string | null
+          created_at: string | null
+          evidence: string | null
+          id: string
+          policy_id: string
+          reason: string
+          status: string | null
+        }
+        Insert: {
+          amount_requested: number
+          claim_date?: string | null
+          created_at?: string | null
+          evidence?: string | null
+          id?: string
+          policy_id: string
+          reason: string
+          status?: string | null
+        }
+        Update: {
+          amount_requested?: number
+          claim_date?: string | null
+          created_at?: string | null
+          evidence?: string | null
+          id?: string
+          policy_id?: string
+          reason?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claims_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_policies: {
+        Row: {
+          coverage_amount: number
+          coverage_type: string
+          created_at: string | null
+          end_date: string
+          farm_id: string
+          id: string
+          policy_number: string
+          premium_amount: number
+          provider: string
+          start_date: string
+          status: string | null
+        }
+        Insert: {
+          coverage_amount: number
+          coverage_type: string
+          created_at?: string | null
+          end_date: string
+          farm_id: string
+          id?: string
+          policy_number: string
+          premium_amount: number
+          provider: string
+          start_date: string
+          status?: string | null
+        }
+        Update: {
+          coverage_amount?: number
+          coverage_type?: string
+          created_at?: string | null
+          end_date?: string
+          farm_id?: string
+          id?: string
+          policy_number?: string
+          premium_amount?: number
+          provider?: string
+          start_date?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_policies_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory: {
         Row: {
-          category_id: string
+          category_id: string | null
           created_at: string
           description: string | null
           expiry_date: string | null
@@ -556,7 +986,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          category_id: string
+          category_id?: string | null
           created_at?: string
           description?: string | null
           expiry_date?: string | null
@@ -566,13 +996,13 @@ export type Database = {
           name: string
           purchase_date?: string | null
           purchase_price?: number | null
-          quantity: number
+          quantity?: number
           storage_location?: string | null
           unit?: string | null
           updated_at?: string
         }
         Update: {
-          category_id?: string
+          category_id?: string | null
           created_at?: string
           description?: string | null
           expiry_date?: string | null
@@ -647,7 +1077,7 @@ export type Database = {
           notes?: string | null
           quantity: number
           total_price?: number | null
-          transaction_date: string
+          transaction_date?: string
           transaction_type: string
           unit_price?: number | null
         }
@@ -759,7 +1189,7 @@ export type Database = {
           livestock_id: string
           medicine?: string | null
           notes?: string | null
-          record_date: string
+          record_date?: string
           record_type: string
         }
         Update: {
@@ -789,7 +1219,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          livestock_id: string | null
+          livestock_id: string
           notes: string | null
           production_date: string
           production_type: string
@@ -799,9 +1229,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          livestock_id?: string | null
+          livestock_id: string
           notes?: string | null
-          production_date: string
+          production_date?: string
           production_type: string
           quantity: number
           unit: string
@@ -809,7 +1239,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          livestock_id?: string | null
+          livestock_id?: string
           notes?: string | null
           production_date?: string
           production_type?: string
@@ -853,98 +1283,36 @@ export type Database = {
         }
         Relationships: []
       }
-      loan_payments: {
+      loans: {
         Row: {
           amount: number
-          created_at: string
+          created_at: string | null
+          farm_id: string
           id: string
-          interest_component: number | null
-          loan_id: string
-          notes: string | null
-          payment_date: string
-          payment_method: string | null
-          principal_component: number | null
-          reference_number: string | null
+          interest_rate: number
+          provider: string
+          status: string | null
+          term_months: number
         }
         Insert: {
           amount: number
-          created_at?: string
+          created_at?: string | null
+          farm_id: string
           id?: string
-          interest_component?: number | null
-          loan_id: string
-          notes?: string | null
-          payment_date: string
-          payment_method?: string | null
-          principal_component?: number | null
-          reference_number?: string | null
+          interest_rate: number
+          provider: string
+          status?: string | null
+          term_months: number
         }
         Update: {
           amount?: number
-          created_at?: string
-          id?: string
-          interest_component?: number | null
-          loan_id?: string
-          notes?: string | null
-          payment_date?: string
-          payment_method?: string | null
-          principal_component?: number | null
-          reference_number?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "loan_payments_loan_id_fkey"
-            columns: ["loan_id"]
-            isOneToOne: false
-            referencedRelation: "loans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      loans: {
-        Row: {
-          created_at: string
-          end_date: string | null
-          farm_id: string
-          id: string
-          interest_rate: number | null
-          lender: string
-          notes: string | null
-          payment_amount: number | null
-          payment_frequency: string | null
-          principal_amount: number
-          start_date: string
-          status: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          end_date?: string | null
-          farm_id: string
-          id?: string
-          interest_rate?: number | null
-          lender: string
-          notes?: string | null
-          payment_amount?: number | null
-          payment_frequency?: string | null
-          principal_amount: number
-          start_date: string
-          status?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          end_date?: string | null
+          created_at?: string | null
           farm_id?: string
           id?: string
-          interest_rate?: number | null
-          lender?: string
-          notes?: string | null
-          payment_amount?: number | null
-          payment_frequency?: string | null
-          principal_amount?: number
-          start_date?: string
+          interest_rate?: number
+          provider?: string
           status?: string | null
-          updated_at?: string
+          term_months?: number
         }
         Relationships: [
           {
@@ -956,32 +1324,218 @@ export type Database = {
           },
         ]
       }
+      market_data: {
+        Row: {
+          created_at: string
+          crop_name: string
+          district: string | null
+          id: string
+          market_location: string | null
+          max_price: number | null
+          min_price: number | null
+          modal_price: number | null
+          price_date: string
+          price_per_unit: number
+          source: string | null
+          state: string | null
+          unit: string
+          updated_at: string
+          variety: string | null
+        }
+        Insert: {
+          created_at?: string
+          crop_name: string
+          district?: string | null
+          id?: string
+          market_location?: string | null
+          max_price?: number | null
+          min_price?: number | null
+          modal_price?: number | null
+          price_date: string
+          price_per_unit: number
+          source?: string | null
+          state?: string | null
+          unit: string
+          updated_at?: string
+          variety?: string | null
+        }
+        Update: {
+          created_at?: string
+          crop_name?: string
+          district?: string | null
+          id?: string
+          market_location?: string | null
+          max_price?: number | null
+          min_price?: number | null
+          modal_price?: number | null
+          price_date?: string
+          price_per_unit?: number
+          source?: string | null
+          state?: string | null
+          unit?: string
+          updated_at?: string
+          variety?: string | null
+        }
+        Relationships: []
+      }
+      marketplace_inquiries: {
+        Row: {
+          buyer_id: string
+          created_at: string | null
+          id: string
+          listing_id: string
+          message: string
+          offer_price: number | null
+          status: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string | null
+          id?: string
+          listing_id: string
+          message: string
+          offer_price?: number | null
+          status?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string | null
+          id?: string
+          listing_id?: string
+          message?: string
+          offer_price?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_inquiries_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_listings: {
+        Row: {
+          available_date: string
+          category: string
+          created_at: string | null
+          description: string | null
+          farm_id: string
+          id: string
+          images: string[] | null
+          location: Json
+          min_order_quantity: number
+          price_per_unit: number
+          quantity_available: number
+          seller_id: string
+          status: string
+          title: string
+          unit: string
+        }
+        Insert: {
+          available_date?: string
+          category: string
+          created_at?: string | null
+          description?: string | null
+          farm_id: string
+          id?: string
+          images?: string[] | null
+          location?: Json
+          min_order_quantity?: number
+          price_per_unit: number
+          quantity_available: number
+          seller_id: string
+          status?: string
+          title: string
+          unit: string
+        }
+        Update: {
+          available_date?: string
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          farm_id?: string
+          id?: string
+          images?: string[] | null
+          location?: Json
+          min_order_quantity?: number
+          price_per_unit?: number
+          quantity_available?: number
+          seller_id?: string
+          status?: string
+          title?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listings_farm_id_fkey"
+            columns: ["farm_id"]
+            isOneToOne: false
+            referencedRelation: "farms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_orders: {
+        Row: {
+          bulk_order_id: string
+          created_at: string | null
+          id: string
+          items: Json
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          bulk_order_id: string
+          created_at?: string | null
+          id?: string
+          items: Json
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          bulk_order_id?: string
+          created_at?: string | null
+          id?: string
+          items?: Json
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_orders_bulk_order_id_fkey"
+            columns: ["bulk_order_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
-          category: string | null
           created_at: string
           id: string
-          message: string
+          message: string | null
           read: boolean
           title: string
           type: string
           user_id: string
         }
         Insert: {
-          category?: string | null
           created_at?: string
           id?: string
-          message: string
+          message?: string | null
           read?: boolean
           title: string
           type: string
           user_id: string
         }
         Update: {
-          category?: string | null
           created_at?: string
           id?: string
-          message?: string
+          message?: string | null
           read?: boolean
           title?: string
           type?: string
@@ -989,38 +1543,371 @@ export type Database = {
         }
         Relationships: []
       }
-      profiles: {
+      organization_invites: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          email: string
+          expires_at: string
+          id: string
+          organization_id: string
+          role: string
+          status: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          email: string
+          expires_at: string
+          id?: string
+          organization_id: string
+          role: string
+          status?: string | null
+          token?: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          role?: string
+          status?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          id: string
+          joined_at: string | null
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string | null
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string | null
+          organization_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_personal: boolean | null
+          name: string
+          owner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_personal?: boolean | null
+          name: string
+          owner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_personal?: boolean | null
+          name?: string
+          owner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          provider: string | null
+          reference_id: string | null
+          status: string | null
+          transaction_type: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          provider?: string | null
+          reference_id?: string | null
+          status?: string | null
+          transaction_type?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          provider?: string | null
+          reference_id?: string | null
+          status?: string | null
+          transaction_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
         Row: {
           created_at: string
-          first_name: string | null
           id: string
-          language: string | null
-          last_name: string | null
-          phone: string | null
-          profile_image_url: string | null
-          updated_at: string
+          post_id: string
+          user_id: string
         }
         Insert: {
           created_at?: string
-          first_name?: string | null
-          id: string
-          language?: string | null
-          last_name?: string | null
-          phone?: string | null
-          profile_image_url?: string | null
-          updated_at?: string
+          id?: string
+          post_id: string
+          user_id: string
         }
         Update: {
           created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produce_batches: {
+        Row: {
+          batch_number: string
+          created_at: string | null
+          crop_name: string
+          id: string
+          organization_id: string
+          status: string | null
+          total_quantity: number | null
+        }
+        Insert: {
+          batch_number: string
+          created_at?: string | null
+          crop_name: string
+          id?: string
+          organization_id: string
+          status?: string | null
+          total_quantity?: number | null
+        }
+        Update: {
+          batch_number?: string
+          created_at?: string | null
+          crop_name?: string
+          id?: string
+          organization_id?: string
+          status?: string | null
+          total_quantity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produce_batches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone_number: string | null
+          state: string | null
+          updated_at: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          phone_number?: string | null
+          state?: string | null
+          updated_at?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
           first_name?: string | null
           id?: string
-          language?: string | null
           last_name?: string | null
-          phone?: string | null
-          profile_image_url?: string | null
-          updated_at?: string
+          phone_number?: string | null
+          state?: string | null
+          updated_at?: string | null
+          zip_code?: string | null
         }
         Relationships: []
+      }
+      suppliers: {
+        Row: {
+          category: string
+          contact_info: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          location: string
+          name: string
+          verified: boolean | null
+        }
+        Insert: {
+          category: string
+          contact_info?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          location: string
+          name: string
+          verified?: boolean | null
+        }
+        Update: {
+          category?: string
+          contact_info?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          location?: string
+          name?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
+      sustainability_logs: {
+        Row: {
+          created_at: string
+          field_id: string | null
+          id: string
+          log_date: string
+          method: string | null
+          notes: string | null
+          product_name: string
+          quantity: number
+          type: string
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          field_id?: string | null
+          id?: string
+          log_date?: string
+          method?: string | null
+          notes?: string | null
+          product_name: string
+          quantity: number
+          type: string
+          unit: string
+        }
+        Update: {
+          created_at?: string
+          field_id?: string | null
+          id?: string
+          log_date?: string
+          method?: string | null
+          notes?: string | null
+          product_name?: string
+          quantity?: number
+          type?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sustainability_logs_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "fields"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -1075,255 +1962,156 @@ export type Database = {
           },
         ]
       }
-      weather_data: {
+      telemetry: {
         Row: {
           created_at: string
-          date: string
-          farm_id: string
-          forecast_data: Json | null
-          humidity: number | null
+          data: Json
+          device_id: string
           id: string
-          precipitation: number | null
-          temperature_max: number | null
-          temperature_min: number | null
-          weather_condition: string | null
-          wind_speed: number | null
+          timestamp: string
+          type: string | null
         }
         Insert: {
           created_at?: string
-          date: string
-          farm_id: string
-          forecast_data?: Json | null
-          humidity?: number | null
+          data: Json
+          device_id: string
           id?: string
-          precipitation?: number | null
-          temperature_max?: number | null
-          temperature_min?: number | null
-          weather_condition?: string | null
-          wind_speed?: number | null
+          timestamp?: string
+          type?: string | null
         }
         Update: {
           created_at?: string
-          date?: string
-          farm_id?: string
-          forecast_data?: Json | null
-          humidity?: number | null
+          data?: Json
+          device_id?: string
           id?: string
-          precipitation?: number | null
-          temperature_max?: number | null
-          temperature_min?: number | null
-          weather_condition?: string | null
-          wind_speed?: number | null
+          timestamp?: string
+          type?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "weather_data_farm_id_fkey"
-            columns: ["farm_id"]
+            foreignKeyName: "telemetry_device_id_fkey"
+            columns: ["device_id"]
             isOneToOne: false
-            referencedRelation: "farms"
+            referencedRelation: "devices"
             referencedColumns: ["id"]
           },
         ]
       }
       testimonials: {
         Row: {
+          created_at: string
           id: string
-          user_name: string
-          role: string | null
-          quote: string
           image_url: string | null
-          rating: number | null
           is_featured: boolean | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_name: string
-          role?: string | null
           quote: string
-          image_url?: string | null
-          rating?: number | null
-          is_featured?: boolean | null
-          created_at?: string
-          updated_at?: string
+          rating: number | null
+          role: string | null
+          updated_at: string
+          user_name: string
         }
-        Update: {
+        Insert: {
+          created_at?: string
           id?: string
-          user_name?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          quote: string
+          rating?: number | null
           role?: string | null
-          quote?: string
+          updated_at?: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
           image_url?: string | null
+          is_featured?: boolean | null
+          quote?: string
           rating?: number | null
-          is_featured?: boolean | null
-          created_at?: string
+          role?: string | null
           updated_at?: string
+          user_name?: string
         }
         Relationships: []
       }
-      app_screenshots: {
+      water_usage: {
         Row: {
-          id: string
-          title: string
-          description: string | null
-          image_url: string
-          display_order: number | null
-          is_featured: boolean | null
           created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          description?: string | null
-          image_url: string
-          display_order?: number | null
-          is_featured?: boolean | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          description?: string | null
-          image_url?: string
-          display_order?: number | null
-          is_featured?: boolean | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      forums: {
-        Row: {
+          field_id: string | null
           id: string
-          title: string
-          description: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          description: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          description?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      post_comments: {
-        Row: {
-          id: string
-          post_id: string
-          user_id: string
-          content: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          post_id: string
-          user_id: string
-          content: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          post_id?: string
-          user_id?: string
-          content?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "forum_posts"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      post_likes: {
-        Row: {
-          id: string
-          post_id: string
-          user_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          post_id: string
-          user_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          post_id?: string
-          user_id?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "forum_posts"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      market_data: {
-        Row: {
-          id: string
-          crop_name: string
-          price_per_unit: number
-          unit: string
-          market_location: string | null
-          price_date: string
           source: string | null
-          created_at: string
-          updated_at: string
+          unit: string
+          usage_date: string
+          volume: number
         }
         Insert: {
-          id?: string
-          crop_name: string
-          price_per_unit: number
-          unit: string
-          market_location?: string | null
-          price_date: string
-          source?: string | null
           created_at?: string
-          updated_at?: string
+          field_id?: string | null
+          id?: string
+          source?: string | null
+          unit: string
+          usage_date?: string
+          volume: number
         }
         Update: {
-          id?: string
-          crop_name?: string
-          price_per_unit?: number
-          unit?: string
-          market_location?: string | null
-          price_date?: string
-          source?: string | null
           created_at?: string
-          updated_at?: string
+          field_id?: string | null
+          id?: string
+          source?: string | null
+          unit?: string
+          usage_date?: string
+          volume?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "water_usage_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "fields"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_access_farm: {
+        Args: {
+          p_farm_id: string
+        }
+        Returns: boolean
+      }
+      can_edit_farm: {
+        Args: {
+          p_farm_id: string
+          p_roles?: string[]
+        }
+        Returns: boolean
+      }
+      field_crop_farm_id: {
+        Args: {
+          p_field_crop_id: string
+        }
+        Returns: string
+      }
+      field_farm_id: {
+        Args: {
+          p_field_id: string
+        }
+        Returns: string
+      }
+      is_org_member: {
+        Args: {
+          p_org_id: string
+          p_roles?: string[]
+        }
+        Returns: boolean
+      }
+      migrate_users_to_organizations: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
