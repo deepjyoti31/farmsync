@@ -7,14 +7,12 @@ If you would like to work on something, comment on (or open) the matching issue 
 
 | Item | Notes |
 | --- | --- |
-| Livestock health records and production tracking | Tables `livestock_health_records` and `livestock_production` exist; UI tabs still say "Coming soon" |
-| Crop calendar | Calendar view of planting and expected harvest dates from `field_crops` |
-| Equipment maintenance scheduling | Table `equipment_maintenance` exists; the schedule button is a placeholder |
-| Task manager | Create, assign, complete and repeat tasks; the dashboard currently only lists them |
-| Avatar upload | Supabase Storage bucket for profile pictures |
-| PDF compliance reports | Inputs and water usage already export as CSV; add an audit-ready PDF |
 | Loan and insurance entry forms | Pages read real records but there is no form to add one yet |
-| Translation coverage | Many pages still have hard-coded English strings |
+| Translation coverage | Many pages, including the new Tasks page and livestock records, still have hard-coded English strings |
+| Unicode fonts in PDF reports | The audit PDF uses built-in Latin fonts; product names in Devanagari or other scripts are replaced with `?` |
+| Layout overflow at narrow widths | The top bar and page headers overflow horizontally on phones and at around 1280 px with the sidebar open |
+
+Recently completed: task manager with repeating tasks, livestock health records with due reminders, livestock production tracking, crop calendar, equipment maintenance logging and scheduling, audit-ready PDF report, and profile picture upload.
 
 ## Next: high-impact features
 

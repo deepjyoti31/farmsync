@@ -44,7 +44,13 @@ Policy patterns:
 | Personal data (`notifications`, `payments`, own `profiles` row) | Owner only | Owner only |
 | Reference and community data (`crops`, `livestock_types`, `forums`, `forum_posts`, `market_data`, ...) | Everyone | Authors for their own posts; reference data via the service role |
 
+`livestock_production` rows always carry a `farm_id`, so an entry can describe a whole herd or flock (for example a day's eggs) as well as a single animal. A trigger fills `farm_id` from the animal when `livestock_id` is given.
+
 `telemetry` has no write policy on purpose: only the `ingest-telemetry` edge function writes it, using the service role, which bypasses RLS.
+
+### File storage
+
+Profile pictures live in the public `avatars` bucket, created by migration. Policies on `storage.objects` allow a signed-in user to upload, replace and delete files only under `avatars/<their user id>/`. The bucket accepts JPG, PNG and WebP up to 2 MB.
 
 ### New users
 
