@@ -30,7 +30,7 @@ npx supabase functions deploy get-weather --project-ref <project-ref>
 npx supabase functions deploy ingest-telemetry --project-ref <project-ref>
 
 # Run the RLS tests against a disposable Postgres
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres ../scripts/test-db.sh
+DATABASE_URL=postgresql://postgres@localhost:5432/postgres ../scripts/test-db.sh
 ```
 
 ## Further reading

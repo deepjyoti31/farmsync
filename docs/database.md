@@ -97,8 +97,8 @@ npx supabase db push
 Run it locally against any disposable Postgres 15+ instance, for example with Docker:
 
 ```bash
-docker run --rm -d --name farmsync-pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres scripts/test-db.sh
+docker run --rm -d --name farmsync-pg -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 postgres:16
+DATABASE_URL=postgresql://postgres@localhost:5432/postgres scripts/test-db.sh
 docker stop farmsync-pg
 ```
 

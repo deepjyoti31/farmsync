@@ -2,7 +2,7 @@
 # Apply every migration to a disposable PostgreSQL database and run the RLS tests.
 #
 # Usage:
-#   DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres scripts/test-db.sh
+#   DATABASE_URL=postgresql://postgres@localhost:5432/postgres scripts/test-db.sh
 #
 # WARNING: point this only at a throwaway database (local Docker, CI service).
 # It creates Supabase stand-in roles and an auth schema, and it refuses to run
