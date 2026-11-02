@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import {
   Plus,
   Filter,
-  CalendarRange,
   ArrowUpDown,
   Sprout,
   CheckCircle2,
@@ -37,6 +36,7 @@ import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddCropForm from '@/components/crops/AddCropForm';
 import CropDetailsDialog from '@/components/crops/CropDetailsDialog';
+import CropCalendar from '@/components/crops/CropCalendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DeleteButton } from '@/components/common/DeleteButton';
 import { deleteEntity } from '@/utils/deleteUtils';
@@ -182,6 +182,7 @@ const Crops = () => {
   };
 
   const isLoading = isLoadingFields || isLoadingCrops;
+  const fieldNames = React.useMemo(() => new Map(farmFields.map((f) => [f.id, f.name])), [farmFields]);
 
   return (
     <div className="space-y-6">
@@ -291,7 +292,7 @@ const Crops = () => {
               <TableBody>
                 {fieldCrops.map((fieldCrop: any) => (
                   <TableRow key={fieldCrop.id}>
-                    <TableCell className="font-medium">{fieldCrop.crop?.name || 'Unknown Crop'}</TableCell>
+                    <TableCell className="font-medium">{fieldCrop.crop?.name || fieldCrop.name || 'Unknown Crop'}</TableCell>
                     <TableCell>{getFieldName(fieldCrop.field_id)}</TableCell>
                     <TableCell>{fieldCrop.crop?.variety || '-'}</TableCell>
                     <TableCell>{format(new Date(fieldCrop.planting_date), 'dd MMM yyyy')}</TableCell>
@@ -337,21 +338,13 @@ const Crops = () => {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Crop Calendar</CardTitle>
-        </CardHeader>
-        <CardContent className="flex items-center justify-center p-12 text-center">
-          <div className="max-w-sm">
-            <CalendarRange className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-medium mb-2">Crop Calendar Coming Soon</h3>
-            <p className="text-muted-foreground mb-4">
-              Plan your sowing, irrigation, fertilization, and harvesting activities with our visual calendar.
-            </p>
-            <Button variant="outline">Check Back Soon</Button>
-          </div>
-        </CardContent>
-      </Card>
+      {selectedFarmId && fieldCrops.length > 0 && (
+        <CropCalendar
+          plantings={fieldCrops}
+          fieldNames={fieldNames}
+          onSelectPlanting={setViewingCropId}
+        />
+      )}
 
       {/* Crop Details Dialog */}
       <CropDetailsDialog
