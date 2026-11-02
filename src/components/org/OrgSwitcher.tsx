@@ -91,7 +91,7 @@ const OrgSwitcher = () => {
                     </DropdownMenuItem>
 
                     {!currentOrganization?.is_personal && (
-                        <DropdownMenuItem onClick={() => navigate('/dashboard/settings')} className="gap-2">
+                        <DropdownMenuItem onClick={() => navigate('/dashboard/organization')} className="gap-2">
                             <SlidersHorizontal className="h-4 w-4" />
                             <span>Org Settings</span>
                         </DropdownMenuItem>
