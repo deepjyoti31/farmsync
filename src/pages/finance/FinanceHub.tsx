@@ -1,33 +1,43 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { calculateCreditScore, calculateLoanEligibility } from '@/lib/financialCalc';
+import { calculateCreditScore, calculateLoanEligibility, creditScoreLabel } from '@/lib/financialCalc';
 import { Loader2, TrendingUp, Shield, CreditCard, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 
 const FinanceHub = () => {
     const { user } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [score, setScore] = useState(0);
-    const [eligibility, setEligibility] = useState(0);
 
-    useEffect(() => {
-        if (user) loadData();
-    }, [user]);
+    // Indicative score from the user's own records: harvest count and recorded income.
+    const { data: summary, isLoading: loading } = useQuery({
+        queryKey: ['finance_hub_summary', user?.id],
+        queryFn: async () => {
+            const [harvests, income, payments] = await Promise.all([
+                supabase.from('harvests').select('id', { count: 'exact', head: true }),
+                supabase.from('financial_transactions').select('amount').eq('type', 'income'),
+                supabase.from('payments').select('*').order('created_at', { ascending: false }).limit(5),
+            ]);
+            if (harvests.error) throw harvests.error;
+            if (income.error) throw income.error;
+            if (payments.error) throw payments.error;
 
-    const loadData = async () => {
-        // Simulate fetching data for calculation
-        // In real app, we'd fetch actual harvest counts and transaction totals
-        setTimeout(() => {
-            const mockScore = calculateCreditScore(15, 25000); // Mock inputs
-            setScore(mockScore);
-            setEligibility(calculateLoanEligibility(mockScore));
-            setLoading(false);
-        }, 1000);
-    };
+            const totalRevenue = (income.data || []).reduce((sum, t) => sum + Number(t.amount), 0);
+            const score = calculateCreditScore(harvests.count ?? 0, totalRevenue);
+            return {
+                score,
+                eligibility: calculateLoanEligibility(score),
+                payments: payments.data || [],
+            };
+        },
+        enabled: !!user,
+    });
+    const score = summary?.score ?? 0;
+    const eligibility = summary?.eligibility ?? 0;
 
     const getScoreColor = (s: number) => {
         if (s >= 750) return 'text-green-600';
@@ -53,14 +63,14 @@ const FinanceHub = () => {
                             <TrendingUp className="h-5 w-5" />
                             Farm Credit Score
                         </CardTitle>
-                        <CardDescription>Based on production capabilities</CardDescription>
+                        <CardDescription>Indicative, based on your recorded harvests and income</CardDescription>
                     </CardHeader>
                     <CardContent className="text-center py-6">
                         <div className={`text-6xl font-bold ${getScoreColor(score)}`}>{score}</div>
-                        <p className="text-sm text-muted-foreground mt-2">Excellent</p>
+                        <p className="text-sm text-muted-foreground mt-2">{creditScoreLabel(score)}</p>
                         <div className="mt-4 pt-4 border-t border-primary/10">
                             <p className="text-sm font-medium">Max Loan Eligibility</p>
-                            <p className="text-2xl font-bold text-foreground">${eligibility.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-foreground">₹{eligibility.toLocaleString('en-IN')}</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -99,12 +109,30 @@ const FinanceHub = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Recent Transactions</CardTitle>
+                        <CardTitle>Recent Payments</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-center py-8 text-muted-foreground">
-                            No recent payments recorded.
-                        </div>
+                        {summary?.payments.length ? (
+                            <ul className="divide-y">
+                                {summary.payments.map((p) => (
+                                    <li key={p.id} className="flex items-center justify-between py-3 text-sm">
+                                        <div>
+                                            <p className="font-medium capitalize">{(p.transaction_type ?? 'payment').replace(/_/g, ' ')}</p>
+                                            <p className="text-muted-foreground">
+                                                {p.created_at ? format(new Date(p.created_at), 'dd MMM yyyy') : ''} · {p.provider}
+                                            </p>
+                                        </div>
+                                        <span className={p.status === 'failed' ? 'text-destructive' : 'font-semibold'}>
+                                            ₹{Number(p.amount).toLocaleString('en-IN')}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                                No recent payments recorded.
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

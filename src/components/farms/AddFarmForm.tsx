@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import BoundaryMap from '@/components/maps/BoundaryMap';
@@ -156,7 +157,7 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
           area_unit: data.areaUnit,
           gps_latitude: centerLat,
           gps_longitude: centerLng,
-          boundaries: boundaries,
+          boundaries: boundaries as unknown as Json,
         });
 
       if (error) throw error;

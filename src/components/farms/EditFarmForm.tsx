@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
 import { Farm } from '@/types';
 import BoundaryMap from '@/components/maps/BoundaryMap';
@@ -166,7 +167,7 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
           area_unit: data.areaUnit,
           gps_latitude: centerLat,
           gps_longitude: centerLng,
-          boundaries: boundaries,
+          boundaries: boundaries as unknown as Json,
           updated_at: new Date().toISOString(),
         })
         .eq('id', farm.id);

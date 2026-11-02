@@ -38,7 +38,7 @@ import { toast } from '@/hooks/use-toast';
 
 const Community = () => {
   const [newPost, setNewPost] = useState('');
-  const [activeForum, setActiveForum] = useState('general');
+  const [activeForum, setActiveForum] = useState('');
 
   // Fetch user data
   const { data: userData } = useQuery({
@@ -55,31 +55,57 @@ const Community = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('forums')
-        .select('*, posts(count)')
-        .order('created_at', { ascending: false });
-      
+        .select('*, forum_posts(count)')
+        .order('created_at', { ascending: true });
+
       if (error) throw error;
       return data;
     },
   });
 
-  // Fetch posts for the active forum - Modified to fix the profiles relation issue
+  // Open the first forum once forums have loaded
+  useEffect(() => {
+    if (!activeForum && forums.length > 0) {
+      setActiveForum(forums[0].id);
+    }
+  }, [forums, activeForum]);
+
+  // Real community totals for the stats card
+  const { data: communityStats } = useQuery({
+    queryKey: ['community_stats'],
+    queryFn: async () => {
+      const [members, discussions] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('forum_posts').select('id', { count: 'exact', head: true }),
+      ]);
+      return {
+        members: members.count ?? 0,
+        discussions: discussions.count ?? 0,
+      };
+    },
+  });
+
+  // Fetch posts for the active forum, with author profile and comment/like counts
   const { data: posts = [], isLoading: isLoadingPosts, refetch: refetchPosts } = useQuery({
     queryKey: ['forum_posts', activeForum],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('posts')
+        .from('forum_posts')
         .select(`
           *,
-          user:profiles(first_name, last_name, profile_image_url),
+          user:profiles(first_name, last_name, avatar_url),
           comments:post_comments(count),
           likes:post_likes(count)
         `)
         .eq('forum_id', activeForum)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      return data;
+      return (data || []).map((post) => ({
+        ...post,
+        comment_count: post.comments?.[0]?.count ?? 0,
+        like_count: post.likes?.[0]?.count ?? 0,
+      }));
     },
     enabled: !!activeForum,
   });
@@ -213,7 +239,7 @@ const Community = () => {
             </Card>
 
             {/* Forum Tabs */}
-            <Tabs defaultValue="general" value={activeForum} onValueChange={setActiveForum}>
+            <Tabs value={activeForum} onValueChange={setActiveForum}>
               <TabsList className="w-full mb-4">
                 {forums.map((forum) => (
                   <TabsTrigger key={forum.id} value={forum.id} className="flex-1">
@@ -247,7 +273,7 @@ const Community = () => {
                             <div key={post.id} className="p-4 border rounded-md">
                               <div className="flex items-start gap-3">
                                 <Avatar className="h-10 w-10">
-                                  <AvatarImage src={post.user?.profile_image_url || ""} />
+                                  <AvatarImage src={post.user?.avatar_url || ""} />
                                   <AvatarFallback>
                                     {getInitials(post.user?.first_name, post.user?.last_name)}
                                   </AvatarFallback>
@@ -330,7 +356,7 @@ const Community = () => {
                     <Users className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <p className="font-medium">Active Members</p>
-                      <p className="text-2xl font-bold">823</p>
+                      <p className="text-2xl font-bold">{(communityStats?.members ?? 0).toLocaleString()}</p>
                     </div>
                   </div>
                   <Separator />
@@ -338,7 +364,7 @@ const Community = () => {
                     <MessageSquare className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <p className="font-medium">Discussions</p>
-                      <p className="text-2xl font-bold">1,246</p>
+                      <p className="text-2xl font-bold">{(communityStats?.discussions ?? 0).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>

@@ -55,7 +55,7 @@ const Finances = () => {
       
       console.log('Fetching financial transactions for farm:', selectedFarmId);
       
-      let query = supabase
+      const query = supabase
         .from('financial_transactions')
         .select(`
           *,

@@ -55,6 +55,20 @@ import SupplierCard from '@/components/market/SupplierCard';
 import CreateListingDialog from '@/components/market/CreateListingDialog';
 import InquiryDialog from '@/components/market/InquiryDialog';
 import { MarketplaceListing, Supplier, MARKET_CATEGORIES } from '@/types/marketplace';
+import {
+  MarketPrice,
+  filterMarketPrices,
+  summarizeCommodities,
+  toMarketPrice,
+} from '@/lib/marketPrices';
+
+/** Shown only while the market_data table is empty, and labelled as sample data in the UI. */
+const SAMPLE_MARKET_PRICES: MarketPrice[] = [
+  { commodity: 'Onion', variety: 'Red', market: 'Lasalgaon', state: 'Maharashtra', district: 'Nashik', min_price: 1200, max_price: 1800, modal_price: 1500, date: '2025-12-18' },
+  { commodity: 'Potato', variety: 'Local', market: 'Indore', state: 'Madhya Pradesh', district: 'Indore', min_price: 800, max_price: 1100, modal_price: 950, date: '2025-12-18' },
+  { commodity: 'Tomato', variety: 'Hybrid', market: 'Kolar', state: 'Karnataka', district: 'Kolar', min_price: 1500, max_price: 2200, modal_price: 1800, date: '2025-12-18' },
+  { commodity: 'Wheat', variety: 'Lokwan', market: 'Khanna', state: 'Punjab', district: 'Ludhiana', min_price: 2100, max_price: 2300, modal_price: 2200, date: '2025-12-18' },
+];
 
 // Types for existing Market Price functionality
 interface MarketData {
@@ -102,49 +116,39 @@ const Market = () => {
   const [marketState, setMarketState] = useState<string | null>(null);
 
   const { data: marketData = [], isLoading: isMarketLoading, refetch: refetchMarket } = useQuery({
-    queryKey: ['market_data', marketState],
+    queryKey: ['market_data'],
     queryFn: async () => {
-      // For demo, we might fall back to mock data if table empty
       const { data, error } = await supabase
-        .from('market_data') // Assuming this table exists from previous context or is mocked elsewhere?
+        .from('market_data')
         .select('*')
-        .eq('state', marketState)
-        .order('date', { ascending: false });
+        .order('price_date', { ascending: false })
+        .limit(500);
 
-      // If error (or table missing), return empty array so UI doesn't crash
       if (error) {
-        console.warn("Market data fetch failed (might be missing table):", error);
+        console.warn('Market data fetch failed:', error);
         return [];
       }
-      return data || [];
+      return (data || []).map(toMarketPrice);
     },
     enabled: activeTab === 'prices'
   });
 
-  // Mock Market Data if empty (since I can't guarantee 'market_data' exists)
-  const safeMarketData = marketData.length > 0 ? marketData : [
-    { commodity: 'Onion', variety: 'Red', market: 'Lasalgaon', state: 'Maharashtra', district: 'Nashik', min_price: 1200, max_price: 1800, modal_price: 1500, date: '2025-12-18' },
-    { commodity: 'Potato', variety: 'Local', market: 'Indore', state: 'Madhya Pradesh', district: 'Indore', min_price: 800, max_price: 1100, modal_price: 950, date: '2025-12-18' },
-    { commodity: 'Tomato', variety: 'Hybrid', market: 'Kolar', state: 'Karnataka', district: 'Kolar', min_price: 1500, max_price: 2200, modal_price: 1800, date: '2025-12-18' },
-    { commodity: 'Wheat', variety: 'Lokwan', market: 'Khanna', state: 'Punjab', district: 'Ludhiana', min_price: 2100, max_price: 2300, modal_price: 2200, date: '2025-12-18' },
-  ];
+  // Until real prices are loaded into market_data, show clearly labelled sample prices.
+  const isSampleMarketData = marketData.length === 0;
+  const safeMarketData: MarketPrice[] = isSampleMarketData ? SAMPLE_MARKET_PRICES : marketData;
 
-  const marketStates = Array.from(new Set(safeMarketData.map((item: any) => item.state))).sort() as string[];
-  const marketCommodities = Array.from(new Set(safeMarketData.map((item: any) => item.commodity))).sort() as string[];
+  const marketStates = Array.from(new Set(safeMarketData.map((item) => item.state).filter(Boolean))).sort();
+  const marketCommodities = Array.from(new Set(safeMarketData.map((item) => item.commodity))).sort();
 
-  const filteredMarketData = safeMarketData.filter((item: any) => {
-    if (marketSearchQuery && !item.commodity.toLowerCase().includes(marketSearchQuery.toLowerCase()) &&
-      !item.market.toLowerCase().includes(marketSearchQuery.toLowerCase())) return false;
-    if (marketCategory && item.commodity !== marketCategory) return false;
-    return true;
+  const filteredMarketData = filterMarketPrices(safeMarketData, {
+    search: marketSearchQuery,
+    commodity: marketCategory,
+    state: marketState,
   });
 
-  const commodityAverages = marketCommodities.slice(0, 4).map(commodity => {
-    const items = safeMarketData.filter((item: any) => item.commodity === commodity);
-    const avgPrice = items.reduce((sum: number, item: any) => sum + item.modal_price, 0) / (items.length || 1);
-    const trendPercent = ((Math.random() * 10) - 5).toFixed(1);
-    return { commodity, avgPrice, trendPercent, isPositive: parseFloat(trendPercent) >= 0 };
-  });
+  const commodityAverages = summarizeCommodities(
+    filterMarketPrices(safeMarketData, { state: marketState }),
+  );
 
 
   // --- MARKETPLACE LISTINGS DATA ---
@@ -264,9 +268,11 @@ const Market = () => {
                     <IndianRupee className="h-5 w-5" />
                     {item.avgPrice.toFixed(0)}
                   </div>
-                  <Badge variant="outline" className={item.isPositive ? "text-green-600 border-green-200 bg-green-50" : "text-red-600 border-red-200 bg-red-50"}>
-                    {item.isPositive ? "↑" : "↓"} {Math.abs(parseFloat(item.trendPercent))}%
-                  </Badge>
+                  {item.trendPercent !== null && (
+                    <Badge variant="outline" className={item.trendPercent >= 0 ? "text-green-600 border-green-200 bg-green-50" : "text-red-600 border-red-200 bg-red-50"}>
+                      {item.trendPercent >= 0 ? "↑" : "↓"} {Math.abs(item.trendPercent).toFixed(1)}%
+                    </Badge>
+                  )}
                 </div>
               </Card>
             ))}
@@ -274,7 +280,10 @@ const Market = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Live Mandi Prices</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                {isSampleMarketData ? 'Mandi Prices' : 'Live Mandi Prices'}
+                {isSampleMarketData && <Badge variant="secondary">Sample data</Badge>}
+              </CardTitle>
               <CardDescription>Real-time updates from major agricultural markets (e-NAM)</CardDescription>
             </CardHeader>
             <CardContent>
@@ -290,7 +299,7 @@ const Market = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMarketData.map((item: any, idx: number) => (
+                  {filteredMarketData.map((item, idx) => (
                     <TableRow key={idx}>
                       <TableCell className="font-medium">{item.commodity} <span className="text-xs text-muted-foreground">({item.variety})</span></TableCell>
                       <TableCell>{item.market}</TableCell>

@@ -9,6 +9,7 @@ import { Leaf, Droplets, FileText, Download } from 'lucide-react';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
+import { downloadCsv, toCsv } from '@/lib/csv';
 
 const Sustainability = () => {
     const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -18,11 +19,11 @@ const Sustainability = () => {
         queryKey: ['sustainability_logs', selectedFarmId],
         queryFn: async () => {
             if (!selectedFarmId) return [];
-            // Join with fields to verify farm ownership if RLS wasn't enough, but RLS handles it.
-            // We need field names though.
+            // Inner join on fields so only this farm's logs are returned.
             const { data, error } = await supabase
                 .from('sustainability_logs')
-                .select('*, field:fields(name)')
+                .select('*, fields!inner(name, farm_id)')
+                .eq('fields.farm_id', selectedFarmId)
                 .order('log_date', { ascending: false });
 
             if (error) throw error;
@@ -38,7 +39,8 @@ const Sustainability = () => {
             if (!selectedFarmId) return [];
             const { data, error } = await supabase
                 .from('water_usage')
-                .select('*, field:fields(name)')
+                .select('*, fields!inner(name, farm_id)')
+                .eq('fields.farm_id', selectedFarmId)
                 .order('usage_date', { ascending: false });
 
             if (error) throw error;
@@ -47,11 +49,28 @@ const Sustainability = () => {
         enabled: !!selectedFarmId
     });
 
-    const handleGenerateReport = () => {
-        toast({
-            title: "Report Generated",
-            description: "Compliance report downloaded (Mock PDF).",
-        });
+    const today = format(new Date(), 'yyyy-MM-dd');
+
+    const handleExportInputs = () => {
+        if (!logs?.length) {
+            toast({ title: "Nothing to export", description: "No input logs recorded for this farm yet." });
+            return;
+        }
+        downloadCsv(`input-log-${today}.csv`, toCsv(
+            ['Date', 'Field', 'Type', 'Product', 'Quantity', 'Unit', 'Method', 'Notes'],
+            logs.map((l) => [l.log_date, l.fields?.name, l.type, l.product_name, l.quantity, l.unit, l.method, l.notes]),
+        ));
+    };
+
+    const handleExportWater = () => {
+        if (!waterUsage?.length) {
+            toast({ title: "Nothing to export", description: "No water usage recorded for this farm yet." });
+            return;
+        }
+        downloadCsv(`water-usage-${today}.csv`, toCsv(
+            ['Date', 'Field', 'Volume', 'Unit', 'Source'],
+            waterUsage.map((w) => [w.usage_date, w.fields?.name, w.volume, w.unit, w.source]),
+        ));
     };
 
     return (
@@ -109,7 +128,7 @@ const Sustainability = () => {
                                         ) : logs?.map((log: any) => (
                                             <TableRow key={log.id}>
                                                 <TableCell>{format(new Date(log.log_date), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell>{log.field?.name}</TableCell>
+                                                <TableCell>{log.fields?.name}</TableCell>
                                                 <TableCell className="capitalize">{log.type}</TableCell>
                                                 <TableCell>{log.product_name}</TableCell>
                                                 <TableCell>{log.quantity} {log.unit}</TableCell>
@@ -151,7 +170,7 @@ const Sustainability = () => {
                                         ) : waterUsage?.map((record: any) => (
                                             <TableRow key={record.id}>
                                                 <TableCell>{format(new Date(record.usage_date), 'dd MMM yyyy')}</TableCell>
-                                                <TableCell>{record.field?.name}</TableCell>
+                                                <TableCell>{record.fields?.name}</TableCell>
                                                 <TableCell className="capitalize">{record.source}</TableCell>
                                                 <TableCell>{record.volume} {record.unit}</TableCell>
                                             </TableRow>
@@ -175,8 +194,8 @@ const Sustainability = () => {
                                             <h3 className="font-medium">Organic Certification Log</h3>
                                             <p className="text-sm text-muted-foreground">Complete Input & Seed history</p>
                                         </div>
-                                        <Button variant="outline" size="sm" onClick={handleGenerateReport}>
-                                            <Download className="h-4 w-4 mr-2" /> Download
+                                        <Button variant="outline" size="sm" onClick={handleExportInputs}>
+                                            <Download className="h-4 w-4 mr-2" /> Export CSV
                                         </Button>
                                     </div>
                                     <div className="p-4 border rounded-lg flex justify-between items-center">
@@ -184,8 +203,8 @@ const Sustainability = () => {
                                             <h3 className="font-medium">Water Usage Report</h3>
                                             <p className="text-sm text-muted-foreground">Aggregated consumption data</p>
                                         </div>
-                                        <Button variant="outline" size="sm" onClick={handleGenerateReport}>
-                                            <Download className="h-4 w-4 mr-2" /> Download
+                                        <Button variant="outline" size="sm" onClick={handleExportWater}>
+                                            <Download className="h-4 w-4 mr-2" /> Export CSV
                                         </Button>
                                     </div>
                                 </div>

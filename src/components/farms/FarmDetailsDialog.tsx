@@ -56,7 +56,7 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
         .single();
 
       if (error) throw error;
-      return data as Farm;
+      return data as unknown as Farm;
     },
     enabled: !!farmId && isOpen,
   });

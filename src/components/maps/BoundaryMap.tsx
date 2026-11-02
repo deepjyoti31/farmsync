@@ -15,7 +15,8 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || 'your-mapbox-
 interface BoundaryMapProps {
   initialCenter?: [number, number]; // [longitude, latitude]
   initialZoom?: number;
-  onBoundariesChange: (boundaries: GeoJSON.Polygon | null) => void;
+  /** Required unless the map is read-only. */
+  onBoundariesChange?: (boundaries: GeoJSON.Polygon | null) => void;
   existingBoundaries?: GeoJSON.Polygon | null;
   readOnly?: boolean;
 }
@@ -87,7 +88,7 @@ const BoundaryMap: React.FC<BoundaryMapProps> = ({
       map.current.on('draw.update', updateBoundaries);
       map.current.on('draw.delete', () => {
         setBoundaries(null);
-        onBoundariesChange(null);
+        onBoundariesChange?.(null);
       });
     }
 
@@ -151,10 +152,10 @@ const BoundaryMap: React.FC<BoundaryMapProps> = ({
       // Get the first polygon (we only allow one)
       const polygon = data.features[0].geometry as GeoJSON.Polygon;
       setBoundaries(polygon);
-      onBoundariesChange(polygon);
+      onBoundariesChange?.(polygon);
     } else {
       setBoundaries(null);
-      onBoundariesChange(null);
+      onBoundariesChange?.(null);
     }
   };
 

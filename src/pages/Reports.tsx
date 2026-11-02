@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getDateRange } from '@/lib/dateRanges';
 import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 
@@ -59,7 +60,7 @@ const Reports = () => {
       if (!selectedFarmId) return [];
       
       // Get date range
-      const { startDate, endDate } = getDateRangeFilter(dateRange);
+      const { startDate, endDate } = getDateRange(dateRange);
       
       // Query financial transactions from Supabase
       const { data, error } = await supabase
@@ -189,46 +190,6 @@ const Reports = () => {
       area: Number(field.area) || 0
     }));
   }, [fieldsData]);
-  
-  // Helper function to get date range
-  function getDateRangeFilter(range: string) {
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth();
-    let startDate = '';
-    let endDate = now.toISOString().split('T')[0];
-    
-    switch (range) {
-      case 'this-month':
-        startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-        break;
-      case 'last-month':
-        startDate = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
-        endDate = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
-        break;
-      case 'this-quarter':
-        const currentQuarter = Math.floor(currentMonth / 3);
-        startDate = new Date(currentYear, currentQuarter * 3, 1).toISOString().split('T')[0];
-        break;
-      case 'last-quarter':
-        const lastQuarter = (Math.floor(currentMonth / 3) - 1 + 4) % 4;
-        const yearOfLastQuarter = lastQuarter > Math.floor(currentMonth / 3) ? currentYear - 1 : currentYear;
-        startDate = new Date(yearOfLastQuarter, lastQuarter * 3, 1).toISOString().split('T')[0];
-        endDate = new Date(lastQuarter === 3 ? currentYear : currentYear - 1, lastQuarter * 3 + 3, 0).toISOString().split('T')[0];
-        break;
-      case 'this-year':
-        startDate = `${currentYear}-01-01`;
-        break;
-      case 'last-year':
-        startDate = `${currentYear - 1}-01-01`;
-        endDate = `${currentYear - 1}-12-31`;
-        break;
-      default:
-        startDate = `${currentYear}-01-01`;
-    }
-    
-    return { startDate, endDate };
-  }
   
   // Helper function to format month labels
   function formatMonthLabel(monthYear: string) {
