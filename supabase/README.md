@@ -1,68 +1,40 @@
-# Supabase Configuration for FarmSync
+# Supabase backend
 
-This directory contains the Supabase configuration for the FarmSync application.
+This directory holds everything FarmSync needs on the Supabase side.
 
-## Tables
+| Path | Contents |
+| --- | --- |
+| `migrations/` | SQL migrations, applied in filename order. Never edit one that has been merged; add a new file |
+| `functions/get-weather/` | Edge function that proxies WeatherAPI.com so the API key stays on the server |
+| `functions/ingest-telemetry/` | Edge function that accepts readings from IoT devices |
+| `tests/` | Row Level Security tests and the Supabase stand-ins they run on |
+| `config.toml` | Supabase CLI configuration for local development |
+| `apply-migrations.cjs` | Convenience wrapper around `supabase db push` |
+| `setup-env-vars.cjs` | Interactive helper that sets `WEATHER_API_KEY` as a function secret |
 
-The following tables are configured:
-
-- **farms**: Farm information
-- **fields**: Field information
-- **crops**: Crop information
-- **field_crops**: Crops planted in fields
-- **inventory**: Inventory items
-- **equipment**: Farm equipment
-- **financial_transactions**: Financial transactions
-- **weather_data**: Weather data
-- **forums**: Discussion categories
-- **forum_posts**: Forum posts
-- **post_comments**: Comments on forum posts
-- **post_likes**: Likes on forum posts
-- **testimonials**: User reviews
-- **app_screenshots**: Marketing screenshots
-- **market_data**: Commodity prices
-
-## Applying Migrations
-
-To apply the migrations to your Supabase project, run:
+## Common commands
 
 ```bash
-node supabase/apply-migrations.js
-```
+# Link the CLI to your project (once)
+npx supabase link --project-ref <project-ref>
 
-Or use the Supabase CLI directly:
-
-```bash
+# Apply pending migrations
 npx supabase db push
+
+# Create a new migration
+npx supabase migration new <short_description>
+
+# Set the weather API key and deploy functions
+npx supabase secrets set WEATHER_API_KEY=<key> --project-ref <project-ref>
+npx supabase functions deploy get-weather --project-ref <project-ref>
+npx supabase functions deploy ingest-telemetry --project-ref <project-ref>
+
+# Run the RLS tests against a disposable Postgres
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres ../scripts/test-db.sh
 ```
 
-## Setting Up Environment Variables
+## Further reading
 
-To set up the WeatherAPI.com API key, run:
-
-```bash
-node supabase/setup-env-vars.js
-```
-
-You will be prompted to enter your WeatherAPI.com API key.
-
-## Row Level Security (RLS) Policies
-
-The following RLS policies are configured:
-
-- Public read access for all tables
-- Authenticated users can create/update/delete their own comments
-- Authenticated users can like/unlike posts
-
-## Seed Data
-
-The migrations include seed data for:
-
-- 3 forum categories
-- 3 app screenshots
-- 3 testimonials
-- Sample market data for common crops
-
-## TypeScript Types
-
-The TypeScript types for the Supabase tables are defined in `src/integrations/supabase/types.ts`.
+- [Database and security](../docs/database.md): schema, access model and migration rules
+- [IoT integration](../docs/iot-integration.md): calling `ingest-telemetry` from devices
+- [Deployment](../docs/deployment.md): production setup
