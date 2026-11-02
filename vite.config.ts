@@ -21,6 +21,8 @@ export default defineConfig(({ mode }) => ({
         // Mapbox GL alone is ~1.7 MB minified, so allow larger chunks to be precached.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,json}'],
+        // PDF generation needs a connection anyway; skip ~1 MB of rarely used code on install.
+        globIgnores: ['**/pdf-*.js', '**/pdf-extras-*.js', '**/complianceReportPdf-*.js'],
         navigateFallback: '/index.html',
       },
       manifest: {
@@ -67,6 +69,9 @@ export default defineConfig(({ mode }) => ({
           charts: ["recharts"],
           mapbox: ["mapbox-gl", "@mapbox/mapbox-gl-draw"],
           i18n: ["i18next", "react-i18next", "i18next-browser-languagedetector", "i18next-http-backend"],
+          // PDF export only; loaded when a report is downloaded.
+          pdf: ["jspdf", "jspdf-autotable"],
+          "pdf-extras": ["html2canvas", "canvg", "dompurify"],
         },
       },
     },

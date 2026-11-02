@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Leaf, Droplets, FileText, Download } from 'lucide-react';
+import { Leaf, Droplets, FileText, Download, Loader2 } from 'lucide-react';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
-import { downloadCsv, toCsv } from '@/lib/csv';
+import { downloadBlob, downloadCsv, toCsv } from '@/lib/csv';
+import { buildComplianceReport } from '@/lib/complianceReport';
 
 const Sustainability = () => {
     const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -71,6 +72,36 @@ const Sustainability = () => {
             ['Date', 'Field', 'Volume', 'Unit', 'Source'],
             waterUsage.map((w) => [w.usage_date, w.fields?.name, w.volume, w.unit, w.source]),
         ));
+    };
+
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+    // Audit-ready PDF combining both logs. jsPDF is loaded only when needed.
+    const handleExportPdf = async () => {
+        if (!selectedFarmId) return;
+        if (!logs?.length && !waterUsage?.length) {
+            toast({ title: "Nothing to report", description: "Record inputs or water use for this farm first." });
+            return;
+        }
+        setIsGeneratingPdf(true);
+        try {
+            const [{ data: farm, error }, { renderComplianceReportPdf }] = await Promise.all([
+                supabase.from('farms').select('name, village, district, state, total_area, area_unit').eq('id', selectedFarmId).single(),
+                import('@/lib/pdf/complianceReportPdf'),
+            ]);
+            if (error) throw error;
+
+            const report = buildComplianceReport(
+                (logs ?? []).map((l) => ({ ...l, fieldName: l.fields?.name })),
+                (waterUsage ?? []).map((w) => ({ ...w, fieldName: w.fields?.name })),
+            );
+            const slug = farm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'farm';
+            downloadBlob(`${slug}-compliance-report-${today}.pdf`, renderComplianceReportPdf(farm, report));
+        } catch (e) {
+            toast({ title: "Could not create PDF", description: (e as Error).message, variant: "destructive" });
+        } finally {
+            setIsGeneratingPdf(false);
+        }
     };
 
     return (
@@ -187,7 +218,19 @@ const Sustainability = () => {
                                 <CardTitle>Compliance Reports</CardTitle>
                                 <CardDescription>Generate standardized reports for certification audits.</CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="space-y-4">
+                                <div className="p-4 border rounded-lg flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center border-primary/30 bg-primary/5">
+                                    <div>
+                                        <h3 className="font-medium flex items-center gap-2"><FileText className="h-4 w-4" /> Audit Report (PDF)</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            Input and water summaries, full logs and a signed declaration, ready to print for an inspector.
+                                        </p>
+                                    </div>
+                                    <Button size="sm" onClick={handleExportPdf} disabled={isGeneratingPdf}>
+                                        {isGeneratingPdf ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                                        Download PDF
+                                    </Button>
+                                </div>
                                 <div className="grid gap-4 md:grid-cols-2">
                                     <div className="p-4 border rounded-lg flex justify-between items-center">
                                         <div>
