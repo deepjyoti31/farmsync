@@ -33,6 +33,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Equipment } from '@/types';
 import { DeleteButton } from '@/components/common/DeleteButton';
+import { Badge } from '@/components/ui/badge';
+import MaintenanceDialog from '@/components/equipment/MaintenanceDialog';
+import { serviceState } from '@/lib/maintenance';
+import { format, parseISO } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const EquipmentPage = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -41,7 +46,9 @@ const EquipmentPage = () => {
   const [isEditEquipmentOpen, setIsEditEquipmentOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-  const [isScheduleMaintenanceOpen, setIsScheduleMaintenanceOpen] = useState(false);
+  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [maintenanceEquipmentId, setMaintenanceEquipmentId] = useState<string | null>(null);
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -67,15 +74,20 @@ const EquipmentPage = () => {
     enabled: !!selectedFarmId,
   });
 
-  // For maintenance records, in a real application, this would fetch from a maintenance_records table
+  // Service history for every machine on this farm, newest first
   const { data: maintenanceRecords = [], isLoading: isLoadingMaintenance } = useQuery({
     queryKey: ['equipment_maintenance', selectedFarmId],
     queryFn: async () => {
       if (!selectedFarmId) return [];
-      
-      // In a real app, this would fetch from a maintenance_records table
-      // For now, we'll return an empty array
-      return [] as any[];
+
+      const { data, error } = await supabase
+        .from('equipment_maintenance')
+        .select('*, equipment!inner(name, farm_id)')
+        .eq('equipment.farm_id', selectedFarmId)
+        .order('maintenance_date', { ascending: false });
+
+      if (error) throw error;
+      return data ?? [];
     },
     enabled: !!selectedFarmId,
   });
@@ -93,7 +105,32 @@ const EquipmentPage = () => {
     maintenance: equipment.filter(e => e.status === 'needs maintenance').length,
     repair: equipment.filter(e => e.status === 'in repair').length,
     inactive: equipment.filter(e => e.status === 'inactive').length,
-    totalValue: equipment.reduce((sum, e) => sum + (Number(e.purchase_price) || 0), 0)
+    totalValue: equipment.reduce((sum, e) => sum + (Number(e.purchase_price) || 0), 0),
+    serviceDue: equipment.filter(e => ['overdue', 'due_soon'].includes(serviceState(e.next_maintenance_date))).length,
+  };
+
+  const renderNextService = (date: string | null) => {
+    const state = serviceState(date);
+    if (state === 'unscheduled') return <span className="text-muted-foreground">Not scheduled</span>;
+    const label = format(parseISO(date!), 'dd MMM yyyy');
+    if (state === 'overdue') return <Badge variant="destructive">Overdue · {label}</Badge>;
+    if (state === 'due_soon') return <Badge className="bg-amber-500 hover:bg-amber-500">Due · {label}</Badge>;
+    return <span>{label}</span>;
+  };
+
+  const openMaintenance = (equipmentId: string | null) => {
+    setMaintenanceEquipmentId(equipmentId);
+    setMaintenanceOpen(true);
+  };
+
+  const deleteEquipment = async (item: Equipment) => {
+    const { error } = await supabase.from('equipment').delete().eq('id', item.id);
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete equipment. Please try again.", variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['equipment'] });
+    toast({ title: "Equipment Deleted", description: `${item.name} has been deleted.` });
   };
 
   const getStatusIcon = (status: string) => {
@@ -155,13 +192,6 @@ const EquipmentPage = () => {
     }
   };
 
-  const handleScheduleMaintenance = () => {
-    setIsScheduleMaintenanceOpen(true);
-    toast({
-      title: "Feature Coming Soon",
-      description: "Maintenance scheduling will be available in a future update.",
-    });
-  };
 
   const handleEquipmentAdded = () => {
     setIsAddEquipmentOpen(false);
@@ -268,7 +298,7 @@ const EquipmentPage = () => {
                   <span className="text-2xl font-bold">{stats.maintenance}</span>
                 </div>
                 <div className="flex items-center mt-2 text-amber-500 text-sm">
-                  <span>{stats.total ? Math.round((stats.maintenance / stats.total) * 100) : 0}% of equipment</span>
+                  <span>{stats.serviceDue} service{stats.serviceDue === 1 ? '' : 's'} due in 14 days</span>
                 </div>
               </CardContent>
             </Card>
@@ -321,7 +351,7 @@ const EquipmentPage = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Manufacturer/Model</TableHead>
-                      <TableHead>Purchase Date</TableHead>
+                      <TableHead>Next Service</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -339,7 +369,7 @@ const EquipmentPage = () => {
                           <TableCell className="font-medium">{item.name}</TableCell>
                           <TableCell>{item.equipment_type}</TableCell>
                           <TableCell>{item.manufacturer} {item.model}</TableCell>
-                          <TableCell>{item.purchase_date ? new Date(item.purchase_date).toLocaleDateString() : 'N/A'}</TableCell>
+                          <TableCell>{renderNextService(item.next_maintenance_date)}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {getStatusIcon(item.status)}
@@ -352,21 +382,17 @@ const EquipmentPage = () => {
                                 <Edit className="h-4 w-4" />
                                 <span className="sr-only">Edit</span>
                               </Button>
-                              <DeleteButton 
-                                onDelete={() => {
-                                  if (selectedEquipment) {
-                                    return confirmDeleteEquipment();
-                                  }
-                                }}
+                              <Button variant="ghost" size="sm" onClick={() => openMaintenance(item.id)}>
+                                <Wrench className="h-4 w-4" />
+                                <span className="sr-only">Maintenance for {item.name}</span>
+                              </Button>
+                              <DeleteButton
+                                onDelete={() => deleteEquipment(item)}
                                 itemName={item.name}
                                 entityType="Equipment"
                                 buttonSize="sm"
                                 buttonVariant="ghost"
                               />
-                              <Button variant="ghost" size="sm">
-                                <FileText className="h-4 w-4" />
-                                <span className="sr-only">View Details</span>
-                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -396,7 +422,7 @@ const EquipmentPage = () => {
                       filteredMaintenanceRecords.map((record) => (
                         <TableRow key={record.id}>
                           <TableCell className="font-medium">{record.equipment?.name || 'Unknown'}</TableCell>
-                          <TableCell>{new Date(record.maintenance_date).toLocaleDateString()}</TableCell>
+                          <TableCell>{format(parseISO(record.maintenance_date), 'dd MMM yyyy')}</TableCell>
                           <TableCell>{record.maintenance_type}</TableCell>
                           <TableCell>{record.performed_by || 'Not specified'}</TableCell>
                           <TableCell className="text-right">₹{Number(record.cost || 0).toLocaleString()}</TableCell>
@@ -409,11 +435,14 @@ const EquipmentPage = () => {
             </CardContent>
             {filteredEquipment.length > 0 && (
               <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={handleScheduleMaintenance}>
+                <Button variant="outline" onClick={() => openMaintenance(null)}>
                   <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Maintenance
+                  Log or Schedule Maintenance
                 </Button>
-                <Button variant="outline">Generate Report</Button>
+                <Button variant="outline" onClick={() => navigate('/dashboard/reports')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Equipment Report
+                </Button>
               </CardFooter>
             )}
           </Card>
@@ -438,6 +467,16 @@ const EquipmentPage = () => {
             onCancel={() => setIsEditEquipmentOpen(false)}
           />
         </Dialog>
+      )}
+
+      {selectedFarmId && (
+        <MaintenanceDialog
+          farmId={selectedFarmId}
+          equipment={equipment}
+          equipmentId={maintenanceEquipmentId}
+          open={maintenanceOpen}
+          onOpenChange={setMaintenanceOpen}
+        />
       )}
 
       {/* Confirmation dialog for deleting equipment */}
