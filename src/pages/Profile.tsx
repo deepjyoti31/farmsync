@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { AVATAR_ACCEPT, AVATAR_BUCKET, avatarPath, avatarPathFromUrl, validateAvatarFile } from '@/lib/avatar';
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, { message: 'First name is required' }),
@@ -35,6 +36,8 @@ const Profile = () => {
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: profile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ['profile'],
@@ -161,12 +164,54 @@ const Profile = () => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  // Future: implement avatar upload functionality
-  const handleAvatarUpload = () => {
-    toast({
-      title: "Coming soon",
-      description: "Avatar upload functionality will be available soon.",
-    });
+  // Upload a new profile picture to the user's folder in the avatars bucket,
+  // point the profile at it, then remove the previous picture.
+  const handleAvatarSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !user) return;
+
+    const problem = validateAvatarFile(file);
+    if (problem) {
+      toast({ title: "Can't use this image", description: problem, variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const path = avatarPath(user.id, file.type);
+      const { error: uploadError } = await supabase.storage
+        .from(AVATAR_BUCKET)
+        .upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+      const previousPath = avatarPathFromUrl(avatarUrl);
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({ id: user.id, avatar_url: publicUrl });
+      if (profileError) throw profileError;
+
+      // The header avatar reads from auth metadata.
+      await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
+
+      if (previousPath && previousPath.startsWith(`${user.id}/`)) {
+        await supabase.storage.from(AVATAR_BUCKET).remove([previousPath]);
+      }
+
+      setAvatarUrl(publicUrl);
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast({ title: "Profile picture updated" });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: (error as Error).message || "Could not upload the image.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
   };
 
   return (
@@ -197,13 +242,22 @@ const Profile = () => {
                       <AvatarImage src={avatarUrl || ""} />
                       <AvatarFallback className="text-2xl">{getInitials()}</AvatarFallback>
                     </Avatar>
-                    <Button 
-                      size="icon" 
+                    <Button
+                      size="icon"
                       className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
-                      onClick={handleAvatarUpload}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      aria-label="Change profile picture"
                     >
-                      <Camera className="h-4 w-4" />
+                      {isUploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
                     </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={AVATAR_ACCEPT}
+                      className="hidden"
+                      onChange={handleAvatarSelected}
+                    />
                   </div>
                   <div className="text-center sm:text-left">
                     <h2 className="text-lg font-medium">
