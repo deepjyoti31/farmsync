@@ -41,3 +41,9 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
   if (insertError) throw insertError;
   return next;
 }
+
+/** Move an open task between "To do" and "In progress" on the board. */
+export async function setTaskStatus(task: TaskRow, status: 'pending' | 'in_progress'): Promise<void> {
+  const { error } = await supabase.from('tasks').update({ status, completed_at: null }).eq('id', task.id);
+  if (error) throw error;
+}

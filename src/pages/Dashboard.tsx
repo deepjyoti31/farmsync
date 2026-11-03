@@ -125,7 +125,7 @@ const Dashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('financial_transactions')
-        .select('amount, type')
+        .select('amount, type, category:financial_categories(name, type)')
         .eq('farm_id', farmId!)
         .gte('transaction_date', format(startOfMonth(new Date()), 'yyyy-MM-dd'));
       if (error) return monthTotals([]);

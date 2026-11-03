@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  priceBoard,
+  sparklinePoints,
   ALL_COMMODITIES,
   ALL_STATES,
   filterMarketPrices,
@@ -86,5 +88,44 @@ describe('summarizeCommodities', () => {
   it('limits the number of commodities', () => {
     const many = ['A', 'B', 'C', 'D', 'E'].map((c) => price({ commodity: c }));
     expect(summarizeCommodities(many, 4)).toHaveLength(4);
+  });
+});
+
+describe('priceBoard', () => {
+  const row = (commodity: string, date: string, modal: number, market = 'Kota') => ({
+    commodity, variety: '', market, state: 'Rajasthan', district: 'Kota', min_price: modal - 50, max_price: modal + 50, modal_price: modal, date,
+  });
+
+  it('gives one row per crop with the latest prices, a trend and the day-on-day change', () => {
+    const board = priceBoard(
+      [
+        row('Wheat', '2026-11-01', 2400),
+        row('Wheat', '2026-11-02', 2400),
+        row('Wheat', '2026-11-02', 2450, 'Bundi'),
+        row('Mustard', '2026-11-02', 5650),
+        row('Mustard', '2026-11-01', 5700),
+      ],
+      ['mustard'],
+    );
+    expect(board.map((r) => r.commodity)).toEqual(['Mustard', 'Wheat']);
+    expect(board[0].pinned).toBe(true);
+    expect(board[1]).toMatchObject({ date: '2026-11-02', modal: 2425, markets: 2, series: [2400, 2425] });
+    expect(board[1].changePercent).toBeCloseTo(1.0417, 3);
+    expect(board[0].changePercent).toBeCloseTo(-0.877, 2);
+  });
+
+  it('has no change for a crop seen on one day only', () => {
+    expect(priceBoard([row('Potato', '2026-11-02', 1180)])[0].changePercent).toBeNull();
+  });
+});
+
+describe('sparklinePoints', () => {
+  it('scales values into the box, higher values nearer the top', () => {
+    const pts = sparklinePoints([1, 3, 2], 100, 20, 0).split(' ').map((p) => p.split(',').map(Number));
+    expect(pts[0]).toEqual([0, 20]);
+    expect(pts[1]).toEqual([50, 0]);
+    expect(pts[2][1]).toBe(10);
+    expect(sparklinePoints([])).toBe('');
+    expect(sparklinePoints([5, 5], 100, 20, 0)).toBe('0.0,10.0 100.0,10.0');
   });
 });

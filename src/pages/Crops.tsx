@@ -1,357 +1,263 @@
-import React, { useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import {
-  Plus,
-  Filter,
-  ArrowUpDown,
-  Sprout,
-  CheckCircle2,
-  Clock,
-  Flower2,
-  Scissors,
-  Loader2,
-  X,
-  Eye,
-  Edit
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { differenceInCalendarDays, format, parseISO } from 'date-fns';
+import { Eye, Loader2, Plus, Sprout } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import PageHeader from '@/components/common/PageHeader';
+import Segmented from '@/components/common/Segmented';
+import { DeleteButton } from '@/components/common/DeleteButton';
 import FarmSelector from '@/components/farms/FarmSelector';
 import AddCropForm from '@/components/crops/AddCropForm';
 import CropDetailsDialog from '@/components/crops/CropDetailsDialog';
 import CropCalendar from '@/components/crops/CropCalendar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DeleteButton } from '@/components/common/DeleteButton';
+import SeasonTimeline, { type TimelinePlanting } from '@/components/crops/SeasonTimeline';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { cropEvents } from '@/lib/cropCalendar';
+import { cropProgress, type CropStage } from '@/lib/dashboard';
 import { deleteEntity } from '@/utils/deleteUtils';
 
+type View = 'timeline' | 'calendar' | 'list';
+
+const STAGE_BADGE: Record<CropStage, { variant: 'outline' | 'default' | 'warning' | 'info'; label: string }> = {
+  planned: { variant: 'outline', label: 'Planned' },
+  growing: { variant: 'default', label: 'Growing' },
+  ready: { variant: 'warning', label: 'Ready' },
+  harvested: { variant: 'info', label: 'Harvested' },
+};
+
+const EVENT_LABEL = { planting: 'Sow', expected_harvest: 'Harvest', harvest: 'Harvested' } as const;
+
 const Crops = () => {
-  const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [viewingCropId, setViewingCropId] = useState<string | null>(null);
-  const [editingCropId, setEditingCropId] = useState<string | null>(null);
+  const [farmId, setFarmId] = useState<string | null>(null);
+  const [view, setView] = useState<View>('timeline');
+  const [addOpen, setAddOpen] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const {
-    data: farmFields = [],
-    isLoading: isLoadingFields,
-    error: fieldsError
-  } = useQuery({
-    queryKey: ['fields', selectedFarmId],
+  const { data: fields = [], isLoading: loadingFields } = useQuery({
+    queryKey: ['fields', farmId, 'names'],
+    enabled: !!farmId,
     queryFn: async () => {
-      if (!selectedFarmId) return [];
-
-      const { data, error } = await supabase
-        .from('fields')
-        .select('*, farm:farm_id(name)')
-        .eq('farm_id', selectedFarmId);
-
+      const { data, error } = await supabase.from('fields').select('id, name, area, area_unit').eq('farm_id', farmId!);
       if (error) throw error;
-      return data || [];
+      return data ?? [];
     },
-    enabled: !!selectedFarmId,
   });
 
-  const {
-    data: fieldCrops = [],
-    isLoading: isLoadingCrops,
-    error: cropsError
-  } = useQuery({
-    queryKey: ['field_crops', selectedFarmId],
+  const fieldIds = fields.map((f) => f.id);
+  const { data: plantings = [], isLoading: loadingCrops } = useQuery({
+    queryKey: ['field_crops', farmId, fieldIds.join(',')],
+    enabled: !!farmId && fieldIds.length > 0,
     queryFn: async () => {
-      if (!selectedFarmId) return [];
-
-      const { data: fieldData, error: fieldError } = await supabase
-        .from('fields')
-        .select('id')
-        .eq('farm_id', selectedFarmId);
-
-      if (fieldError) throw fieldError;
-      if (!fieldData || fieldData.length === 0) return [];
-
-      const fieldIds = fieldData.map(field => field.id);
-
-      const { data: fieldCropsData, error: cropError } = await supabase
-        .from('field_crops')
-        .select(`
-          *,
-          crop:crops(*)
-        `)
-        .in('field_id', fieldIds);
-
-      if (cropError) throw cropError;
-      return fieldCropsData || [];
+      const { data, error } = await supabase.from('field_crops').select('*, crop:crops(*)').in('field_id', fieldIds).order('planting_date');
+      if (error) throw error;
+      return data ?? [];
     },
-    enabled: !!selectedFarmId,
   });
 
-  React.useEffect(() => {
-    if (fieldsError) {
-      toast({
-        title: 'Error loading fields',
-        description: (fieldsError as Error).message,
-        variant: 'destructive',
-      });
-    }
+  const fieldById = useMemo(() => new Map(fields.map((f) => [f.id, f])), [fields]);
+  const fieldNames = useMemo(() => new Map(fields.map((f) => [f.id, f.name])), [fields]);
+  const now = useMemo(() => new Date(), []);
 
-    if (cropsError) {
-      toast({
-        title: 'Error loading crops',
-        description: (cropsError as Error).message,
-        variant: 'destructive',
-      });
-    }
-  }, [fieldsError, cropsError]);
+  const timeline: TimelinePlanting[] = plantings.map((p) => {
+    const f = fieldById.get(p.field_id);
+    return {
+      ...p,
+      label: [p.crop?.name || p.name || 'Crop', p.crop?.variety].filter(Boolean).join(' · '),
+      where: f ? `${f.name} · ${f.area} ${f.area_unit}` : 'Field',
+    };
+  });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'planned':
-        return <Clock className="h-4 w-4 text-farm-yellow" />;
-      case 'planted':
-        return <Flower2 className="h-4 w-4 text-farm-green" />;
-      case 'growing':
-        return <Sprout className="h-4 w-4 text-farm-lightGreen" />;
-      case 'harvested':
-        return <Scissors className="h-4 w-4 text-farm-brown" />;
-      default:
-        return null;
-    }
-  };
+  const stages = plantings.map((p) => cropProgress(p, now).stage);
+  const inGround = stages.filter((s) => s === 'growing' || s === 'ready').length;
+  const upcoming = cropEvents(plantings, fieldNames)
+    .filter((e) => e.kind !== 'harvest')
+    .filter((e) => {
+      const d = differenceInCalendarDays(parseISO(e.date), now);
+      return d >= 0 && d <= 45;
+    })
+    .slice(0, 6);
+  const nextHarvest = cropEvents(plantings, fieldNames).find((e) => e.kind === 'expected_harvest' && parseISO(e.date) >= now);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'planned':
-        return <Badge variant="outline" className="bg-muted/40">Planned</Badge>;
-      case 'planted':
-        return <Badge variant="outline" className="bg-farm-green/10 text-farm-green border-farm-green/20">Planted</Badge>;
-      case 'growing':
-        return <Badge variant="outline" className="bg-farm-lightGreen/10 text-farm-lightGreen border-farm-lightGreen/20">Growing</Badge>;
-      case 'harvested':
-        return <Badge variant="outline" className="bg-farm-brown/10 text-farm-brown border-farm-brown/20">Harvested</Badge>;
-      default:
-        return null;
-    }
-  };
-
-  const getFieldName = (fieldId: string | undefined) => {
-    if (!fieldId) return 'Not assigned';
-    const field = farmFields.find(f => f.id === fieldId);
-    return field ? field.name : 'Unknown Field';
-  };
-
-  const handleAddCropSuccess = () => {
-    setDialogOpen(false);
-    queryClient.invalidateQueries({queryKey: ['field_crops']});
-    toast({
-      title: "Crop added successfully",
-      description: "Your crop has been added to the field.",
-    });
-  };
-
-  const handleDeleteCrop = async (cropId: string) => {
+  const remove = async (id: string) => {
     await deleteEntity({
-      id: cropId,
+      id,
       entityType: 'crop',
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['field_crops'] });
-        if (selectedFarmId) {
-          queryClient.invalidateQueries({ queryKey: ['field_crops', selectedFarmId] });
-        }
-        toast({
-          title: "Crop deleted",
-          description: "The crop has been deleted successfully.",
-        });
-      }
+        toast({ title: 'Planting deleted' });
+      },
     });
   };
 
-  const isLoading = isLoadingFields || isLoadingCrops;
-  const fieldNames = React.useMemo(() => new Map(farmFields.map((f) => [f.id, f.name])), [farmFields]);
+  const loading = loadingFields || loadingCrops;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Crop Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Plan, track, and manage all your crops throughout their lifecycle.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <FarmSelector
-            selectedFarmId={selectedFarmId}
-            onFarmChange={setSelectedFarmId}
-          />
-
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filter
+    <div>
+      <PageHeader
+        title="Crops"
+        description={
+          plantings.length > 0
+            ? `${plantings.length} plantings · ${inGround} in the ground${nextHarvest ? ` · next harvest from ${format(parseISO(nextHarvest.date), 'd MMM')}` : ''}`
+            : 'Plan each planting and follow it from sowing to harvest.'
+        }
+        actions={
+          <>
+            <FarmSelector selectedFarmId={farmId} onFarmChange={setFarmId} />
+            <Button disabled={!farmId || fields.length === 0} onClick={() => setAddOpen(true)}>
+              <Plus /> Plan a crop
             </Button>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2" disabled={!selectedFarmId}>
-                  <Plus className="h-4 w-4" />
-                  Add Crop
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Add New Crop</DialogTitle>
-                </DialogHeader>
-                {selectedFarmId && (
-                  <AddCropForm
-                    farmId={selectedFarmId}
-                    onSuccess={handleAddCropSuccess}
-                    onCancel={() => setDialogOpen(false)}
-                  />
-                )}
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {isLoading ? (
-        <div className="flex items-center justify-center h-[50vh]">
+      {!farmId || loading ? (
+        <div className="flex justify-center p-12" role="status" aria-label="Loading crops">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : !selectedFarmId ? (
-        <Card>
-          <CardContent className="flex items-center justify-center p-12 text-center">
-            <div className="max-w-sm">
-              <Sprout className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-medium mb-2">Select a Farm</h3>
-              <p className="text-muted-foreground mb-4">
-                Please select a farm to view and manage your crops.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : fieldCrops.length === 0 ? (
-        <Card>
-          <CardContent className="flex items-center justify-center p-12 text-center">
-            <div className="max-w-sm">
-              <Sprout className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-medium mb-2">No Crops Added Yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Start adding crops to track and manage your farm's production.
-              </p>
-              <Button className="gap-2" onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Add Your First Crop
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      ) : plantings.length === 0 ? (
+        <div className="surface flex flex-col items-center gap-3 p-12 text-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-[18px] bg-leaf-tint text-primary">
+            <Sprout className="h-8 w-8" aria-hidden="true" />
+          </span>
+          <h2 className="text-xl font-bold">{fields.length === 0 ? 'Add a field first' : 'Nothing planned yet'}</h2>
+          <p className="max-w-sm text-muted-foreground">
+            {fields.length === 0
+              ? 'Crops are planted in fields. Add your fields, then plan what goes in each one.'
+              : 'Add a planting with its sowing date and expected harvest to see it on the season plan.'}
+          </p>
+          {fields.length > 0 && (
+            <Button size="lg" className="mt-2" onClick={() => setAddOpen(true)}>
+              <Plus /> Plan your first crop
+            </Button>
+          )}
+        </div>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Crops</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Crop</TableHead>
-                  <TableHead>Field</TableHead>
-                  <TableHead>Variety</TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <span>Planting Date</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <span>Harvest Date</span>
-                      <ArrowUpDown className="h-3 w-3" />
-                    </div>
-                  </TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fieldCrops.map((fieldCrop: any) => (
-                  <TableRow key={fieldCrop.id}>
-                    <TableCell className="font-medium">{fieldCrop.crop?.name || fieldCrop.name || 'Unknown Crop'}</TableCell>
-                    <TableCell>{getFieldName(fieldCrop.field_id)}</TableCell>
-                    <TableCell>{fieldCrop.crop?.variety || '-'}</TableCell>
-                    <TableCell>{format(new Date(fieldCrop.planting_date), 'dd MMM yyyy')}</TableCell>
-                    <TableCell>{fieldCrop.expected_harvest_date ? format(new Date(fieldCrop.expected_harvest_date), 'dd MMM yyyy') : '-'}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(fieldCrop.status)}
-                        {getStatusBadge(fieldCrop.status)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setViewingCropId(fieldCrop.id)}
-                          title="View Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setViewingCropId(fieldCrop.id)}
-                          title="Edit Status"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <DeleteButton
-                          onDelete={() => handleDeleteCrop(fieldCrop.id)}
-                          itemName={fieldCrop.crop?.name}
-                          entityType="Crop"
-                          buttonSize="sm"
-                          buttonVariant="ghost"
-                        />
-                      </div>
-                    </TableCell>
+        <div className="flex flex-col gap-6">
+          <Segmented
+            label="View"
+            value={view}
+            onChange={setView}
+            className="self-start"
+            options={[
+              { value: 'timeline', label: 'Season plan' },
+              { value: 'calendar', label: 'Calendar' },
+              { value: 'list', label: 'List' },
+            ]}
+          />
+
+          {view === 'timeline' && (
+            <>
+              <SeasonTimeline plantings={timeline} onSelect={setViewingId} />
+              <section aria-labelledby="upcoming-h" className="surface p-5 pb-2 md:p-6 md:pb-2">
+                <h2 id="upcoming-h" className="mb-1 text-xl font-bold">
+                  Coming up
+                </h2>
+                {upcoming.length === 0 ? (
+                  <p className="py-4 text-sm text-muted-foreground">No sowing or harvest in the next six weeks.</p>
+                ) : (
+                  <ol>
+                    {upcoming.map((e) => {
+                      const d = parseISO(e.date);
+                      return (
+                        <li key={`${e.plantingId}-${e.kind}`} className="flex items-center gap-3.5 border-t border-muted py-3 first:border-t-0">
+                          <span className="flex w-[52px] shrink-0 flex-col items-center rounded-[10px] bg-background py-1.5">
+                            <span className="font-mono text-[11px] uppercase text-muted-foreground">{format(d, 'MMM')}</span>
+                            <span className="font-display text-xl font-bold leading-tight">{format(d, 'd')}</span>
+                          </span>
+                          <span className="flex flex-1 flex-col gap-0.5">
+                            <span className="text-[15px] font-semibold">
+                              {EVENT_LABEL[e.kind]} {e.cropName.toLowerCase()}
+                            </span>
+                            <span className="text-[13px] text-muted-foreground">{e.fieldName}</span>
+                          </span>
+                          <Badge variant={e.kind === 'planting' ? 'default' : 'warning'}>{e.kind === 'planting' ? 'Sowing' : 'Harvest'}</Badge>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </section>
+            </>
+          )}
+
+          {view === 'calendar' && <CropCalendar plantings={plantings} fieldNames={fieldNames} onSelectPlanting={setViewingId} />}
+
+          {view === 'list' && (
+            <section aria-label="All plantings" className="surface overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Crop</TableHead>
+                    <TableHead>Field</TableHead>
+                    <TableHead>Sown</TableHead>
+                    <TableHead>Harvest</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead className="text-end">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {timeline.map((p) => {
+                    const stage = STAGE_BADGE[cropProgress(p, now).stage];
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-semibold">{p.label}</TableCell>
+                        <TableCell>{fieldNames.get(p.field_id) ?? '·'}</TableCell>
+                        <TableCell className="font-mono text-[13px]">{format(parseISO(p.planting_date), 'd MMM yyyy')}</TableCell>
+                        <TableCell className="font-mono text-[13px]">
+                          {p.actual_harvest_date
+                            ? format(parseISO(p.actual_harvest_date), 'd MMM yyyy')
+                            : p.expected_harvest_date
+                              ? `~${format(parseISO(p.expected_harvest_date), 'd MMM yyyy')}`
+                              : '·'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={stage.variant}>{stage.label}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => setViewingId(p.id)} aria-label={`Open ${p.label}`}>
+                              <Eye /> Open
+                            </Button>
+                            <DeleteButton onDelete={() => remove(p.id)} itemName={p.label} entityType="Planting" buttonSize="sm" buttonVariant="ghost" />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </section>
+          )}
+        </div>
       )}
 
-      {selectedFarmId && fieldCrops.length > 0 && (
-        <CropCalendar
-          plantings={fieldCrops}
-          fieldNames={fieldNames}
-          onSelectPlanting={setViewingCropId}
-        />
-      )}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Plan a crop</DialogTitle>
+          </DialogHeader>
+          {farmId && (
+            <AddCropForm
+              farmId={farmId}
+              onSuccess={() => {
+                setAddOpen(false);
+                queryClient.invalidateQueries({ queryKey: ['field_crops'] });
+                toast({ title: 'Planting added' });
+              }}
+              onCancel={() => setAddOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
-      {/* Crop Details Dialog */}
-      <CropDetailsDialog
-        cropId={viewingCropId}
-        isOpen={!!viewingCropId}
-        onClose={() => setViewingCropId(null)}
-      />
+      <CropDetailsDialog cropId={viewingId} isOpen={!!viewingId} onClose={() => setViewingId(null)} />
     </div>
   );
 };

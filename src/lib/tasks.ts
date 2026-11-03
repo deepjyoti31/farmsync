@@ -80,3 +80,40 @@ export function sortTasks<T extends TaskLike>(tasks: T[]): T[] {
     return a.title.localeCompare(b.title);
   });
 }
+
+export type TaskGroupKey = 'overdue' | 'today' | 'week' | 'later' | 'undated' | 'done';
+
+export const TASK_GROUP_LABELS: Record<TaskGroupKey, string> = {
+  overdue: 'Late',
+  today: 'Today',
+  week: 'Next 7 days',
+  later: 'Later',
+  undated: 'No date',
+  done: 'Done',
+};
+
+const GROUP_ORDER: TaskGroupKey[] = ['overdue', 'today', 'week', 'later', 'undated', 'done'];
+
+/**
+ * Splits tasks into the sections shown on the Tasks screen, in display order,
+ * leaving out empty sections. Each section is sorted with `sortTasks`.
+ */
+export function groupTasksByDue<T extends TaskLike>(tasks: T[], today: Date = new Date()): { key: TaskGroupKey; tasks: T[] }[] {
+  const buckets = new Map<TaskGroupKey, T[]>();
+  for (const task of tasks) {
+    let key: TaskGroupKey;
+    if (isCompleted(task)) key = 'done';
+    else {
+      const state = dueState(task.due_date, today);
+      key = state === 'overdue' ? 'overdue' : state === 'today' ? 'today' : state === 'soon' ? 'week' : state === 'later' ? 'later' : 'undated';
+    }
+    buckets.set(key, [...(buckets.get(key) ?? []), task]);
+  }
+  return GROUP_ORDER.filter((k) => buckets.has(k)).map((key) => ({ key, tasks: sortTasks(buckets.get(key)!) }));
+}
+
+export type BoardColumn = 'pending' | 'in_progress' | 'completed';
+
+/** Board column for a task. Cancelled and unknown statuses sit with "To do". */
+export const boardColumn = (task: Pick<TaskLike, 'status'>): BoardColumn =>
+  task.status === 'completed' ? 'completed' : task.status === 'in_progress' ? 'in_progress' : 'pending';

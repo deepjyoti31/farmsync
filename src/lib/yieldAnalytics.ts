@@ -36,6 +36,12 @@ export function toHectares(area: number, unit: string): number | null {
   return factor === undefined ? null : area * factor;
 }
 
+/** Area in `unit` for a value in hectares, or null for an unknown unit. */
+export function fromHectares(hectares: number, unit: string): number | null {
+  const factor = HECTARES_PER_UNIT[unit.toLowerCase()];
+  return factor === undefined ? null : hectares / factor;
+}
+
 export interface HarvestRecord {
   cropName: string;
   quantity: number;

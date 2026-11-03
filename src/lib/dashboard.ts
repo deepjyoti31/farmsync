@@ -1,4 +1,5 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { transactionType, type TransactionLike } from './financeSummary';
 
 /** Rupees with Indian digit grouping, e.g. ₹1,24,550 */
 export const formatMoney = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
@@ -88,13 +89,15 @@ export interface MonthTotals {
   net: number;
 }
 
-export function monthTotals(rows: { amount: number; type: string | null }[]): MonthTotals {
+/** Income, expenses and net. Type comes from the transaction, else its category; rows of unknown type are left out. */
+export function monthTotals(rows: Pick<TransactionLike, 'amount' | 'type' | 'category'>[]): MonthTotals {
   let income = 0;
   let expense = 0;
   for (const r of rows) {
     const amount = Number(r.amount) || 0;
-    if ((r.type || '').toLowerCase() === 'income') income += amount;
-    else expense += amount;
+    const type = transactionType(r);
+    if (type === 'income') income += amount;
+    else if (type === 'expense') expense += amount;
   }
   return { income, expense, net: income - expense };
 }
