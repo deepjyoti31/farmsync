@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dueState, nextDueDate, sortTasks, type TaskLike } from './tasks';
+import { boardColumn, dueState, groupTasksByDue, nextDueDate, sortTasks, type TaskLike } from './tasks';
 
 describe('nextDueDate', () => {
   it('advances by the recurrence interval', () => {
@@ -63,5 +63,29 @@ describe('sortTasks', () => {
       task('new', { status: 'completed', due_date: '2026-10-01' }),
     ]);
     expect(sorted.map((t) => t.id)).toEqual(['new', 'old']);
+  });
+});
+
+describe('groupTasksByDue', () => {
+  const today = new Date(2026, 10, 3);
+  const t = (id: string, due_date: string | null, status = 'pending'): TaskLike => ({ id, title: id, due_date, status, priority: 'medium' });
+
+  it('puts each task in one section, in display order, without empty sections', () => {
+    const groups = groupTasksByDue(
+      [t('later', '2026-12-01'), t('late', '2026-11-01'), t('done', '2026-11-03', 'completed'), t('none', null), t('today', '2026-11-03'), t('week', '2026-11-06')],
+      today,
+    );
+    expect(groups.map((g) => g.key)).toEqual(['overdue', 'today', 'week', 'later', 'undated', 'done']);
+    expect(groups.map((g) => g.tasks.map((x) => x.id))).toEqual([['late'], ['today'], ['week'], ['later'], ['none'], ['done']]);
+    expect(groupTasksByDue([t('a', '2026-11-03')], today).map((g) => g.key)).toEqual(['today']);
+  });
+});
+
+describe('boardColumn', () => {
+  it('maps statuses to board columns', () => {
+    expect(boardColumn({ status: 'in_progress' })).toBe('in_progress');
+    expect(boardColumn({ status: 'completed' })).toBe('completed');
+    expect(boardColumn({ status: 'cancelled' })).toBe('pending');
+    expect(boardColumn({ status: null })).toBe('pending');
   });
 });

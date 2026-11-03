@@ -67,6 +67,16 @@ describe('monthTotals', () => {
   it('splits income from expenses', () => {
     expect(monthTotals([{ amount: 48200, type: 'income' }, { amount: 21650, type: 'expense' }])).toEqual({ income: 48200, expense: 21650, net: 26550 });
   });
+
+  it('falls back to the category type, which is how the transaction form saves them', () => {
+    expect(
+      monthTotals([
+        { amount: 1000, type: null, category: { type: 'income' } },
+        { amount: 300, type: null, category: { type: 'expense' } },
+        { amount: 50, type: null, category: null },
+      ]),
+    ).toEqual({ income: 1000, expense: 300, net: 700 });
+  });
 });
 
 describe('attentionItems', () => {

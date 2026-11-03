@@ -4,19 +4,16 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardFooter
+  CardDescription
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Search,
-  ShoppingCart,
-  TrendingUp,
-  Info,
   RefreshCw,
   Store,
   Leaf,
-  Users
+  Users,
+  Star
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -34,12 +31,6 @@ import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Table,
   TableHeader,
   TableBody,
@@ -47,7 +38,7 @@ import {
   TableRow,
   TableCell
 } from '@/components/ui/table';
-import { IndianRupee, Calendar } from 'lucide-react';
+
 
 // New Components and Types
 import ListingCard from '@/components/market/ListingCard';
@@ -58,9 +49,11 @@ import { MarketplaceListing, Supplier, MARKET_CATEGORIES } from '@/types/marketp
 import {
   MarketPrice,
   filterMarketPrices,
-  summarizeCommodities,
+  priceBoard,
   toMarketPrice,
 } from '@/lib/marketPrices';
+import PageHeader from '@/components/common/PageHeader';
+import PriceBoard from '@/components/market/PriceBoard';
 
 /** Shown only while the market_data table is empty, and labelled as sample data in the UI. */
 const SAMPLE_MARKET_PRICES: MarketPrice[] = [
@@ -70,22 +63,10 @@ const SAMPLE_MARKET_PRICES: MarketPrice[] = [
   { commodity: 'Wheat', variety: 'Lokwan', market: 'Khanna', state: 'Punjab', district: 'Ludhiana', min_price: 2100, max_price: 2300, modal_price: 2200, date: '2025-12-18' },
 ];
 
-// Types for existing Market Price functionality
-interface MarketData {
-  commodity: string;
-  variety: string;
-  market: string;
-  state: string;
-  district: string;
-  min_price: number;
-  max_price: number;
-  modal_price: number;
-  date: string;
-}
 
 const Market = () => {
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("buy");
+  const [activeTab, setActiveTab] = useState("prices");
 
   // States for Listings
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -107,6 +88,19 @@ const Market = () => {
       const { data, error } = await supabase.from('farms').select('*');
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Crops grown on the selected farm are pinned to the top of the price board.
+  const { data: grownCrops = [] } = useQuery({
+    queryKey: ['field_crops', selectedFarmId, 'crop-names'],
+    enabled: !!selectedFarmId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('field_crops')
+        .select('name, crop:crops(name), field:fields!inner(farm_id)')
+        .eq('field.farm_id', selectedFarmId!);
+      return Array.from(new Set((data ?? []).map((r) => r.crop?.name || r.name).filter((n): n is string => !!n)));
     },
   });
 
@@ -146,8 +140,14 @@ const Market = () => {
     state: marketState,
   });
 
-  const commodityAverages = summarizeCommodities(
-    filterMarketPrices(safeMarketData, { state: marketState }),
+  // Prices arrive newest first, so the first row per crop and market is that market's latest.
+  const latestPerMarket = filteredMarketData.filter((item, i, all) =>
+    all.findIndex((o) => o.commodity === item.commodity && o.market === item.market && o.variety === item.variety) === i,
+  );
+
+  const board = priceBoard(
+    filterMarketPrices(safeMarketData, { search: marketSearchQuery, commodity: marketCategory, state: marketState }),
+    grownCrops,
   );
 
 
@@ -194,27 +194,22 @@ const Market = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Market</h1>
-          <p className="text-muted-foreground mt-1">
-            Connect with buyers, sellers, and suppliers.
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <FarmSelector
-            selectedFarmId={selectedFarmId}
-            onFarmChange={setSelectedFarmId}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Market"
+        description="Today's mandi prices, produce listings and suppliers near you."
+        actions={
+          <>
+            <FarmSelector selectedFarmId={selectedFarmId} onFarmChange={setSelectedFarmId} />
+            <CreateListingDialog farms={farms} onSuccess={() => refetchListings()} trigger={<Button>List produce for sale</Button>} />
+          </>
+        }
+      />
 
       <Tabs defaultValue="prices" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="prices">Market Prices</TabsTrigger>
-          <TabsTrigger value="buy">Browse Listings</TabsTrigger>
-          <TabsTrigger value="sell">My Listings</TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="prices">Prices</TabsTrigger>
+          <TabsTrigger value="buy">Listings</TabsTrigger>
+          <TabsTrigger value="sell">My listings{myListings.length > 0 && <span className="font-mono text-xs text-muted-foreground">{myListings.length}</span>}</TabsTrigger>
           <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
         </TabsList>
 
@@ -259,32 +254,31 @@ const Market = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {commodityAverages.map((item, index) => (
-              <Card key={index} className="p-4 flex flex-col justify-between">
-                <div className="text-sm text-muted-foreground">{item.commodity}</div>
-                <div className="flex items-end justify-between">
-                  <div className="text-2xl font-bold flex items-center">
-                    <IndianRupee className="h-5 w-5" />
-                    {item.avgPrice.toFixed(0)}
-                  </div>
-                  {item.trendPercent !== null && (
-                    <Badge variant="outline" className={item.trendPercent >= 0 ? "text-green-600 border-green-200 bg-green-50" : "text-red-600 border-red-200 bg-red-50"}>
-                      {item.trendPercent >= 0 ? "↑" : "↓"} {Math.abs(item.trendPercent).toFixed(1)}%
-                    </Badge>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
+          <section aria-labelledby="board-h" className="surface overflow-hidden">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 pb-2 pt-5">
+              <h2 id="board-h" className="text-xl font-bold">Price board</h2>
+              {isSampleMarketData && <Badge variant="warning">Sample data</Badge>}
+              <span className="text-sm text-muted-foreground">₹ per quintal, averaged across markets</span>
+              {grownCrops.length > 0 && (
+                <span className="ms-auto inline-flex items-center gap-1.5 text-[13px] text-[#34453A] dark:text-muted-foreground">
+                  <Star className="h-3.5 w-3.5 fill-harvest text-[#B26B00]" aria-hidden="true" /> Crops you grow come first
+                </span>
+              )}
+            </div>
+            {board.length > 0 ? (
+              <PriceBoard rows={board} />
+            ) : (
+              <p className="px-5 pb-6 text-muted-foreground">No prices match.</p>
+            )}
+          </section>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                {isSampleMarketData ? 'Mandi Prices' : 'Live Mandi Prices'}
-                {isSampleMarketData && <Badge variant="secondary">Sample data</Badge>}
+              <CardTitle className="flex items-center gap-2">
+                Every market
+                {isSampleMarketData && <Badge variant="warning">Sample data</Badge>}
               </CardTitle>
-              <CardDescription>Real-time updates from major agricultural markets (e-NAM)</CardDescription>
+              <CardDescription>Each market's latest prices, newest first.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -299,17 +293,20 @@ const Market = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredMarketData.map((item, idx) => (
+                  {latestPerMarket.map((item, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{item.commodity} <span className="text-xs text-muted-foreground">({item.variety})</span></TableCell>
+                      <TableCell className="font-medium">
+                        {item.commodity}
+                        {item.variety && <span className="text-xs text-muted-foreground"> ({item.variety})</span>}
+                      </TableCell>
                       <TableCell>{item.market}</TableCell>
                       <TableCell>{item.district}, {item.state}</TableCell>
-                      <TableCell>{item.min_price} - {item.max_price}</TableCell>
-                      <TableCell className="font-bold">{item.modal_price}</TableCell>
-                      <TableCell>{item.date}</TableCell>
+                      <TableCell className="font-mono text-[13px]">{item.min_price} to {item.max_price}</TableCell>
+                      <TableCell className="font-mono font-medium">{item.modal_price}</TableCell>
+                      <TableCell className="font-mono text-[13px]">{item.date}</TableCell>
                     </TableRow>
                   ))}
-                  {filteredMarketData.length === 0 && (
+                  {latestPerMarket.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No market data found

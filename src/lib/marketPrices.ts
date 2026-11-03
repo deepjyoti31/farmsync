@@ -94,3 +94,68 @@ export function summarizeCommodities(prices: MarketPrice[], limit = 4): Commodit
       return { commodity, avgPrice: latestAvg, trendPercent };
     });
 }
+
+export interface BoardRow {
+  commodity: string;
+  /** Latest price date for this commodity */
+  date: string;
+  min: number;
+  modal: number;
+  max: number;
+  /** Average modal price per day, oldest first, up to `days` points */
+  series: number[];
+  /** Change of the latest day's average versus the day before, in percent */
+  changePercent: number | null;
+  /** True when the farm grows this crop */
+  pinned: boolean;
+  markets: number;
+}
+
+/**
+ * One row per commodity for the price board: the latest day's min / modal / max
+ * (averaged over markets), a short trend, and the change since the previous day.
+ * Crops in `pinned` (matched case-insensitively) come first, then alphabetical.
+ */
+export function priceBoard(prices: MarketPrice[], pinned: string[] = [], days = 7): BoardRow[] {
+  const pin = new Set(pinned.map((p) => p.trim().toLowerCase()));
+  const by = new Map<string, MarketPrice[]>();
+  for (const p of prices) by.set(p.commodity, [...(by.get(p.commodity) ?? []), p]);
+
+  const rows: BoardRow[] = [];
+  for (const [commodity, items] of by) {
+    const dates = Array.from(new Set(items.map((i) => i.date))).sort();
+    const latest = dates[dates.length - 1];
+    const today = items.filter((i) => i.date === latest);
+    const series = dates.slice(-days).map((d) => average(items.filter((i) => i.date === d).map((i) => i.modal_price)));
+    const prev = series.length > 1 ? series[series.length - 2] : null;
+    const last = series[series.length - 1];
+    rows.push({
+      commodity,
+      date: latest,
+      min: average(today.map((i) => i.min_price)),
+      modal: last,
+      max: average(today.map((i) => i.max_price)),
+      series,
+      changePercent: prev && prev > 0 ? ((last - prev) / prev) * 100 : null,
+      pinned: pin.has(commodity.toLowerCase()),
+      markets: new Set(today.map((i) => i.market)).size,
+    });
+  }
+  return rows.sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.commodity.localeCompare(b.commodity));
+}
+
+/** SVG polyline points for a sparkline of `values` in a `w` x `h` box. */
+export function sparklinePoints(values: number[], w = 96, h = 28, pad = 3): string {
+  if (values.length === 0) return '';
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  const span = hi - lo || 1;
+  const step = values.length > 1 ? (w - 2 * pad) / (values.length - 1) : 0;
+  return values
+    .map((v, i) => {
+      const x = values.length > 1 ? pad + i * step : w / 2;
+      const y = hi === lo ? h / 2 : h - pad - ((v - lo) / span) * (h - 2 * pad);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateYieldByCrop, toHectares, toTonnes, type HarvestRecord } from './yieldAnalytics';
+import { aggregateYieldByCrop, fromHectares, toHectares, toTonnes, type HarvestRecord } from './yieldAnalytics';
 
 const harvest = (overrides: Partial<HarvestRecord>): HarvestRecord => ({
   cropName: 'Rice',
@@ -60,5 +60,14 @@ describe('aggregateYieldByCrop', () => {
         harvest({ fieldArea: 0 }),
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('fromHectares', () => {
+  it('converts hectares back to the field unit', () => {
+    expect(fromHectares(1, 'bigha')).toBe(4);
+    expect(fromHectares(2, 'hectares')).toBe(2);
+    expect(fromHectares(0.404686, 'acres')).toBeCloseTo(1, 6);
+    expect(fromHectares(1, 'furlong')).toBeNull();
   });
 });
