@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, format, parseISO, subDays } from 'date-fns';
+import { differenceInCalendarDays, differenceInCalendarMonths, format, parseISO, subDays } from 'date-fns';
 
 export const HEALTH_RECORD_TYPES = [
   'vaccination',
@@ -116,4 +116,35 @@ export function productionTotal(
 
 function round(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+export interface HerdAnimal extends AnimalLike {
+  status?: string | null;
+}
+
+/** Live animals (not sold or dead) and how many of each type, largest group first. */
+export function herdSummary(animals: HerdAnimal[]): { active: number; byType: { name: string; count: number }[] } {
+  const live = animals.filter((a) => !a.status || a.status === 'active');
+  const counts = new Map<string, number>();
+  for (const a of live) {
+    const name = a.livestock_type?.name ?? 'Animal';
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return {
+    active: live.length,
+    byType: [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+  };
+}
+
+/** Short age from a birth date: "2 y 3 m", "5 m", "12 d". Null without a birth date or for one in the future. */
+export function ageLabel(birthDate: string | null | undefined, today: Date = new Date()): string | null {
+  if (!birthDate) return null;
+  const born = parseISO(birthDate);
+  const days = differenceInCalendarDays(today, born);
+  if (days < 0) return null;
+  const months = differenceInCalendarMonths(today, born) - (today.getDate() < born.getDate() ? 1 : 0);
+  if (months < 1) return `${days} d`;
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  return y > 0 ? (m > 0 ? `${y} y ${m} m` : `${y} y`) : `${m} m`;
 }

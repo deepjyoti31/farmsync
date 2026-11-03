@@ -112,9 +112,9 @@ const HealthRecordsCard: React.FC<HealthRecordsCardProps> = ({ farmId, animals }
       </CardHeader>
       <CardContent className="space-y-4">
         {reminders.length > 0 && (
-          <div className="rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+          <div className="rounded-md border border-harvest/50 bg-warning-tint p-3">
             <p className="mb-2 flex items-center gap-2 text-sm font-medium">
-              <AlertTriangle className="h-4 w-4 text-amber-600" /> Due in the next two weeks
+              <AlertTriangle className="h-4 w-4 text-warning" /> Due in the next two weeks
             </p>
             <ul className="space-y-1 text-sm">
               {reminders.map(({ record, daysUntilDue }) => (

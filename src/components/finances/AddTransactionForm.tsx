@@ -163,7 +163,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
             </SelectContent>
           </Select>
           {errors.category_id && (
-            <p className="text-sm text-red-500">{errors.category_id.message}</p>
+            <p className="text-sm text-destructive">{errors.category_id.message}</p>
           )}
         </div>
         
@@ -207,7 +207,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
             required
           />
           {errors.amount && (
-            <p className="text-sm text-red-500">{errors.amount.message}</p>
+            <p className="text-sm text-destructive">{errors.amount.message}</p>
           )}
         </div>
         

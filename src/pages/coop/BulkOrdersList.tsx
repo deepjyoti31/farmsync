@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { BulkOrder } from '@/types/coop';
 import { Plus, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
+import PageHeader from '@/components/common/PageHeader';
 
 const BulkOrdersList = () => {
     const { currentOrganization, userRole } = useAuth();
@@ -41,18 +42,20 @@ const BulkOrdersList = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="page-title">Bulk Orders</h1>
-                    <p className="text-muted-foreground">Manage group purchases for {currentOrganization?.name}</p>
-                </div>
-                {(userRole === 'owner' || userRole === 'admin') && (
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Order
-                    </Button>
-                )}
-            </div>
+            <PageHeader
+              title="Bulk Orders"
+              description={<>Manage group purchases for {currentOrganization?.name}</>}
+              actions={
+                <>
+                  {(userRole === 'owner' || userRole === 'admin') && (
+                      <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Order
+                      </Button>
+                  )}
+                </>
+              }
+            />
 
             <div className="grid gap-4">
                 {loading ? (

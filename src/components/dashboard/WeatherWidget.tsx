@@ -1,7 +1,9 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Cloud, CloudRain, CloudSun, Droplets, Loader2, RefreshCw, Sun } from 'lucide-react';
+import { parseISO } from 'date-fns';
+import { CloudSun, Droplets, Loader2, RefreshCw } from 'lucide-react';
+import WeatherIcon from '@/components/weather/WeatherIcon';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { rainAdvice } from '@/lib/dashboard';
@@ -28,15 +30,8 @@ interface WeatherData {
   }>;
 }
 
-const iconFor = (condition: string | undefined, className: string) => {
-  const c = (condition || '').toLowerCase();
-  if (c.includes('rain') || c.includes('thunder') || c.includes('drizzle') || c.includes('shower')) return <CloudRain className={cn(className, 'text-info')} aria-hidden="true" />;
-  if (c.includes('clear') || c.includes('sunny')) return <Sun className={cn(className, 'text-[#B26B00]')} aria-hidden="true" />;
-  if (c.includes('cloud') || c.includes('overcast')) return <Cloud className={cn(className, 'text-muted-foreground')} aria-hidden="true" />;
-  return <CloudSun className={cn(className, 'text-[#B26B00]')} aria-hidden="true" />;
-};
-
-const weekday = (date: string, lang: string) => new Date(date).toLocaleDateString(lang, { weekday: 'short' });
+// Forecast dates are yyyy-MM-dd; parse them as local dates so the weekday is right west of UTC.
+const weekday = (date: string, lang: string) => parseISO(date).toLocaleDateString(lang, { weekday: 'short' });
 
 /** Wide weather band for the Today screen: now, five days, and a rain tip. */
 const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
@@ -107,7 +102,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
       ) : (
         <>
           <div className="flex min-w-[200px] flex-[0_1_220px] items-center gap-4">
-            {iconFor(weather.current.condition, 'h-14 w-14 shrink-0')}
+            <WeatherIcon condition={weather.current.condition} className="h-14 w-14 shrink-0" />
             <div className="flex flex-col">
               <span className="font-display text-[40px] font-bold leading-none">{Math.round(weather.current.temperature)}°</span>
               <span className="text-sm text-muted-foreground">{weather.current.condition}</span>
@@ -130,7 +125,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
               return (
                 <li key={day.date} className={cn('flex flex-col items-center justify-center gap-1 rounded-[10px] px-1 py-2.5', rainy ? 'bg-info-tint' : 'bg-background')}>
                   <span className="text-[13px] font-semibold">{weekday(day.date, i18n.language)}</span>
-                  {iconFor(day.condition, 'h-5 w-5')}
+                  <WeatherIcon condition={day.condition} className="h-5 w-5" />
                   <span className="font-mono text-[13px] leading-tight">
                     <span className="sr-only">{t('today.weather.high', 'High')} </span>
                     {Math.round(day.temperature_max)}°
@@ -152,7 +147,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
               <div className="flex flex-col gap-1 text-sm leading-snug">
                 <strong>
                   {t('today.weather.rain_title', {
-                    day: new Date(wet.date).toLocaleDateString(i18n.language, { weekday: 'long' }),
+                    day: parseISO(wet.date).toLocaleDateString(i18n.language, { weekday: 'long' }),
                     chance: wet.precipitation_chance,
                     defaultValue: 'Rain likely on {{day}} ({{chance}}%)',
                   })}

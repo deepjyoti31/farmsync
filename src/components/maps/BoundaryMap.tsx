@@ -198,8 +198,8 @@ const BoundaryMap: React.FC<BoundaryMapProps> = ({
         )}
 
         {!readOnly && boundaries && (
-          <Alert variant="success" className="mt-2 bg-green-50 border-green-200 text-green-800">
-            <Check className="h-4 w-4 text-green-600" />
+          <Alert variant="success" className="mt-2 bg-leaf-tint border-leaf/30 text-[#1A4D2C]">
+            <Check className="h-4 w-4 text-leaf" />
             <AlertTitle>Boundaries Marked</AlertTitle>
             <AlertDescription>
               Farm boundaries have been successfully marked. You can edit them by dragging the points or clear and redraw.

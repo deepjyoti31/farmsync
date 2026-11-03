@@ -9,6 +9,7 @@ import { calculateCreditScore, calculateLoanEligibility, creditScoreLabel } from
 import { Loader2, TrendingUp, Shield, CreditCard, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import PageHeader from '@/components/common/PageHeader';
 
 const FinanceHub = () => {
     const { user } = useAuth();
@@ -40,20 +41,20 @@ const FinanceHub = () => {
     const eligibility = summary?.eligibility ?? 0;
 
     const getScoreColor = (s: number) => {
-        if (s >= 750) return 'text-green-600';
-        if (s >= 650) return 'text-blue-600';
-        if (s >= 550) return 'text-yellow-600';
-        return 'text-red-600';
+        if (s >= 750) return 'text-leaf';
+        if (s >= 650) return 'text-info';
+        if (s >= 550) return 'text-warning';
+        return 'text-destructive';
     };
 
     if (loading) return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-2">
-                <h1 className="page-title">Financial Services</h1>
-                <p className="text-muted-foreground">Access credit, insurance, and manage payments.</p>
-            </div>
+            <PageHeader
+              title="Financial Services"
+              description="Access credit, insurance, and manage payments."
+            />
 
             {/* Credit Score Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -79,7 +80,7 @@ const FinanceHub = () => {
                     <Link to="/dashboard/finance/loans" className="block h-full">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Wallet className="h-5 w-5 text-blue-500" />
+                                <Wallet className="h-5 w-5 text-info" />
                                 Loans & Credit
                             </CardTitle>
                             <CardDescription>Manage active loans and apply for new credit</CardDescription>
@@ -94,7 +95,7 @@ const FinanceHub = () => {
                     <Link to="/dashboard/finance/insurance" className="block h-full">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Shield className="h-5 w-5 text-green-500" />
+                                <Shield className="h-5 w-5 text-leaf" />
                                 Insurance
                             </CardTitle>
                             <CardDescription>Protect your crops against weather risks</CardDescription>

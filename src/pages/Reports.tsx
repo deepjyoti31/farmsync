@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { transactionType, compactRupees } from '@/lib/financeSummary';
+import { AXIS_PROPS, CHART, GRID_PROPS, categoryColor, foldCategories, TOOLTIP_PROPS } from '@/lib/chartPalette';
 import { 
   Card, 
   CardContent, 
@@ -48,8 +50,13 @@ import { getDateRange } from '@/lib/dateRanges';
 import { downloadCsv, toCsv } from '@/lib/csv';
 import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
+import PageHeader from '@/components/common/PageHeader';
 
 const Reports = () => {
+  // A transaction's own type wins, then its category's (the add form only sets the category).
+  const typeOf = (t: { type?: string | null; financial_categories?: { type?: string | null } | null }) =>
+    transactionType({ type: t.type, category: t.financial_categories });
+
   const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('this-year');
   const [reportType, setReportType] = useState<string>('financial');
@@ -142,12 +149,9 @@ const Reports = () => {
         monthlyData[monthYear] = { income: 0, expenses: 0 };
       }
       
-      const isIncome = transaction.financial_categories?.type === 'income';
-      if (isIncome) {
-        monthlyData[monthYear].income += Number(transaction.amount) || 0;
-      } else {
-        monthlyData[monthYear].expenses += Number(transaction.amount) || 0;
-      }
+      const kind = typeOf(transaction);
+      if (kind === 'income') monthlyData[monthYear].income += Number(transaction.amount) || 0;
+      if (kind === 'expense') monthlyData[monthYear].expenses += Number(transaction.amount) || 0;
     });
     
     // Convert to array for charts
@@ -166,7 +170,7 @@ const Reports = () => {
     const categoryTotals: Record<string, number> = {};
     
     transactionsData.forEach(transaction => {
-      const isExpense = transaction.financial_categories?.type === 'expense';
+      const isExpense = typeOf(transaction) === 'expense';
       if (isExpense) {
         const categoryName = transaction.financial_categories?.name || 'Other';
         if (!categoryTotals[categoryName]) {
@@ -202,20 +206,19 @@ const Reports = () => {
   // Calculate summary stats
   const totalIncome = React.useMemo(() => {
     return transactionsData
-      .filter(t => t.financial_categories?.type === 'income')
+      .filter(t => typeOf(t) === 'income')
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
   }, [transactionsData]);
   
   const totalExpenses = React.useMemo(() => {
     return transactionsData
-      .filter(t => t.financial_categories?.type === 'expense')
+      .filter(t => typeOf(t) === 'expense')
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
   }, [transactionsData]);
   
   const netProfit = totalIncome - totalExpenses;
   
   // Colors for charts
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   
   // Export the data behind the active report tab as CSV.
   const downloadReport = () => {
@@ -227,7 +230,7 @@ const Reports = () => {
         ['Date', 'Type', 'Category', 'Description', 'Amount', 'Payment method', 'Reference'],
         transactionsData.map((t) => [
           t.transaction_date,
-          t.type ?? t.financial_categories?.type,
+          typeOf(t) ?? '',
           t.financial_categories?.name,
           t.description,
           t.amount,
@@ -259,25 +262,22 @@ const Reports = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Farm Reports</h1>
-          <p className="text-muted-foreground mt-1">
-            View and analyze your farm's performance data
-          </p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-2">
-          <FarmSelector
-            selectedFarmId={selectedFarmId}
-            onFarmChange={setSelectedFarmId}
-          />
-          <Button className="gap-2" onClick={downloadReport}>
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Farm Reports"
+        description="View and analyze your farm's performance data"
+        actions={
+          <>
+            <FarmSelector
+              selectedFarmId={selectedFarmId}
+              onFarmChange={setSelectedFarmId}
+            />
+            <Button className="gap-2" onClick={downloadReport}>
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </>
+        }
+      />
       
       {!selectedFarmId ? (
         <Card className="p-8 text-center">
@@ -337,7 +337,7 @@ const Reports = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center">
-                      <TrendingUp className="h-5 w-5 text-green-500 mr-2" />
+                      <TrendingUp className="h-5 w-5 text-leaf mr-2" />
                       <span className="text-2xl font-bold">₹{totalIncome.toLocaleString()}</span>
                     </div>
                   </CardContent>
@@ -351,7 +351,7 @@ const Reports = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center">
-                      <TrendingUp className="h-5 w-5 text-red-500 mr-2" />
+                      <TrendingUp className="h-5 w-5 text-destructive mr-2" />
                       <span className="text-2xl font-bold">₹{totalExpenses.toLocaleString()}</span>
                     </div>
                   </CardContent>
@@ -365,7 +365,7 @@ const Reports = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center">
-                      <TrendingUp className="h-5 w-5 text-blue-500 mr-2" />
+                      <TrendingUp className="h-5 w-5 text-info mr-2" />
                       <span className="text-2xl font-bold">₹{netProfit.toLocaleString()}</span>
                     </div>
                   </CardContent>
@@ -392,13 +392,13 @@ const Reports = () => {
                         data={financialChartData}
                         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
+                        <CartesianGrid {...GRID_PROPS} />
+                        <XAxis {...AXIS_PROPS} dataKey="month" />
+                        <YAxis {...AXIS_PROPS} tickFormatter={compactRupees} width={60} />
+                        <Tooltip {...TOOLTIP_PROPS} />
                         <Legend />
-                        <Bar dataKey="income" name="Income" fill="#10b981" />
-                        <Bar dataKey="expenses" name="Expenses" fill="#ef4444" />
+                        <Bar dataKey="income" name="Income" fill={CHART.income} />
+                        <Bar dataKey="expenses" name="Expenses" fill={CHART.expense} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -424,20 +424,19 @@ const Reports = () => {
                       <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
                           <Pie
-                            data={expenseCategoryData}
+                            data={foldCategories(expenseCategoryData, 'value', 'name')}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
                             label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                             outerRadius={80}
-                            fill="#8884d8"
                             dataKey="value"
                           >
-                            {expenseCategoryData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            {foldCategories(expenseCategoryData, 'value', 'name').map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={categoryColor(index)} stroke="#FFFFFF" strokeWidth={2} />
                             ))}
                           </Pie>
-                          <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                          <Tooltip {...TOOLTIP_PROPS} formatter={(value) => `₹${value.toLocaleString()}`} />
                         </PieChart>
                       </ResponsiveContainer>
                     )}
@@ -464,15 +463,15 @@ const Reports = () => {
                           data={financialChartData}
                           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                          <CartesianGrid {...GRID_PROPS} />
+                          <XAxis {...AXIS_PROPS} dataKey="month" />
+                          <YAxis {...AXIS_PROPS} tickFormatter={compactRupees} width={60} />
+                          <Tooltip {...TOOLTIP_PROPS} formatter={(value) => `₹${value.toLocaleString()}`} />
                           <Line
                             type="monotone"
                             dataKey="profit"
                             name="Profit/Loss"
-                            stroke="#8884d8"
+                            stroke={CHART.single}
                             strokeWidth={2}
                             dot={{ r: 4 }}
                           />
@@ -507,12 +506,12 @@ const Reports = () => {
                         data={fieldAreaData}
                         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
+                        <CartesianGrid {...GRID_PROPS} />
+                        <XAxis {...AXIS_PROPS} dataKey="name" />
+                        <YAxis {...AXIS_PROPS} />
+                        <Tooltip {...TOOLTIP_PROPS} />
                         <Legend />
-                        <Bar dataKey="area" name="Area (acres)" fill="#8884d8" />
+                        <Bar dataKey="area" name="Area (acres)" fill={CHART.single} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -567,15 +566,15 @@ const Reports = () => {
                           labelLine={true}
                           label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                           outerRadius={150}
-                          fill="#8884d8"
                           dataKey="value"
                         >
-                          <Cell fill="#10b981" />
-                          <Cell fill="#f59e0b" />
-                          <Cell fill="#ef4444" />
-                          <Cell fill="#6b7280" />
+                          {/* Status colours: good, needs attention, out of action, not in use */}
+                          <Cell fill="#2E7D4F" stroke="#FFFFFF" strokeWidth={2} />
+                          <Cell fill="#E39B34" stroke="#FFFFFF" strokeWidth={2} />
+                          <Cell fill="#B4553A" stroke="#FFFFFF" strokeWidth={2} />
+                          <Cell fill={CHART.other} stroke="#FFFFFF" strokeWidth={2} />
                         </Pie>
-                        <Tooltip />
+                        <Tooltip {...TOOLTIP_PROPS} />
                       </PieChart>
                     </ResponsiveContainer>
                   )}

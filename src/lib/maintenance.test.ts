@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { maintenanceCostByEquipment, serviceState } from './maintenance';
+import { maintenanceCostByEquipment, serviceState, sortByService } from './maintenance';
 
 describe('serviceState', () => {
   const today = new Date(2026, 10, 2, 8, 0);
@@ -22,5 +22,22 @@ describe('maintenanceCostByEquipment', () => {
     ]);
     expect(totals.get('tractor')).toBe(3250.5);
     expect(totals.get('pump')).toBe(0);
+  });
+});
+
+describe('sortByService', () => {
+  it('puts overdue first, then due soon, scheduled and unscheduled', () => {
+    const today = new Date(2026, 10, 3);
+    const sorted = sortByService(
+      [
+        { name: 'Sprayer', next_maintenance_date: null },
+        { name: 'Pump', next_maintenance_date: '2027-03-01' },
+        { name: 'Tractor', next_maintenance_date: '2026-11-10' },
+        { name: 'Trailer', next_maintenance_date: '2026-10-20' },
+        { name: 'Harrow', next_maintenance_date: '2026-11-08' },
+      ],
+      today,
+    );
+    expect(sorted.map((m) => m.name)).toEqual(['Trailer', 'Harrow', 'Tractor', 'Pump', 'Sprayer']);
   });
 });

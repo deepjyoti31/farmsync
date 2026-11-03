@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, Key, Loader2, Bell, Lock, Globe, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import PageHeader from '@/components/common/PageHeader';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -129,10 +130,10 @@ const Settings = () => {
   return (
     <div className="mx-auto w-full max-w-4xl">
       <div className="flex flex-col space-y-6">
-        <div>
-          <h1 className="page-title">Settings</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
-        </div>
+        <PageHeader
+          title="Settings"
+          description="Manage your account settings and preferences"
+        />
 
         <Tabs defaultValue="account" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { calculateMonthlyPayment } from '@/lib/financialCalc';
 import type { LoanStatus } from '@/types/finance';
+import PageHeader from '@/components/common/PageHeader';
 
 const STATUS_VARIANT: Record<LoanStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
     pending: 'secondary',
@@ -39,16 +40,18 @@ const LoanList = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="page-title">Loans</h1>
-                    <p className="text-muted-foreground">Manage your working capital</p>
-                </div>
-                <Button disabled title="Loan applications are coming soon">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Apply for Loan
-                </Button>
-            </div>
+            <PageHeader
+              title="Loans"
+              description="Manage your working capital"
+              actions={
+                <>
+                  <Button disabled title="Loan applications are coming soon">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Apply for Loan
+                  </Button>
+                </>
+              }
+            />
 
             {isLoading ? (
                 <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin" /></div>

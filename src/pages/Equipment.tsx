@@ -1,492 +1,288 @@
-import React, { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  CardFooter
-} from '@/components/ui/card';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { differenceInCalendarDays, format, parseISO, startOfYear } from 'date-fns';
+import { FileText, Loader2, Pencil, Plus, Tractor, Wrench } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Plus,
-  Tractor,
-  Wrench,
-  Calendar,
-  AlertTriangle,
-  Check,
-  Clock,
-  Loader2,
-  Settings,
-  FileText,
-  Edit,
-  Trash
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import FarmSelector from '@/components/farms/FarmSelector';
 import { Dialog } from '@/components/ui/dialog';
+import PageHeader from '@/components/common/PageHeader';
+import Segmented from '@/components/common/Segmented';
+import { DeleteButton } from '@/components/common/DeleteButton';
+import FarmSelector from '@/components/farms/FarmSelector';
+import { KpiTile } from '@/components/dashboard/SideCards';
 import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
 import EditEquipmentForm from '@/components/equipment/EditEquipmentForm';
-import DeleteConfirmation from '@/components/common/DeleteConfirmation';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Equipment } from '@/types';
-import { DeleteButton } from '@/components/common/DeleteButton';
-import { Badge } from '@/components/ui/badge';
 import MaintenanceDialog from '@/components/equipment/MaintenanceDialog';
-import { serviceState } from '@/lib/maintenance';
-import { format, parseISO } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { formatMoney } from '@/lib/dashboard';
+import { maintenanceCostByEquipment, serviceState, sortByService, type ServiceState } from '@/lib/maintenance';
+import type { Equipment } from '@/types';
+import { cn } from '@/lib/utils';
+
+type View = 'machines' | 'history';
+
+const STATUS: Record<string, { variant: 'default' | 'warning' | 'info' | 'secondary'; label: string }> = {
+  operational: { variant: 'default', label: 'Working' },
+  'needs maintenance': { variant: 'warning', label: 'Needs maintenance' },
+  'in repair': { variant: 'info', label: 'In repair' },
+  inactive: { variant: 'secondary', label: 'Not in use' },
+};
+
+const SERVICE_TONE: Record<ServiceState, string> = {
+  overdue: 'bg-rust-tint text-rust',
+  due_soon: 'bg-warning-tint text-[#5C3A00] dark:text-warning',
+  scheduled: 'bg-background text-[#34453A] dark:text-muted-foreground',
+  unscheduled: 'bg-background text-muted-foreground',
+};
+
+const serviceText = (date: string | null) => {
+  const state = serviceState(date);
+  if (state === 'unscheduled') return 'No service scheduled';
+  const days = differenceInCalendarDays(parseISO(date!), new Date());
+  const when = format(parseISO(date!), 'd MMM yyyy');
+  if (state === 'overdue') return `Service overdue by ${-days} ${days === -1 ? 'day' : 'days'} (${when})`;
+  if (days === 0) return 'Service due today';
+  return `Next service ${when}${state === 'due_soon' ? `, in ${days} ${days === 1 ? 'day' : 'days'}` : ''}`;
+};
 
 const EquipmentPage = () => {
-  const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'all' | 'maintenance'>('all');
-  const [isAddEquipmentOpen, setIsAddEquipmentOpen] = useState(false);
-  const [isEditEquipmentOpen, setIsEditEquipmentOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
-  const [maintenanceEquipmentId, setMaintenanceEquipmentId] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [farmId, setFarmId] = useState<string | null>(null);
+  const [view, setView] = useState<View>('machines');
+  const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<Equipment | null>(null);
+  const [serviceOpen, setServiceOpen] = useState(false);
+  const [serviceFor, setServiceFor] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Use React Query to fetch equipment data from Supabase
-  const { data: equipment = [], isLoading: isLoadingEquipment } = useQuery({
-    queryKey: ['equipment', selectedFarmId],
+  const { data: machines = [], isLoading } = useQuery({
+    queryKey: ['equipment', farmId],
+    enabled: !!farmId,
     queryFn: async () => {
-      if (!selectedFarmId) return [];
-      
-      const { data, error } = await supabase
-        .from('equipment')
-        .select('*')
-        .eq('farm_id', selectedFarmId)
-        .order('name');
-      
-      if (error) {
-        console.error('Error fetching equipment:', error);
-        throw error;
-      }
-      
-      return data as Equipment[];
+      const { data, error } = await supabase.from('equipment').select('*').eq('farm_id', farmId!).order('name');
+      if (error) throw error;
+      return (data ?? []) as Equipment[];
     },
-    enabled: !!selectedFarmId,
   });
 
-  // Service history for every machine on this farm, newest first
-  const { data: maintenanceRecords = [], isLoading: isLoadingMaintenance } = useQuery({
-    queryKey: ['equipment_maintenance', selectedFarmId],
+  const { data: records = [] } = useQuery({
+    queryKey: ['equipment_maintenance', farmId],
+    enabled: !!farmId,
     queryFn: async () => {
-      if (!selectedFarmId) return [];
-
       const { data, error } = await supabase
         .from('equipment_maintenance')
         .select('*, equipment!inner(name, farm_id)')
-        .eq('equipment.farm_id', selectedFarmId)
+        .eq('equipment.farm_id', farmId!)
         .order('maintenance_date', { ascending: false });
-
       if (error) throw error;
       return data ?? [];
     },
-    enabled: !!selectedFarmId,
   });
 
-  const isLoading = isLoadingEquipment || isLoadingMaintenance;
+  const sorted = useMemo(() => sortByService(machines), [machines]);
+  const spend = useMemo(() => maintenanceCostByEquipment(records), [records]);
+  const yearStart = format(startOfYear(new Date()), 'yyyy-MM-dd');
+  const spendThisYear = records.filter((r) => r.maintenance_date >= yearStart).reduce((s, r) => s + Number(r.cost ?? 0), 0);
+  const lastService = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of records) if (!m.has(r.equipment_id)) m.set(r.equipment_id, r.maintenance_date);
+    return m;
+  }, [records]);
 
-  // Define filtered equipment and maintenance records based on the tab
-  const filteredEquipment = equipment;
-  const filteredMaintenanceRecords = maintenanceRecords;
+  const working = machines.filter((m) => m.status === 'operational').length;
+  const states = machines.map((m) => serviceState(m.next_maintenance_date));
+  const overdue = states.filter((s) => s === 'overdue').length;
+  const dueSoon = states.filter((s) => s === 'due_soon').length;
+  const value = machines.reduce((s, m) => s + (Number(m.purchase_price) || 0), 0);
 
-  // Calculate statistics
-  const stats = {
-    total: equipment.length,
-    operational: equipment.filter(e => e.status === 'operational').length,
-    maintenance: equipment.filter(e => e.status === 'needs maintenance').length,
-    repair: equipment.filter(e => e.status === 'in repair').length,
-    inactive: equipment.filter(e => e.status === 'inactive').length,
-    totalValue: equipment.reduce((sum, e) => sum + (Number(e.purchase_price) || 0), 0),
-    serviceDue: equipment.filter(e => ['overdue', 'due_soon'].includes(serviceState(e.next_maintenance_date))).length,
-  };
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['equipment'] });
 
-  const renderNextService = (date: string | null) => {
-    const state = serviceState(date);
-    if (state === 'unscheduled') return <span className="text-muted-foreground">Not scheduled</span>;
-    const label = format(parseISO(date!), 'dd MMM yyyy');
-    if (state === 'overdue') return <Badge variant="destructive">Overdue · {label}</Badge>;
-    if (state === 'due_soon') return <Badge className="bg-amber-500 hover:bg-amber-500">Due · {label}</Badge>;
-    return <span>{label}</span>;
-  };
-
-  const openMaintenance = (equipmentId: string | null) => {
-    setMaintenanceEquipmentId(equipmentId);
-    setMaintenanceOpen(true);
-  };
-
-  const deleteEquipment = async (item: Equipment) => {
-    const { error } = await supabase.from('equipment').delete().eq('id', item.id);
+  const remove = async (m: Equipment) => {
+    const { error } = await supabase.from('equipment').delete().eq('id', m.id);
     if (error) {
-      toast({ title: "Error", description: "Failed to delete equipment. Please try again.", variant: "destructive" });
+      toast({ title: 'Could not delete the machine', description: error.message, variant: 'destructive' });
       return;
     }
-    queryClient.invalidateQueries({ queryKey: ['equipment'] });
-    toast({ title: "Equipment Deleted", description: `${item.name} has been deleted.` });
+    refresh();
+    toast({ title: `${m.name} deleted` });
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'operational':
-        return <Check className="h-5 w-5 text-green-500" />;
-      case 'needs maintenance':
-        return <AlertTriangle className="h-5 w-5 text-amber-500" />;
-      case 'in repair':
-        return <Wrench className="h-5 w-5 text-blue-500" />;
-      case 'inactive':
-        return <Clock className="h-5 w-5 text-gray-500" />;
-      default:
-        return <Settings className="h-5 w-5 text-gray-500" />;
-    }
+  const logService = (id: string | null) => {
+    setServiceFor(id);
+    setServiceOpen(true);
   };
-
-  const handleAddEquipment = () => {
-    setIsAddEquipmentOpen(true);
-  };
-
-  const handleEditEquipment = (item: Equipment) => {
-    setSelectedEquipment(item);
-    setIsEditEquipmentOpen(true);
-  };
-
-  const handleDeleteEquipment = (item: Equipment) => {
-    setSelectedEquipment(item);
-    setIsDeleteConfirmOpen(true);
-  };
-
-  const confirmDeleteEquipment = async () => {
-    if (!selectedEquipment) return;
-    
-    try {
-      const { error } = await supabase
-        .from('equipment')
-        .delete()
-        .eq('id', selectedEquipment.id);
-        
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ['equipment'] });
-      
-      toast({
-        title: "Equipment Deleted",
-        description: `${selectedEquipment.name} has been deleted.`,
-      });
-      
-      setIsDeleteConfirmOpen(false);
-      setSelectedEquipment(null);
-    } catch (error) {
-      console.error('Error deleting equipment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete equipment. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-
-  const handleEquipmentAdded = () => {
-    setIsAddEquipmentOpen(false);
-    queryClient.invalidateQueries({ queryKey: ['equipment'] });
-    toast({
-      title: "Equipment Added",
-      description: "New equipment has been added to your inventory.",
-    });
-  };
-
-  const handleEquipmentUpdated = () => {
-    setIsEditEquipmentOpen(false);
-    setSelectedEquipment(null);
-    queryClient.invalidateQueries({ queryKey: ['equipment'] });
-    toast({
-      title: "Equipment Updated",
-      description: "Equipment has been updated successfully.",
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Equipment</h1>
-          <p className="text-muted-foreground mt-1">
-            Track and manage your farm equipment and schedule maintenance.
-          </p>
+    <div>
+      <PageHeader
+        title="Equipment"
+        description="Machines and tools, when each is due for service, and what upkeep costs."
+        actions={
+          <>
+            <FarmSelector selectedFarmId={farmId} onFarmChange={setFarmId} />
+            <Button variant="outline" disabled={machines.length === 0} onClick={() => logService(null)}>
+              <Wrench /> Log a service
+            </Button>
+            <Button disabled={!farmId} onClick={() => setAddOpen(true)}>
+              <Plus /> Add a machine
+            </Button>
+          </>
+        }
+      />
+
+      {!farmId || isLoading ? (
+        <div className="flex justify-center p-12" role="status" aria-label="Loading equipment">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-2">
-          <FarmSelector
-            selectedFarmId={selectedFarmId}
-            onFarmChange={setSelectedFarmId}
-          />
-          <Button className="gap-2" onClick={handleAddEquipment}>
-            <Plus className="h-4 w-4" />
-            Add Equipment
+      ) : machines.length === 0 ? (
+        <div className="surface flex flex-col items-center gap-3 p-12 text-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-[18px] bg-leaf-tint text-primary">
+            <Tractor className="h-8 w-8" aria-hidden="true" />
+          </span>
+          <h2 className="text-xl font-bold">No machines yet</h2>
+          <p className="max-w-sm text-muted-foreground">Add your tractor, pumps and tools to keep their service history and get reminded before a service is due.</p>
+          <Button size="lg" className="mt-2" onClick={() => setAddOpen(true)}>
+            <Plus /> Add the first machine
           </Button>
         </div>
-      </div>
-      
-      {!selectedFarmId ? (
-        <Card className="p-8 text-center">
-          <CardTitle className="mb-4">Select a Farm</CardTitle>
-          <CardDescription>
-            Please select a farm to view its equipment.
-          </CardDescription>
-        </Card>
       ) : (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Equipment
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <Tractor className="h-5 w-5 text-primary mr-2" />
-                  <span className="text-2xl font-bold">{stats.total}</span>
-                </div>
-                <div className="flex items-center mt-2 text-muted-foreground text-sm">
-                  <span>Total value: ₹{stats.totalValue.toLocaleString()}</span>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Operational
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <Check className="h-5 w-5 text-green-500 mr-2" />
-                  <span className="text-2xl font-bold">{stats.operational}</span>
-                </div>
-                <div className="flex items-center mt-2 text-green-500 text-sm">
-                  <span>{stats.total ? Math.round((stats.operational / stats.total) * 100) : 0}% of equipment</span>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Needs Maintenance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
-                  <span className="text-2xl font-bold">{stats.maintenance}</span>
-                </div>
-                <div className="flex items-center mt-2 text-amber-500 text-sm">
-                  <span>{stats.serviceDue} service{stats.serviceDue === 1 ? '' : 's'} due in 14 days</span>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  In Repair
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center">
-                  <Wrench className="h-5 w-5 text-blue-500 mr-2" />
-                  <span className="text-2xl font-bold">{stats.repair}</span>
-                </div>
-                <div className="flex items-center mt-2 text-blue-500 text-sm">
-                  <span>{stats.total ? Math.round((stats.repair / stats.total) * 100) : 0}% of equipment</span>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+            <KpiTile label="Machines" value={String(machines.length)} note={value > 0 ? `${formatMoney(value)} bought` : undefined} />
+            <KpiTile label="Working" value={String(working)} note={`of ${machines.length} machines`} />
+            <KpiTile
+              label="Service due"
+              value={String(overdue + dueSoon)}
+              note={overdue > 0 ? `${overdue} overdue` : dueSoon > 0 ? 'in the next 14 days' : 'nothing in the next 14 days'}
+            />
+            <KpiTile label="Upkeep this year" value={formatMoney(spendThisYear)} note={`${records.filter((r) => r.maintenance_date >= yearStart).length} services logged`} />
           </div>
-          
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Equipment List</CardTitle>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant={activeTab === 'all' ? 'default' : 'outline'} 
-                    onClick={() => setActiveTab('all')}
-                    size="sm"
-                  >
-                    All Equipment
-                  </Button>
-                  <Button 
-                    variant={activeTab === 'maintenance' ? 'default' : 'outline'} 
-                    onClick={() => setActiveTab('maintenance')}
-                    size="sm"
-                  >
-                    Maintenance Records
-                  </Button>
-                </div>
+
+          <Segmented
+            label="View"
+            value={view}
+            onChange={setView}
+            className="self-start"
+            options={[
+              { value: 'machines', label: 'Machines' },
+              { value: 'history', label: `Service history · ${records.length}` },
+            ]}
+          />
+
+          {view === 'machines' ? (
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
+              {sorted.map((m) => {
+                const state = serviceState(m.next_maintenance_date);
+                const status = STATUS[m.status] ?? { variant: 'secondary' as const, label: m.status };
+                const last = lastService.get(m.id) ?? m.last_maintenance_date;
+                return (
+                  <li key={m.id} className="surface flex flex-col gap-3.5 p-5">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-leaf-tint text-primary">
+                        <Tractor className="h-[22px] w-[22px]" aria-hidden="true" />
+                      </span>
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <h3 className="truncate text-lg font-bold">{m.name}</h3>
+                        <span className="truncate text-[13px] text-muted-foreground">
+                          {[m.equipment_type, [m.manufacturer, m.model].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
+                        </span>
+                      </div>
+                      <Badge variant={status.variant}>{status.label}</Badge>
+                    </div>
+                    <p className={cn('rounded-[10px] px-3 py-2.5 text-sm font-medium', SERVICE_TONE[state])}>{serviceText(m.next_maintenance_date)}</p>
+                    <dl className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Last service</dt>
+                        <dd className="font-mono text-[13px]">{last ? format(parseISO(last), 'd MMM yyyy') : '·'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">Spent on upkeep</dt>
+                        <dd className="font-mono text-[13px]">{formatMoney(spend.get(m.id) ?? 0)}</dd>
+                      </div>
+                    </dl>
+                    <div className="mt-auto flex flex-wrap gap-2">
+                      <Button size="sm" className="flex-[1_1_120px]" onClick={() => logService(m.id)}>
+                        <Wrench /> Log service
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(m)} aria-label={`Edit ${m.name}`}>
+                        <Pencil /> Edit
+                      </Button>
+                      <DeleteButton onDelete={() => remove(m)} itemName={m.name} entityType="Machine" buttonSize="icon" buttonVariant="ghost" />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <section aria-labelledby="history-h" className="surface p-5 pb-2 md:p-6 md:pb-2">
+              <div className="mb-1 flex items-center gap-3">
+                <h2 id="history-h" className="text-xl font-bold">
+                  Service history
+                </h2>
+                <Button variant="ghost" size="sm" className="ms-auto" asChild>
+                  <Link to="/dashboard/reports">
+                    <FileText /> Equipment report
+                  </Link>
+                </Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              {activeTab === 'all' ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Manufacturer/Model</TableHead>
-                      <TableHead>Next Service</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredEquipment.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                          No equipment found. Add your first equipment to get started.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredEquipment.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.name}</TableCell>
-                          <TableCell>{item.equipment_type}</TableCell>
-                          <TableCell>{item.manufacturer} {item.model}</TableCell>
-                          <TableCell>{renderNextService(item.next_maintenance_date)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(item.status)}
-                              <span>{item.status}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleEditEquipment(item)}>
-                                <Edit className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => openMaintenance(item.id)}>
-                                <Wrench className="h-4 w-4" />
-                                <span className="sr-only">Maintenance for {item.name}</span>
-                              </Button>
-                              <DeleteButton
-                                onDelete={() => deleteEquipment(item)}
-                                itemName={item.name}
-                                entityType="Equipment"
-                                buttonSize="sm"
-                                buttonVariant="ghost"
-                              />
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+              {records.length === 0 ? (
+                <p className="py-6 text-center text-muted-foreground">No services logged yet.</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Equipment</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Performed By</TableHead>
-                      <TableHead className="text-right">Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMaintenanceRecords.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                          No maintenance records found.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredMaintenanceRecords.map((record) => (
-                        <TableRow key={record.id}>
-                          <TableCell className="font-medium">{record.equipment?.name || 'Unknown'}</TableCell>
-                          <TableCell>{format(parseISO(record.maintenance_date), 'dd MMM yyyy')}</TableCell>
-                          <TableCell>{record.maintenance_type}</TableCell>
-                          <TableCell>{record.performed_by || 'Not specified'}</TableCell>
-                          <TableCell className="text-right">₹{Number(record.cost || 0).toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                <ol>
+                  {records.map((r) => {
+                    const d = parseISO(r.maintenance_date);
+                    return (
+                      <li key={r.id} className="flex items-center gap-3.5 border-t border-muted py-3 first:border-t-0">
+                        <span className="flex w-[56px] shrink-0 flex-col items-center rounded-[10px] bg-background py-1.5">
+                          <span className="font-mono text-[11px] uppercase text-muted-foreground">{format(d, 'MMM yy')}</span>
+                          <span className="font-display text-xl font-bold leading-tight">{format(d, 'd')}</span>
+                        </span>
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="text-[15px] font-semibold">
+                            {r.maintenance_type} · {r.equipment?.name ?? 'Machine'}
+                          </span>
+                          <span className="truncate text-[13px] text-muted-foreground">{[r.performed_by, r.notes].filter(Boolean).join(' · ') || 'No notes'}</span>
+                        </span>
+                        <span className="font-mono text-sm">{formatMoney(Number(r.cost ?? 0))}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
               )}
-            </CardContent>
-            {filteredEquipment.length > 0 && (
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => openMaintenance(null)}>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Log or Schedule Maintenance
-                </Button>
-                <Button variant="outline" onClick={() => navigate('/dashboard/reports')}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Equipment Report
-                </Button>
-              </CardFooter>
-            )}
-          </Card>
-        </>
+            </section>
+          )}
+        </div>
       )}
 
-      {/* Dialog for adding equipment */}
-      <Dialog open={isAddEquipmentOpen} onOpenChange={setIsAddEquipmentOpen}>
-        <AddEquipmentForm 
-          farmId={selectedFarmId} 
-          onSuccess={handleEquipmentAdded}
-          onCancel={() => setIsAddEquipmentOpen(false)}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <AddEquipmentForm
+          farmId={farmId}
+          onSuccess={() => {
+            setAddOpen(false);
+            refresh();
+            toast({ title: 'Machine added' });
+          }}
+          onCancel={() => setAddOpen(false)}
         />
       </Dialog>
 
-      {/* Dialog for editing equipment */}
-      {selectedEquipment && (
-        <Dialog open={isEditEquipmentOpen} onOpenChange={setIsEditEquipmentOpen}>
-          <EditEquipmentForm 
-            equipment={selectedEquipment}
-            onSuccess={handleEquipmentUpdated}
-            onCancel={() => setIsEditEquipmentOpen(false)}
+      {editing && (
+        <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+          <EditEquipmentForm
+            equipment={editing}
+            onSuccess={() => {
+              setEditing(null);
+              refresh();
+              toast({ title: 'Machine updated' });
+            }}
+            onCancel={() => setEditing(null)}
           />
         </Dialog>
       )}
 
-      {selectedFarmId && (
-        <MaintenanceDialog
-          farmId={selectedFarmId}
-          equipment={equipment}
-          equipmentId={maintenanceEquipmentId}
-          open={maintenanceOpen}
-          onOpenChange={setMaintenanceOpen}
-        />
-      )}
-
-      {/* Confirmation dialog for deleting equipment */}
-      <DeleteConfirmation 
-        isOpen={isDeleteConfirmOpen}
-        onClose={() => setIsDeleteConfirmOpen(false)}
-        onConfirm={confirmDeleteEquipment}
-        title="Delete Equipment"
-        itemName={selectedEquipment?.name}
-      />
+      {farmId && <MaintenanceDialog farmId={farmId} equipment={machines} equipmentId={serviceFor} open={serviceOpen} onOpenChange={setServiceOpen} />}
     </div>
   );
 };

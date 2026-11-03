@@ -30,6 +30,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Badge } from '@/components/ui/badge';
+import PageHeader from '@/components/common/PageHeader';
 
 type NotificationType = 'info' | 'warning' | 'alert';
 
@@ -212,21 +213,20 @@ const Notifications = () => {
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
-        <div>
-          <h1 className="page-title">Notifications</h1>
-          <p className="text-muted-foreground">Stay updated with important events and alerts</p>
-        </div>
-        
-        <div className="flex gap-2 mt-4 md:mt-0">
-          {unreadCount > 0 && (
-            <Button variant="outline" onClick={handleMarkAllAsRead}>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Mark All as Read
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Notifications"
+        description="Stay updated with important events and alerts"
+        actions={
+          <>
+            {unreadCount > 0 && (
+              <Button variant="outline" onClick={handleMarkAllAsRead}>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Mark All as Read
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">

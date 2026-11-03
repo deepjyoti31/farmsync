@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { compactRupees } from '@/lib/financeSummary';
+import { AXIS_PROPS, CHART, GRID_PROPS, categoryColor, foldCategories, TOOLTIP_PROPS } from '@/lib/chartPalette';
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Sprout } from 'lucide-react';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { aggregateYieldByCrop, type HarvestRecord } from '@/lib/yieldAnalytics';
+import PageHeader from '@/components/common/PageHeader';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const Analytics = () => {
     const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -75,13 +77,15 @@ const Analytics = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="page-title">Analytics</h1>
-                    <p className="text-muted-foreground">Visualize your farm's performance and financial health.</p>
-                </div>
-                <FarmSelector selectedFarmId={selectedFarmId} onFarmChange={setSelectedFarmId} />
-            </div>
+            <PageHeader
+              title="Analytics"
+              description="Visualize your farm's performance and financial health."
+              actions={
+                <>
+                  <FarmSelector selectedFarmId={selectedFarmId} onFarmChange={setSelectedFarmId} />
+                </>
+              }
+            />
 
             {!selectedFarmId ? (
                 <Card>
@@ -106,7 +110,7 @@ const Analytics = () => {
                                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-green-600">+₹{financialData?.income.toLocaleString()}</div>
+                                    <div className="text-2xl font-bold text-leaf">+₹{financialData?.income.toLocaleString()}</div>
                                     <p className="text-xs text-muted-foreground">Total recorded income</p>
                                 </CardContent>
                             </Card>
@@ -116,7 +120,7 @@ const Analytics = () => {
                                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold text-red-600">-₹{financialData?.expense.toLocaleString()}</div>
+                                    <div className="text-2xl font-bold text-destructive">-₹{financialData?.expense.toLocaleString()}</div>
                                     <p className="text-xs text-muted-foreground">Total recorded expenses</p>
                                 </CardContent>
                             </Card>
@@ -124,13 +128,13 @@ const Analytics = () => {
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
                                     {((financialData?.income || 0) - (financialData?.expense || 0)) > 0 ? (
-                                        <TrendingUp className="h-4 w-4 text-green-600" />
+                                        <TrendingUp className="h-4 w-4 text-leaf" />
                                     ) : (
-                                        <TrendingDown className="h-4 w-4 text-red-600" />
+                                        <TrendingDown className="h-4 w-4 text-destructive" />
                                     )}
                                 </CardHeader>
                                 <CardContent>
-                                    <div className={`text-2xl font-bold ${((financialData?.income || 0) - (financialData?.expense || 0)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    <div className={`text-2xl font-bold ${((financialData?.income || 0) - (financialData?.expense || 0)) >= 0 ? 'text-leaf' : 'text-destructive'}`}>
                                         ₹{((financialData?.income || 0) - (financialData?.expense || 0)).toLocaleString()}
                                     </div>
                                     <p className="text-xs text-muted-foreground">Income - Expenses</p>
@@ -149,11 +153,14 @@ const Analytics = () => {
                                             { name: 'Income', amount: financialData?.income || 0 },
                                             { name: 'Expense', amount: financialData?.expense || 0 }
                                         ]}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="name" />
-                                            <YAxis />
-                                            <Tooltip formatter={(value) => `₹${Number(value).toLocaleString()}`} />
-                                            <Bar dataKey="amount" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                            <CartesianGrid {...GRID_PROPS} />
+                                            <XAxis {...AXIS_PROPS} dataKey="name" />
+                                            <YAxis {...AXIS_PROPS} tickFormatter={compactRupees} width={60} />
+                                            <Tooltip {...TOOLTIP_PROPS} formatter={(value) => `₹${Number(value).toLocaleString()}`} />
+                                            <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={96}>
+                                                <Cell fill={CHART.income} />
+                                                <Cell fill={CHART.expense} />
+                                            </Bar>
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </CardContent>
@@ -167,19 +174,18 @@ const Analytics = () => {
                                     <ResponsiveContainer width="100%" height={350}>
                                         <PieChart>
                                             <Pie
-                                                data={financialData?.expenseByCategory}
+                                                data={foldCategories(financialData?.expenseByCategory ?? [], 'value', 'name')}
                                                 cx="50%"
                                                 cy="50%"
                                                 labelLine={false}
                                                 outerRadius={80}
-                                                fill="#8884d8"
                                                 dataKey="value"
                                             >
-                                                {financialData?.expenseByCategory.map((entry: any, index: number) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                {foldCategories(financialData?.expenseByCategory ?? [], 'value', 'name').map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={categoryColor(index)} stroke="#FFFFFF" strokeWidth={2} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip formatter={(value) => `₹${Number(value).toLocaleString()}`} />
+                                            <Tooltip {...TOOLTIP_PROPS} formatter={(value) => `₹${Number(value).toLocaleString()}`} />
                                             <Legend />
                                         </PieChart>
                                     </ResponsiveContainer>
@@ -208,11 +214,11 @@ const Analytics = () => {
                                 ) : (
                                     <ResponsiveContainer width="100%" height={400}>
                                         <BarChart data={yieldData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="name" />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Bar dataKey="yieldPerHectare" fill="#10b981" name="Yield (t/ha)" radius={[4, 4, 0, 0]} />
+                                            <CartesianGrid {...GRID_PROPS} />
+                                            <XAxis {...AXIS_PROPS} dataKey="name" />
+                                            <YAxis {...AXIS_PROPS} />
+                                            <Tooltip {...TOOLTIP_PROPS} />
+                                            <Bar dataKey="yieldPerHectare" fill={CHART.single} name="Yield (t/ha)" radius={[4, 4, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 )}

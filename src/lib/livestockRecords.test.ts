@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { animalLabel, dailyProduction, productionTotal, upcomingHealthDue } from './livestockRecords';
+import { ageLabel, animalLabel, dailyProduction, herdSummary, productionTotal, upcomingHealthDue } from './livestockRecords';
 
 const today = new Date(2026, 10, 2, 9, 0); // 2 Nov 2026
 
@@ -69,5 +69,35 @@ describe('production summaries', () => {
     expect(productionTotal(entries, 'milk', 7, today)).toBe(26.5);
     expect(productionTotal(entries, 'milk', 30, today)).toBe(35.5);
     expect(productionTotal(entries, 'eggs', 1, today)).toBe(120);
+  });
+});
+
+describe('herdSummary', () => {
+  it('counts live animals by type, largest group first', () => {
+    const s = herdSummary([
+      { livestock_type: { name: 'Cow' }, status: 'active' },
+      { livestock_type: { name: 'Goat' }, status: 'active' },
+      { livestock_type: { name: 'Cow' }, status: null },
+      { livestock_type: { name: 'Cow' }, status: 'sold' },
+      { livestock_type: null, status: 'active' },
+    ]);
+    expect(s.active).toBe(4);
+    expect(s.byType).toEqual([
+      { name: 'Cow', count: 2 },
+      { name: 'Animal', count: 1 },
+      { name: 'Goat', count: 1 },
+    ]);
+  });
+});
+
+describe('ageLabel', () => {
+  const today = new Date(2026, 10, 3);
+  it('shows years and months, months, or days', () => {
+    expect(ageLabel('2024-08-01', today)).toBe('2 y 3 m');
+    expect(ageLabel('2025-11-03', today)).toBe('1 y');
+    expect(ageLabel('2026-06-10', today)).toBe('4 m');
+    expect(ageLabel('2026-10-22', today)).toBe('12 d');
+    expect(ageLabel(null, today)).toBeNull();
+    expect(ageLabel('2027-01-01', today)).toBeNull();
   });
 });

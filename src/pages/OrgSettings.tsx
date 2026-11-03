@@ -20,6 +20,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import PageHeader from '@/components/common/PageHeader';
 
 const OrgSettings = () => {
     const { currentOrganization, userRole } = useAuth();
@@ -101,12 +102,10 @@ const OrgSettings = () => {
 
     return (
         <div className="mx-auto w-full max-w-4xl space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="page-title">Organization Settings</h1>
-                    <p className="text-muted-foreground">{currentOrganization.name}</p>
-                </div>
-            </div>
+            <PageHeader
+              title="Organization Settings"
+              description={<>{currentOrganization.name}</>}
+            />
 
             <Card>
                 <CardHeader>

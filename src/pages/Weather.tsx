@@ -1,472 +1,222 @@
-
-import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  CardFooter
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  Cloud,
-  Sun,
-  CloudRain,
-  CloudSnow,
-  CloudLightning,
-  CloudDrizzle,
-  Wind,
-  Droplets,
-  Umbrella,
-  RefreshCw,
-  MapPin,
-  ThermometerSun,
-  ThermometerSnowflake,
-  Calendar,
-  ArrowUp,
-  ArrowDown,
-  Loader2
-} from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { format, parseISO } from 'date-fns';
+import { CheckCircle2, CloudSun, Loader2, MapPin, PauseCircle, RefreshCw } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Button } from '@/components/ui/button';
+import PageHeader from '@/components/common/PageHeader';
 import FarmSelector from '@/components/farms/FarmSelector';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import WeatherIcon from '@/components/weather/WeatherIcon';
+import { supabase } from '@/integrations/supabase/client';
+import { AXIS_PROPS, CATEGORICAL, CHART, GRID_PROPS, TOOLTIP_PROPS } from '@/lib/chartPalette';
+import { WEATHER_RULES, fieldWorkAdvice } from '@/lib/weatherAdvice';
+import { cn } from '@/lib/utils';
 
 interface WeatherResponse {
-  current: {
-    temperature: number;
-    humidity: number;
-    precipitation: number;
-    wind_speed: number;
-    condition: string;
-  };
-  forecast: Array<{
-    date: string;
-    temperature_min: number;
-    temperature_max: number;
-    condition: string;
-    precipitation_chance: number;
-  }>;
+  current: { temperature: number; humidity: number; precipitation: number; wind_speed: number; condition: string };
+  forecast: { date: string; temperature_min: number; temperature_max: number; condition: string; precipitation_chance: number }[];
 }
 
-const Weather = () => {
-  const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+// High and low are the amber and blue slots of the chart palette, a validated pair.
+const HIGH = CATEGORICAL[1];
+const LOW = CATEGORICAL[2];
 
-  // Fetch farm location data
-  const { data: farm } = useQuery({
-    queryKey: ['farm', selectedFarmId],
+const Weather = () => {
+  const [farmId, setFarmId] = React.useState<string | null>(null);
+
+  const { data: farm, isLoading: loadingFarm } = useQuery({
+    queryKey: ['farm', farmId],
+    enabled: !!farmId,
     queryFn: async () => {
-      if (!selectedFarmId) return null;
-      
-      const { data, error } = await supabase
-        .from('farms')
-        .select('name, gps_latitude, gps_longitude, village, district, state')
-        .eq('id', selectedFarmId)
-        .single();
-      
+      const { data, error } = await supabase.from('farms').select('name, village, district, state, gps_latitude, gps_longitude').eq('id', farmId!).single();
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedFarmId,
   });
 
-  // Fetch weather data
-  const { 
-    data: weather, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useQuery({
-    queryKey: ['weather', selectedFarmId],
+  const hasCoords = !!farm?.gps_latitude && !!farm?.gps_longitude;
+
+  // Same key as the Today screen's weather band, so the two share one cached forecast.
+  const { data: weather, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useQuery({
+    queryKey: ['weather', farmId, farm?.gps_latitude, farm?.gps_longitude],
+    enabled: !!farm && hasCoords,
+    refetchInterval: 1000 * 60 * 30,
+    retry: false,
     queryFn: async () => {
-      if (!selectedFarmId) return null;
-      
-      // Use default coordinates if farm doesn't have GPS coordinates
-      const latitude = farm?.gps_latitude || 20.5937; // Default to central India
-      const longitude = farm?.gps_longitude || 78.9629;
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('get-weather', {
-          body: { latitude, longitude },
-        });
-        
-        if (error) throw error;
-        return data as WeatherResponse;
-      } catch (error) {
-        console.error('Error fetching weather:', error);
-        throw new Error('Failed to fetch weather data');
-      }
+      const { data, error } = await supabase.functions.invoke('get-weather', { body: { latitude: farm!.gps_latitude, longitude: farm!.gps_longitude } });
+      if (error) throw error;
+      return data as WeatherResponse;
     },
-    enabled: !!farm || !!selectedFarmId, // Enable even if we don't have farm GPS data
   });
 
-  const handleRefresh = async () => {
-    try {
-      setIsRefreshing(true);
-      await refetch();
-      toast({
-        title: 'Weather updated',
-        description: 'Weather data has been refreshed successfully',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to refresh weather data',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const getWeatherIcon = (condition: string) => {
-    if (!condition) return <Cloud className="h-12 w-12 text-primary" />;
-    
-    const conditionLower = condition.toLowerCase();
-    
-    if (conditionLower.includes('clear') || conditionLower.includes('sunny')) {
-      return <Sun className="h-12 w-12 text-farm-yellow" />;
-    } else if (conditionLower.includes('rain') || conditionLower.includes('shower')) {
-      return <CloudRain className="h-12 w-12 text-farm-sky" />;
-    } else if (conditionLower.includes('thunder') || conditionLower.includes('storm')) {
-      return <CloudLightning className="h-12 w-12 text-purple-500" />;
-    } else if (conditionLower.includes('snow')) {
-      return <CloudSnow className="h-12 w-12 text-blue-300" />;
-    } else if (conditionLower.includes('drizzle')) {
-      return <CloudDrizzle className="h-12 w-12 text-blue-400" />;
-    } else if (conditionLower.includes('cloud') || conditionLower.includes('overcast')) {
-      return <Cloud className="h-12 w-12 text-gray-400" />;
-    } else if (conditionLower.includes('partly')) {
-      return <Cloud className="h-12 w-12 text-gray-400" />;
-    } else {
-      return <Cloud className="h-12 w-12 text-primary" />;
-    }
-  };
-
-  // Prepare data for temperature chart
-  const tempChartData = weather?.forecast?.map(day => ({
-    date: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
-    min: day.temperature_min,
-    max: day.temperature_max,
-  }));
-  
-  // Create data for precipitation chart
-  const precipChartData = weather?.forecast?.map(day => ({
-    date: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
-    chance: day.precipitation_chance,
-  }));
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const place = [farm?.village, farm?.district, farm?.state].filter(Boolean).join(', ');
+  const days = weather?.forecast ?? [];
+  const chart = days.map((d) => ({ day: format(parseISO(d.date), 'EEE'), high: Math.round(d.temperature_max), low: Math.round(d.temperature_min), rain: d.precipitation_chance }));
+  const advice = weather ? fieldWorkAdvice(weather.current, days) : [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="page-title">Weather</h1>
-          <p className="text-muted-foreground mt-1">
-            View current weather conditions and forecast for your farm
-          </p>
+    <div>
+      <PageHeader
+        title="Weather"
+        description={place ? `Forecast for ${place}` : 'Local forecast for your farm, and what it means for field work.'}
+        actions={
+          <>
+            <FarmSelector selectedFarmId={farmId} onFarmChange={setFarmId} />
+            <Button variant="outline" onClick={() => refetch()} disabled={!hasCoords || isFetching}>
+              <RefreshCw className={cn(isFetching && 'animate-spin')} /> Refresh
+            </Button>
+          </>
+        }
+      />
+
+      {!farmId || loadingFarm || (hasCoords && isLoading) ? (
+        <div className="flex justify-center p-12" role="status" aria-label="Loading weather">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-2">
-          <FarmSelector
-            selectedFarmId={selectedFarmId}
-            onFarmChange={setSelectedFarmId}
-          />
-          <Button 
-            variant="outline" 
-            className="gap-2"
-            onClick={handleRefresh}
-            disabled={isRefreshing || !selectedFarmId}
-          >
-            {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Refresh Data
+      ) : !hasCoords ? (
+        <div className="surface flex flex-col items-center gap-3 p-12 text-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-[18px] bg-info-tint text-info">
+            <MapPin className="h-8 w-8" aria-hidden="true" />
+          </span>
+          <h2 className="text-xl font-bold">Where is {farm?.name ?? 'this farm'}?</h2>
+          <p className="max-w-sm text-muted-foreground">The forecast needs the farm's location. Draw its boundary or add its GPS position on the Farms page.</p>
+          <Button size="lg" className="mt-2" asChild>
+            <Link to="/dashboard/farms">Add the farm's location</Link>
           </Button>
         </div>
-      </div>
-      
-      {!selectedFarmId ? (
-        <Card className="p-8 text-center">
-          <CardTitle className="mb-4">Select a Farm</CardTitle>
-          <CardDescription>
-            Please select a farm to view weather forecast for that location.
-          </CardDescription>
-        </Card>
-      ) : !weather ? (
-        <Card className="p-8 text-center">
-          <CardTitle className="mb-4">Loading Weather Data</CardTitle>
-          <CardDescription>
-            Fetching weather information for your farm...
-          </CardDescription>
-        </Card>
+      ) : isError || !weather ? (
+        <div className="surface flex flex-col items-center gap-3 p-12 text-center">
+          <CloudSun className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
+          <h2 className="text-xl font-bold">The forecast service did not answer</h2>
+          <p className="max-w-sm text-muted-foreground">This can happen on a weak connection. Try again in a moment.</p>
+          <Button variant="outline" className="mt-2" onClick={() => refetch()}>
+            <RefreshCw /> Try again
+          </Button>
+        </div>
       ) : (
-        <>
-          <Card className="overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-white text-2xl font-bold">Current Weather</CardTitle>
-                    <CardDescription className="text-blue-100">
-                      <div className="flex items-center mt-1">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        {farm?.village && farm?.district ? (
-                          <span>{farm.village}, {farm.district}, {farm.state}</span>
-                        ) : (
-                          <span>{farm?.name || 'Your Farm'}</span>
-                        )}
-                      </div>
-                    </CardDescription>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-blue-100">Last updated:</span>
-                    <p className="text-sm font-medium text-white">{new Date().toLocaleString()}</p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pb-8">
-                <div className="flex flex-col md:flex-row justify-between items-center">
-                  <div className="flex items-center mb-4 md:mb-0">
-                    {getWeatherIcon(weather.current.condition)}
-                    <div className="ml-4">
-                      <div className="text-5xl font-bold">{weather.current.temperature}°C</div>
-                      <div className="text-lg text-blue-100">{weather.current.condition}</div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                    <div className="flex items-center">
-                      <Droplets className="h-5 w-5 mr-2 text-blue-100" />
-                      <div>
-                        <div className="text-sm text-blue-100">Humidity</div>
-                        <div className="font-medium">{weather.current.humidity}%</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Wind className="h-5 w-5 mr-2 text-blue-100" />
-                      <div>
-                        <div className="text-sm text-blue-100">Wind</div>
-                        <div className="font-medium">{weather.current.wind_speed} km/h</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Umbrella className="h-5 w-5 mr-2 text-blue-100" />
-                      <div>
-                        <div className="text-sm text-blue-100">Precipitation</div>
-                        <div className="font-medium">{weather.current.precipitation} mm</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="h-5 w-5 mr-2 text-blue-100" />
-                      <div>
-                        <div className="text-sm text-blue-100">Date</div>
-                        <div className="font-medium">{new Date().toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
+        <div className="flex flex-col gap-6">
+          <section aria-labelledby="now-h" className="surface flex flex-wrap items-center gap-6 p-5 md:p-6">
+            <div className="flex min-w-[240px] flex-[1_1_260px] items-center gap-5">
+              <WeatherIcon condition={weather.current.condition} className="h-16 w-16" />
+              <div className="flex flex-col">
+                <h2 id="now-h" className="eyebrow">
+                  Now
+                </h2>
+                <span className="font-display text-[56px] font-bold leading-none">{Math.round(weather.current.temperature)}°</span>
+                <span className="text-muted-foreground">{weather.current.condition}</span>
+              </div>
             </div>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>5-Day Forecast</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Day</TableHead>
-                      <TableHead>Weather</TableHead>
-                      <TableHead>Condition</TableHead>
-                      <TableHead>
-                        <div className="flex items-center">
-                          <ThermometerSun className="h-4 w-4 mr-1" />
-                          <span>Max</span>
-                        </div>
-                      </TableHead>
-                      <TableHead>
-                        <div className="flex items-center">
-                          <ThermometerSnowflake className="h-4 w-4 mr-1" />
-                          <span>Min</span>
-                        </div>
-                      </TableHead>
-                      <TableHead>
-                        <div className="flex items-center">
-                          <Umbrella className="h-4 w-4 mr-1" />
-                          <span>Precip.</span>
-                        </div>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {weather.forecast.map((day, index) => (
-                      <TableRow key={day.date}>
-                        <TableCell className="font-medium">
-                          {index === 0 ? 'Today' : new Date(day.date).toLocaleDateString('en-US', { weekday: 'long' })}
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-center">
-                            {getWeatherIcon(day.condition)}
-                          </div>
-                        </TableCell>
-                        <TableCell>{day.condition}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <ArrowUp className="h-4 w-4 text-red-500 mr-1" />
-                            {day.temperature_max}°C
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <ArrowDown className="h-4 w-4 text-blue-500 mr-1" />
-                            {day.temperature_min}°C
-                          </div>
-                        </TableCell>
-                        <TableCell>{day.precipitation_chance}%</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            <dl className="grid flex-[1_1_320px] grid-cols-3 gap-3">
+              {[
+                ['Humidity', `${weather.current.humidity}%`],
+                ['Wind', `${weather.current.wind_speed} km/h`],
+                ['Rain today', `${weather.current.precipitation} mm`],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-xl bg-background p-3.5">
+                  <dt className="text-xs text-muted-foreground">{k}</dt>
+                  <dd className="mt-1 font-mono text-lg font-medium">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            {dataUpdatedAt > 0 && <p className="w-full text-xs text-muted-foreground">Updated {format(new Date(dataUpdatedAt), 'h:mm a')}</p>}
+          </section>
+
+          <section aria-labelledby="days-h">
+            <h2 id="days-h" className="mb-3 text-xl font-bold">
+              Next {days.length} days
+            </h2>
+            <ol className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
+              {days.map((d) => {
+                const wet = d.precipitation_chance >= WEATHER_RULES.wetChance;
+                return (
+                  <li key={d.date} className={cn('surface flex flex-col gap-2 p-4', wet && 'border-info/40 bg-info-tint')}>
+                    <span className="flex items-baseline justify-between">
+                      <span className="font-semibold">{format(parseISO(d.date), 'EEEE')}</span>
+                      <span className="font-mono text-xs text-muted-foreground">{format(parseISO(d.date), 'd MMM')}</span>
+                    </span>
+                    <WeatherIcon condition={d.condition} className="h-8 w-8" />
+                    <span className="text-sm text-muted-foreground">{d.condition}</span>
+                    <span className="font-mono">
+                      <span className="sr-only">High </span>
+                      {Math.round(d.temperature_max)}°<span className="text-muted-foreground"> / </span>
+                      <span className="sr-only">low </span>
+                      <span className="text-muted-foreground">{Math.round(d.temperature_min)}°</span>
+                    </span>
+                    <span className="flex flex-col gap-1">
+                      <span className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Rain</span>
+                        <span className="font-mono text-info">{d.precipitation_chance}%</span>
+                      </span>
+                      <span aria-hidden="true" className="h-1.5 rounded bg-muted">
+                        <span className="block h-full rounded bg-info" style={{ width: `${d.precipitation_chance}%` }} />
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+
+          <section aria-labelledby="advice-h" className="surface p-5 md:p-6">
+            <h2 id="advice-h" className="mb-1 text-xl font-bold">
+              Field work
+            </h2>
+            <p className="mb-3 text-sm text-muted-foreground">Rules of thumb from the forecast. Check your crop and local advice before acting.</p>
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
+              {advice.map((a) => (
+                <li key={a.kind} className="flex gap-3 rounded-xl border p-3.5">
+                  {a.tone === 'go' ? (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-leaf" aria-label="Go ahead" />
+                  ) : (
+                    <PauseCircle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-label="Wait or take care" />
+                  )}
+                  <span className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{a.title}</span>
+                    <span className="text-sm leading-snug text-muted-foreground">{a.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <section aria-labelledby="temp-h" className="surface p-5 md:p-6">
+              <h2 id="temp-h" className="mb-4 text-xl font-bold">
+                Highs and lows
+              </h2>
+              <div className="h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chart} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                    <CartesianGrid {...GRID_PROPS} />
+                    <XAxis {...AXIS_PROPS} dataKey="day" />
+                    <YAxis {...AXIS_PROPS} unit="°" width={44} />
+                    <Tooltip {...TOOLTIP_PROPS} formatter={(v: number) => `${v}°`} />
+                    <Legend iconType="plainline" wrapperStyle={{ fontSize: 13 }} />
+                    <Line type="monotone" dataKey="high" name="High" stroke={HIGH} strokeWidth={2} dot={{ r: 4, fill: HIGH, stroke: '#FFFFFF', strokeWidth: 2 }} />
+                    <Line type="monotone" dataKey="low" name="Low" stroke={LOW} strokeWidth={2} dot={{ r: 4, fill: LOW, stroke: '#FFFFFF', strokeWidth: 2 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Temperature Forecast</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={tempChartData}
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis label={{ value: '°C', position: 'insideLeft', angle: -90 }} />
-                      <Tooltip />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="max" 
-                        name="Max Temp" 
-                        stroke="#f97316" 
-                        activeDot={{ r: 8 }} 
-                        strokeWidth={2}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="min" 
-                        name="Min Temp" 
-                        stroke="#0ea5e9" 
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Precipitation Chance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={precipChartData}
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis label={{ value: '%', position: 'insideLeft', angle: -90 }} />
-                      <Tooltip />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="chance" 
-                        name="Precipitation Chance" 
-                        stroke="#3b82f6" 
-                        fill="#3b82f6"
-                        strokeWidth={2}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+            </section>
+            <section aria-labelledby="rain-h" className="surface p-5 md:p-6">
+              <h2 id="rain-h" className="mb-4 text-xl font-bold">
+                Chance of rain
+              </h2>
+              <div className="h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chart} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                    <CartesianGrid {...GRID_PROPS} />
+                    <XAxis {...AXIS_PROPS} dataKey="day" />
+                    <YAxis {...AXIS_PROPS} unit="%" domain={[0, 100]} width={44} />
+                    <Tooltip {...TOOLTIP_PROPS} formatter={(v: number) => `${v}%`} />
+                    <Bar dataKey="rain" name="Chance of rain" fill={CHART.water} radius={[4, 4, 0, 0]} maxBarSize={36} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
           </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Weather Advisory</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="p-4 border rounded-md">
-                  <h3 className="font-medium text-lg mb-2">Farming Tips Based on Weather Forecast</h3>
-                  <ul className="space-y-2 list-disc pl-5">
-                    <li>Temperatures are expected to {weather.forecast[0].temperature_max > 30 ? 'be quite high' : 'remain moderate'} in the coming days. {weather.forecast[0].temperature_max > 30 ? 'Ensure proper irrigation to prevent crop stress.' : 'Conditions are favorable for most crop growth.'}</li>
-                    {weather.forecast.some(day => day.precipitation_chance > 50) ? (
-                      <li>Significant chance of precipitation in the forecast. Consider delaying any chemical spraying operations.</li>
-                    ) : (
-                      <li>Dry conditions expected. Ensure adequate irrigation for your crops.</li>
-                    )}
-                    {weather.current.wind_speed > 15 ? (
-                      <li>Higher wind speeds may affect spraying operations and young plant growth. Take necessary precautions.</li>
-                    ) : (
-                      <li>Wind conditions are favorable for field operations.</li>
-                    )}
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" className="w-full">View Detailed Weather Report</Button>
-            </CardFooter>
-          </Card>
-        </>
+        </div>
       )}
     </div>
   );

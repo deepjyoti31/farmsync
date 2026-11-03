@@ -1,27 +1,17 @@
-
 import React from 'react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Heart } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DeleteButton } from '@/components/common/DeleteButton';
+import { ageLabel } from '@/lib/livestockRecords';
 
 interface LivestockItem {
   id: string;
-  tag_id?: string;
-  breed?: string;
-  gender?: string;
-  status?: string;
-  livestock_type?: {
-    name?: string;
-  };
+  tag_id?: string | null;
+  breed?: string | null;
+  gender?: string | null;
+  status?: string | null;
+  birth_date?: string | null;
+  livestock_type?: { name?: string | null } | null;
 }
 
 interface LivestockTableProps {
@@ -29,64 +19,59 @@ interface LivestockTableProps {
   onDelete: (id: string) => Promise<void>;
 }
 
-export const LivestockTable: React.FC<LivestockTableProps> = ({ livestock, onDelete }) => {
-  const getHealthBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return <Badge className="bg-farm-green text-white">Active</Badge>;
-      case 'sold':
-        return <Badge className="bg-farm-yellow text-black">Sold</Badge>;
-      case 'deceased':
-        return <Badge className="bg-destructive">Deceased</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+const STATUS: Record<string, { variant: 'default' | 'warning' | 'secondary'; label: string }> = {
+  active: { variant: 'default', label: 'On farm' },
+  sold: { variant: 'warning', label: 'Sold' },
+  deceased: { variant: 'secondary', label: 'Died' },
+};
 
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Type</TableHead>
-          <TableHead>Breed</TableHead>
-          <TableHead>Tag ID</TableHead>
-          <TableHead>Gender</TableHead>
-          <TableHead>
-            <div className="flex items-center gap-1">
-              <Heart className="h-4 w-4 mr-1" />
-              <span>Status</span>
-            </div>
-          </TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {livestock.map((animal) => (
+/** The animal register: one row per animal with tag, type, breed, sex, age and status. */
+export const LivestockTable: React.FC<LivestockTableProps> = ({ livestock, onDelete }) => (
+  <Table className="min-w-[640px]">
+    <TableHeader>
+      <TableRow>
+        <TableHead className="ps-5 md:ps-6">Tag</TableHead>
+        <TableHead>Animal</TableHead>
+        <TableHead>Sex</TableHead>
+        <TableHead>Age</TableHead>
+        <TableHead>Status</TableHead>
+        <TableHead className="w-12 pe-5 md:pe-6">
+          <span className="sr-only">Actions</span>
+        </TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {livestock.map((animal) => {
+        const status = STATUS[(animal.status || 'active').toLowerCase()] ?? { variant: 'secondary' as const, label: animal.status ?? '' };
+        const name = animal.livestock_type?.name || 'Animal';
+        return (
           <TableRow key={animal.id}>
-            <TableCell className="font-medium">{animal.livestock_type?.name || 'Unknown'}</TableCell>
-            <TableCell>{animal.breed || '-'}</TableCell>
-            <TableCell>{animal.tag_id || '-'}</TableCell>
-            <TableCell className="capitalize">{animal.gender || 'Unknown'}</TableCell>
+            <TableCell className="ps-5 font-mono text-[13px] md:ps-6">{animal.tag_id ? `#${animal.tag_id}` : '·'}</TableCell>
             <TableCell>
-              {getHealthBadge(animal.status || 'active')}
+              <span className="flex flex-col gap-0.5">
+                <span className="font-semibold">{name}</span>
+                {animal.breed && <span className="text-[13px] text-muted-foreground">{animal.breed}</span>}
+              </span>
             </TableCell>
+            <TableCell className="capitalize">{animal.gender && animal.gender !== 'unknown' ? animal.gender : '·'}</TableCell>
+            <TableCell className="font-mono text-[13px]">{ageLabel(animal.birth_date) ?? '·'}</TableCell>
             <TableCell>
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm">Details</Button>
-                <DeleteButton 
-                  onDelete={() => onDelete(animal.id)}
-                  itemName={animal.tag_id || animal.livestock_type?.name}
-                  entityType="Livestock"
-                  buttonSize="sm"
-                  buttonVariant="ghost"
-                />
-              </div>
+              <Badge variant={status.variant}>{status.label}</Badge>
+            </TableCell>
+            <TableCell className="pe-5 md:pe-6">
+              <DeleteButton
+                onDelete={() => onDelete(animal.id)}
+                itemName={animal.tag_id ? `${name} #${animal.tag_id}` : name}
+                entityType="Animal"
+                buttonSize="icon"
+                buttonVariant="ghost"
+              />
             </TableCell>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-};
+        );
+      })}
+    </TableBody>
+  </Table>
+);
 
 export default LivestockTable;
