@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { downloadBlob, downloadCsv, toCsv } from '@/lib/csv';
 import { buildComplianceReport } from '@/lib/complianceReport';
+import PageHeader from '@/components/common/PageHeader';
 
 const Sustainability = () => {
     const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
@@ -106,13 +107,15 @@ const Sustainability = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="page-title">Sustainability & Compliance</h1>
-                    <p className="text-muted-foreground">Track farm inputs and resource usage for certification.</p>
-                </div>
-                <FarmSelector selectedFarmId={selectedFarmId} onFarmChange={setSelectedFarmId} />
-            </div>
+            <PageHeader
+              title="Sustainability & Compliance"
+              description="Track farm inputs and resource usage for certification."
+              actions={
+                <>
+                  <FarmSelector selectedFarmId={selectedFarmId} onFarmChange={setSelectedFarmId} />
+                </>
+              }
+            />
 
             {!selectedFarmId ? (
                 <Card>

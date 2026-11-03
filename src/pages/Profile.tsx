@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { AVATAR_ACCEPT, AVATAR_BUCKET, avatarPath, avatarPathFromUrl, validateAvatarFile } from '@/lib/avatar';
+import PageHeader from '@/components/common/PageHeader';
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, { message: 'First name is required' }),
@@ -217,10 +218,10 @@ const Profile = () => {
   return (
     <div className="mx-auto w-full max-w-4xl">
       <div className="flex flex-col space-y-6">
-        <div>
-          <h1 className="page-title">Profile</h1>
-          <p className="text-muted-foreground">Manage your personal information</p>
-        </div>
+        <PageHeader
+          title="Profile"
+          description="Manage your personal information"
+        />
 
         <Card>
           <CardHeader>

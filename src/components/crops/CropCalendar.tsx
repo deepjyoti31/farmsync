@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils';
 import { cropEvents, groupByDate, monthGrid, type CropEventKind, type PlantingLike } from '@/lib/cropCalendar';
 
 const KIND_STYLES: Record<CropEventKind, { chip: string; dot: string; label: string }> = {
-  planting: { chip: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200', dot: 'bg-green-600', label: 'Sowing' },
-  expected_harvest: { chip: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200', dot: 'bg-amber-500', label: 'Expected harvest' },
+  planting: { chip: 'bg-leaf-tint text-[#1A4D2C]', dot: 'bg-leaf', label: 'Sowing' },
+  expected_harvest: { chip: 'bg-warning-tint text-[#6E4600]', dot: 'bg-harvest', label: 'Expected harvest' },
   harvest: { chip: 'bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200', dot: 'bg-stone-600', label: 'Harvested' },
 };
 

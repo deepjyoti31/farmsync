@@ -30,3 +30,17 @@ export function maintenanceCostByEquipment(records: { equipment_id: string; cost
   }
   return totals;
 }
+
+const SERVICE_RANK: Record<ServiceState, number> = { overdue: 0, due_soon: 1, scheduled: 2, unscheduled: 3 };
+
+/** Machines ordered by how soon they need attention: overdue, due soon, scheduled, then unscheduled; by date, then name. */
+export function sortByService<T extends { name: string; next_maintenance_date: string | null }>(machines: T[], today: Date = new Date()): T[] {
+  return [...machines].sort((a, b) => {
+    const r = SERVICE_RANK[serviceState(a.next_maintenance_date, today)] - SERVICE_RANK[serviceState(b.next_maintenance_date, today)];
+    if (r !== 0) return r;
+    if (a.next_maintenance_date && b.next_maintenance_date && a.next_maintenance_date !== b.next_maintenance_date) {
+      return a.next_maintenance_date.localeCompare(b.next_maintenance_date);
+    }
+    return a.name.localeCompare(b.name);
+  });
+}

@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ComplianceStandard, ComplianceRule } from '@/types/compliance';
 import { runAudit, type RuleResult } from '@/lib/complianceEngine';
 import { toast } from '@/hooks/use-toast';
+import PageHeader from '@/components/common/PageHeader';
 
 const StandardDetail = () => {
     const { id } = useParams();
@@ -72,20 +73,17 @@ const StandardDetail = () => {
                 <ArrowLeft className="h-4 w-4 mr-2" /> Back to Compass
             </Button>
 
-            <div className="flex justify-between items-start">
-                <div className="space-y-1">
-                    <h1 className="page-title">{standard.name}</h1>
-                    <div className="flex gap-2">
-                        <Badge>{standard.version}</Badge>
-                        <Badge variant="outline">{standard.authority}</Badge>
-                    </div>
-                    <p className="text-muted-foreground mt-2 max-w-2xl">{standard.description}</p>
-                </div>
-                <Button onClick={handleRunAudit} size="lg" disabled={isAuditing || rules.length === 0}>
-                    <PlayCircle className="h-5 w-5 mr-2" />
-                    {isAuditing ? 'Checking...' : 'Run Compliance Check'}
-                </Button>
-            </div>
+            <PageHeader
+                eyebrow={[standard.version, standard.authority].filter(Boolean).join(' · ')}
+                title={standard.name}
+                description={standard.description}
+                actions={
+                    <Button onClick={handleRunAudit} size="lg" disabled={isAuditing || rules.length === 0}>
+                        <PlayCircle className="h-5 w-5" />
+                        {isAuditing ? 'Checking...' : 'Run compliance check'}
+                    </Button>
+                }
+            />
 
             <div className="grid gap-4 mt-8">
                 <h2 className="text-xl font-semibold">Rules & Criteria</h2>

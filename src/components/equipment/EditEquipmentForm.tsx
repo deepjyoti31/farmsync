@@ -127,7 +127,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
               placeholder="Enter equipment name"
             />
             {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message}</p>
+              <p className="text-sm text-destructive">{errors.name.message}</p>
             )}
           </div>
           
@@ -139,7 +139,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
               placeholder="Tractor, Harvester, etc."
             />
             {errors.equipment_type && (
-              <p className="text-sm text-red-500">{errors.equipment_type.message}</p>
+              <p className="text-sm text-destructive">{errors.equipment_type.message}</p>
             )}
           </div>
           
@@ -219,7 +219,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
               </SelectContent>
             </Select>
             {errors.status && (
-              <p className="text-sm text-red-500">{errors.status.message}</p>
+              <p className="text-sm text-destructive">{errors.status.message}</p>
             )}
           </div>
         </div>

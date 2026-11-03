@@ -2,12 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, AlertTriangle, CheckCircle, FileText } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ComplianceStandard } from '@/types/compliance';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '@/components/common/PageHeader';
 
 const Compass = () => {
     const [standards, setStandards] = useState<ComplianceStandard[]>([]);
@@ -31,17 +31,15 @@ const Compass = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-2">
-                <h1 className="page-title flex items-center gap-3">
-                    <ShieldCheck className="h-8 w-8 text-primary" />
-                    Compass
-                </h1>
-                <p className="text-muted-foreground">Compliance engine & Audit readiness.</p>
-            </div>
+            <PageHeader
+              eyebrow="Compass"
+              title="Compliance"
+              description="Compliance engine & Audit readiness."
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Active Certifications Card */}
-                <Card className="col-span-1 border-green-500/20 bg-green-500/5">
+                <Card className="col-span-1 border-leaf/25 bg-leaf-tint/60">
                     <CardHeader>
                         <CardTitle>Active Certifications</CardTitle>
                         <CardDescription>Standards you are subscribed to</CardDescription>
@@ -51,7 +49,7 @@ const Compass = () => {
                             {standards.slice(0, 1).map(std => (
                                 <div key={std.id} className="flex justify-between items-center p-3 bg-background rounded-lg border">
                                     <span className="font-medium">{std.name}</span>
-                                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Active</Badge>
+                                    <Badge variant="outline" className="text-leaf border-leaf/30 bg-leaf-tint">Active</Badge>
                                 </div>
                             ))}
                             {standards.length === 0 && <p className="text-sm text-muted-foreground">No active subscriptions.</p>}
@@ -59,37 +57,19 @@ const Compass = () => {
                     </CardContent>
                 </Card>
 
-                {/* Readiness Score Card */}
-                <Card className="col-span-1">
+                {/* How readiness is measured: no score is shown until a check has actually been run */}
+                <Card className="col-span-1 md:col-span-2">
                     <CardHeader>
-                        <CardTitle>Audit Readiness</CardTitle>
-                        <CardDescription>Based on recent log validation</CardDescription>
+                        <CardTitle>Check your readiness</CardTitle>
+                        <CardDescription>Compass checks your input and water logs against a standard's rules</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-center py-4">
-                            <div className="text-5xl font-bold text-primary mb-2">92%</div>
-                            <Progress value={92} className="h-2" />
-                            <p className="text-xs text-muted-foreground mt-2">Ready for inspection</p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Alerts Card */}
-                <Card className="col-span-1">
-                    <CardHeader>
-                        <CardTitle>Compliance Alerts</CardTitle>
-                        <CardDescription>Potential violations detected</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-2">
-                            <div className="flex items-start gap-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
-                                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                                <span>Buffer zone warning on Field B (2 days ago)</span>
-                            </div>
-                            <div className="flex items-start gap-2 text-sm text-green-600 bg-green-50 p-2 rounded">
-                                <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                                <span>Input logs verified for Q3</span>
-                            </div>
+                    <CardContent className="space-y-3 text-sm">
+                        <p className="text-muted-foreground">
+                            Open a standard below and run a compliance check to see which rules pass and which fail. For an inspector, export the audit-ready PDF from the Sustainability page.
+                        </p>
+                        <div className="flex items-start gap-2 rounded-[10px] bg-info-tint p-3 text-[#173E6B] dark:text-info">
+                            <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                            <span>The check compares the products in your input logs with each standard's banned list, so keep those logs up to date.</span>
                         </div>
                     </CardContent>
                 </Card>

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import PageHeader from '@/components/common/PageHeader';
 
 const formatMoney = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
 
@@ -25,16 +26,18 @@ const InsuranceList = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="page-title">Insurance</h1>
-                    <p className="text-muted-foreground">Risk protection for your farm</p>
-                </div>
-                <Button variant="outline" disabled title="Online quotes are coming soon">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Get Coverage
-                </Button>
-            </div>
+            <PageHeader
+              title="Insurance"
+              description="Risk protection for your farm"
+              actions={
+                <>
+                  <Button variant="outline" disabled title="Online quotes are coming soon">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Get Coverage
+                  </Button>
+                </>
+              }
+            />
 
             {isLoading ? (
                 <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin" /></div>

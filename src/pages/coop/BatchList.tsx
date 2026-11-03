@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ProduceBatch } from '@/types/coop';
 import { Plus, Package } from 'lucide-react';
 import { format } from 'date-fns';
+import PageHeader from '@/components/common/PageHeader';
 
 const BatchList = () => {
     const { currentOrganization, userRole } = useAuth();
@@ -41,18 +42,20 @@ const BatchList = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="page-title">Produce Batches</h1>
-                    <p className="text-muted-foreground">Track aggregated produce for {currentOrganization?.name}</p>
-                </div>
-                {(userRole === 'owner' || userRole === 'admin') && (
-                    <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Batch
-                    </Button>
-                )}
-            </div>
+            <PageHeader
+              title="Produce Batches"
+              description={<>Track aggregated produce for {currentOrganization?.name}</>}
+              actions={
+                <>
+                  {(userRole === 'owner' || userRole === 'admin') && (
+                      <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Create Batch
+                      </Button>
+                  )}
+                </>
+              }
+            />
 
             <div className="grid gap-4">
                 {loading ? (

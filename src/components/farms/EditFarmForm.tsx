@@ -342,7 +342,7 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
             <p className="text-muted-foreground text-sm mb-2">
               {boundaries ?
                 "You can edit the existing boundaries by dragging the points or clear and redraw them." :
-                "Use the polygon tool <span className=\"inline-block bg-blue-100 text-blue-800 px-1 rounded\">◻</span> in the top left corner of the map to draw your farm boundaries. Click on the map to add points and complete the polygon by clicking on the first point."
+                "Use the polygon tool <span className=\"inline-block bg-info-tint text-info px-1 rounded\">◻</span> in the top left corner of the map to draw your farm boundaries. Click on the map to add points and complete the polygon by clicking on the first point."
               }
             </p>
 

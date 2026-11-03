@@ -35,6 +35,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import PageHeader from '@/components/common/PageHeader';
 
 const Community = () => {
   const [newPost, setNewPost] = useState('');
@@ -200,12 +201,10 @@ const Community = () => {
   return (
     <div className="w-full">
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div>
-            <h1 className="page-title">Community</h1>
-            <p className="text-muted-foreground">Connect with other farmers, share knowledge and learn from experts</p>
-          </div>
-        </div>
+        <PageHeader
+          title="Community"
+          description="Connect with other farmers, share knowledge and learn from experts"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
@@ -381,7 +380,7 @@ const Community = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 border rounded-md">
                     <div className="flex items-center gap-3">
-                      <Sprout className="h-5 w-5 text-green-500" />
+                      <Sprout className="h-5 w-5 text-leaf" />
                       <div>
                         <p className="font-medium">Organic Farming</p>
                         <p className="text-xs text-muted-foreground">342 members</p>
@@ -391,7 +390,7 @@ const Community = () => {
                   </div>
                   <div className="flex justify-between items-center p-3 border rounded-md">
                     <div className="flex items-center gap-3">
-                      <Tractor className="h-5 w-5 text-orange-500" />
+                      <Tractor className="h-5 w-5 text-[#B26B00]" />
                       <div>
                         <p className="font-medium">Modern Equipment</p>
                         <p className="text-xs text-muted-foreground">215 members</p>

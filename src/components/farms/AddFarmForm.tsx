@@ -328,7 +328,7 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
           <div>
             <h3 className="text-lg font-medium mb-1">Mark Farm Boundaries</h3>
             <p className="text-muted-foreground text-sm mb-2">
-              Use the polygon tool <span className="inline-block bg-blue-100 text-blue-800 px-1 rounded">◻</span> in the top left corner of the map to draw your farm boundaries.
+              Use the polygon tool <span className="inline-block bg-info-tint text-info px-1 rounded">◻</span> in the top left corner of the map to draw your farm boundaries.
               Click on the map to add points and complete the polygon by clicking on the first point.
             </p>
 

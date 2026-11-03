@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format, parseISO, subDays } from 'date-fns';
 import { BarChart3, Loader2, Plus } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AXIS_PROPS, CHART, GRID_PROPS, TOOLTIP_PROPS } from '@/lib/chartPalette';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -125,11 +126,11 @@ const ProductionCard: React.FC<ProductionCardProps> = ({ farmId, animals }) => {
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={series}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" interval={6} fontSize={12} />
-                  <YAxis fontSize={12} width={40} />
-                  <Tooltip formatter={(v) => [`${v} ${unit}`, activeType]} />
-                  <Bar dataKey="quantity" fill="#16a34a" radius={[3, 3, 0, 0]} />
+                  <CartesianGrid {...GRID_PROPS} />
+                  <XAxis {...AXIS_PROPS} dataKey="label" interval={6} />
+                  <YAxis {...AXIS_PROPS} width={40} />
+                  <Tooltip {...TOOLTIP_PROPS} formatter={(v) => [`${v} ${unit}`, activeType]} />
+                  <Bar dataKey="quantity" fill={CHART.single} radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

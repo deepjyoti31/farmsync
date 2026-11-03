@@ -6,9 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Users, Map as MapIcon, Package, ShoppingCart } from 'lucide-react';
 import { CoopStats } from '@/types/coop';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { categoryColor, foldCategories, TOOLTIP_PROPS } from '@/lib/chartPalette';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toHectares } from '@/lib/yieldAnalytics';
+import PageHeader from '@/components/common/PageHeader';
 
 const CoopDashboard = () => {
     const { currentOrganization } = useAuth();
@@ -91,7 +93,6 @@ const CoopDashboard = () => {
         }
     };
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
     if (loading) {
         return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -99,18 +100,20 @@ const CoopDashboard = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-2">
-                <h1 className="page-title">Cooperative</h1>
-                <p className="text-muted-foreground">Overview for {currentOrganization?.name}</p>
-                <div className="flex gap-2 pt-2">
-                    <Button asChild variant="outline" size="sm">
-                        <Link to="/dashboard/coop/orders"><ShoppingCart className="h-4 w-4 mr-2" />Bulk Orders</Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm">
-                        <Link to="/dashboard/coop/batches"><Package className="h-4 w-4 mr-2" />Produce Batches</Link>
-                    </Button>
-                </div>
-            </div>
+            <PageHeader
+              title="Cooperative"
+              description={<>Overview for {currentOrganization?.name}</>}
+              actions={
+                <>
+                  <Button asChild variant="outline" size="sm">
+                      <Link to="/dashboard/coop/orders"><ShoppingCart className="h-4 w-4 mr-2" />Bulk Orders</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                      <Link to="/dashboard/coop/batches"><Package className="h-4 w-4 mr-2" />Produce Batches</Link>
+                  </Button>
+                </>
+              }
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
@@ -166,19 +169,18 @@ const CoopDashboard = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={cropDistribution}
+                                    data={foldCategories(cropDistribution, 'value', 'name')}
                                     cx="50%"
                                     cy="50%"
                                     outerRadius={80}
-                                    fill="#8884d8"
                                     dataKey="value"
                                     label
                                 >
-                                    {cropDistribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    {foldCategories(cropDistribution, 'value', 'name').map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={categoryColor(index)} stroke="#FFFFFF" strokeWidth={2} />
                                     ))}
                                 </Pie>
-                                <Tooltip />
+                                <Tooltip {...TOOLTIP_PROPS} />
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>

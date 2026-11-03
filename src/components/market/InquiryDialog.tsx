@@ -120,11 +120,11 @@ const InquiryDialog: React.FC<InquiryDialogProps> = ({ listing, open, onOpenChan
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <div className="p-3 bg-muted rounded-md text-sm space-y-1">
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Listed Price:</span>
+                                <span className="text-muted-foreground">Listed Price:</span>
                                 <span className="font-semibold">₹{listing.price_per_unit}/{listing.unit}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Available:</span>
+                                <span className="text-muted-foreground">Available:</span>
                                 <span>{listing.quantity_available} {listing.unit}</span>
                             </div>
                         </div>
@@ -136,7 +136,7 @@ const InquiryDialog: React.FC<InquiryDialogProps> = ({ listing, open, onOpenChan
                                 <FormItem>
                                     <FormLabel>Your Offer Price (Optional)</FormLabel>
                                     <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₹</span>
                                         <FormControl>
                                             <Input type="number" step="0.01" className="pl-7" placeholder="If different from listed price" {...field} />
                                         </FormControl>

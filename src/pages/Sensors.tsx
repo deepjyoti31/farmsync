@@ -11,9 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AXIS_PROPS, GRID_PROPS, categoryColor, TOOLTIP_PROPS } from '@/lib/chartPalette';
 import { generateDeviceApiKey, metricLabel, toTelemetrySeries } from '@/lib/telemetry';
+import PageHeader from '@/components/common/PageHeader';
 
-const SERIES_COLORS = ['#2563eb', '#16a34a', '#d97706', '#9333ea'];
 
 type Device = {
     id: string;
@@ -104,56 +105,58 @@ const Sensors = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="page-title">Sensors</h1>
-                    <p className="text-muted-foreground">Manage your hardware devices and monitor real-time telemetry.</p>
-                </div>
-                <Dialog open={isAddingDevice} onOpenChange={setIsAddingDevice}>
-                    <DialogTrigger asChild>
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" /> Add Device
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Register New Device</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label>Device Name</Label>
-                                <Input
-                                    value={newDeviceName}
-                                    onChange={(e) => setNewDeviceName(e.target.value)}
-                                    placeholder="e.g. North Field Station"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Device Type</Label>
-                                <Select value={newDeviceType} onValueChange={setNewDeviceType}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="weather_station">Weather Station</SelectItem>
-                                        <SelectItem value="soil_sensor">Soil Sensor</SelectItem>
-                                        <SelectItem value="irrigation_system">Irrigation System</SelectItem>
-                                        <SelectItem value="livestock_tracker">Livestock Tracker</SelectItem>
-                                        <SelectItem value="equipment_tracker">Equipment Tracker</SelectItem>
-                                        <SelectItem value="storage_monitor">Silo/Storage Monitor</SelectItem>
-                                        <SelectItem value="drone">Drone</SelectItem>
-                                        <SelectItem value="camera">Camera/Vision</SelectItem>
-                                        <SelectItem value="generic">Generic/Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button onClick={handleAddDevice}>Register Device</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </div>
+            <PageHeader
+              title="Sensors"
+              description="Manage your hardware devices and monitor real-time telemetry."
+              actions={
+                <>
+                  <Dialog open={isAddingDevice} onOpenChange={setIsAddingDevice}>
+                      <DialogTrigger asChild>
+                          <Button className="gap-2">
+                              <Plus className="h-4 w-4" /> Add Device
+                          </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                          <DialogHeader>
+                              <DialogTitle>Register New Device</DialogTitle>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                              <div className="grid gap-2">
+                                  <Label>Device Name</Label>
+                                  <Input
+                                      value={newDeviceName}
+                                      onChange={(e) => setNewDeviceName(e.target.value)}
+                                      placeholder="e.g. North Field Station"
+                                  />
+                              </div>
+                              <div className="grid gap-2">
+                                  <Label>Device Type</Label>
+                                  <Select value={newDeviceType} onValueChange={setNewDeviceType}>
+                                      <SelectTrigger>
+                                          <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                          <SelectItem value="weather_station">Weather Station</SelectItem>
+                                          <SelectItem value="soil_sensor">Soil Sensor</SelectItem>
+                                          <SelectItem value="irrigation_system">Irrigation System</SelectItem>
+                                          <SelectItem value="livestock_tracker">Livestock Tracker</SelectItem>
+                                          <SelectItem value="equipment_tracker">Equipment Tracker</SelectItem>
+                                          <SelectItem value="storage_monitor">Silo/Storage Monitor</SelectItem>
+                                          <SelectItem value="drone">Drone</SelectItem>
+                                          <SelectItem value="camera">Camera/Vision</SelectItem>
+                                          <SelectItem value="generic">Generic/Other</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                              </div>
+                          </div>
+                          <DialogFooter>
+                              <Button onClick={handleAddDevice}>Register Device</Button>
+                          </DialogFooter>
+                      </DialogContent>
+                  </Dialog>
+                </>
+              }
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Summary Cards */}
@@ -219,17 +222,17 @@ const Sensors = () => {
                                 ) : (
                                     <ResponsiveContainer width="100%" height="100%">
                                         <LineChart data={telemetry.points}>
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="time" />
-                                            <YAxis />
-                                            <Tooltip />
+                                            <CartesianGrid {...GRID_PROPS} />
+                                            <XAxis {...AXIS_PROPS} dataKey="time" />
+                                            <YAxis {...AXIS_PROPS} />
+                                            <Tooltip {...TOOLTIP_PROPS} />
                                             <Legend />
                                             {telemetry.metrics.map((metric, i) => (
                                                 <Line
                                                     key={metric}
                                                     type="monotone"
                                                     dataKey={metric}
-                                                    stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                                                    stroke={categoryColor(i)}
                                                     name={metricLabel(metric)}
                                                     dot={false}
                                                 />
@@ -255,10 +258,10 @@ const Sensors = () => {
                                                         switch (device.type) {
                                                             case 'weather_station': return <Thermometer className="h-5 w-5 text-primary" />;
                                                             case 'soil_sensor': return <Droplets className="h-5 w-5 text-primary" />;
-                                                            case 'irrigation_system': return <Droplets className="h-5 w-5 text-blue-500" />;
-                                                            case 'livestock_tracker': return <Activity className="h-5 w-5 text-orange-500" />;
-                                                            case 'equipment_tracker': return <Activity className="h-5 w-5 text-gray-600" />;
-                                                            case 'storage_monitor': return <Database className="h-5 w-5 text-purple-500" />;
+                                                            case 'irrigation_system': return <Droplets className="h-5 w-5 text-info" />;
+                                                            case 'livestock_tracker': return <Activity className="h-5 w-5 text-[#B26B00]" />;
+                                                            case 'equipment_tracker': return <Activity className="h-5 w-5 text-muted-foreground" />;
+                                                            case 'storage_monitor': return <Database className="h-5 w-5 text-info" />;
                                                             case 'drone': return <Wind className="h-5 w-5 text-primary" />;
                                                             case 'camera': return <Camera className="h-5 w-5 text-primary" />;
                                                             default: return <Activity className="h-5 w-5 text-primary" />;
@@ -271,8 +274,8 @@ const Sensors = () => {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <div className={`flex items-center gap-2 text-sm ${device.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
-                                                    <div className={`h-2 w-2 rounded-full ${device.is_active ? 'bg-green-600' : 'bg-muted-foreground'}`} />
+                                                <div className={`flex items-center gap-2 text-sm ${device.is_active ? 'text-leaf' : 'text-muted-foreground'}`}>
+                                                    <div className={`h-2 w-2 rounded-full ${device.is_active ? 'bg-leaf' : 'bg-muted-foreground'}`} />
                                                     {device.is_active ? 'Active' : 'Inactive'}
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1 font-mono">ID: ...{device.id.slice(-4)}</p>
