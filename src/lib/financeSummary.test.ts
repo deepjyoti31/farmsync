@@ -1,11 +1,36 @@
 import { describe, expect, it } from 'vitest';
-import { categoryTotals, compactRupees, monthlySeries, niceMax, transactionType } from './financeSummary';
+import { categoryTotals, compactRupees, monthlySeries, niceMax, totalOfType, transactionType } from './financeSummary';
 
 describe('transactionType', () => {
   it('prefers the transaction type, then the category type', () => {
     expect(transactionType({ type: 'expense', category: { type: 'income' } })).toBe('expense');
     expect(transactionType({ type: null, category: { type: 'income' } })).toBe('income');
     expect(transactionType({ type: null, category: null })).toBeNull();
+  });
+});
+
+describe('totalOfType', () => {
+  const rows = [
+    // Entered through the add-transaction form: only the category carries the type.
+    { amount: 5000, type: null, category: { type: 'income' } },
+    { amount: '2500', category: { type: 'Income' } },
+    { amount: 1200, type: 'income', category: null },
+    { amount: 800, type: null, category: { type: 'expense' } },
+    // Own type wins over the category's.
+    { amount: 300, type: 'expense', category: { type: 'income' } },
+    { amount: 999, type: null, category: null },
+  ];
+
+  it('counts income whether the type is on the transaction or its category', () => {
+    expect(totalOfType(rows, 'income')).toBe(8700);
+  });
+
+  it('counts expenses with the same rule', () => {
+    expect(totalOfType(rows, 'expense')).toBe(1100);
+  });
+
+  it('is zero for no rows', () => {
+    expect(totalOfType([], 'income')).toBe(0);
   });
 });
 
