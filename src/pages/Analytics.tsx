@@ -77,7 +77,7 @@ const Analytics = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Analytics & Insights</h1>
+                    <h1 className="page-title">Analytics</h1>
                     <p className="text-muted-foreground">Visualize your farm's performance and financial health.</p>
                 </div>
                 <FarmSelector selectedFarmId={selectedFarmId} onFarmChange={setSelectedFarmId} />

@@ -40,10 +40,10 @@ const BulkOrdersList = () => {
     };
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold">Bulk Orders</h1>
+                    <h1 className="page-title">Bulk Orders</h1>
                     <p className="text-muted-foreground">Manage group purchases for {currentOrganization?.name}</p>
                 </div>
                 {(userRole === 'owner' || userRole === 'admin') && (

@@ -20,6 +20,11 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Figtree', 'system-ui', '-apple-system', 'Segoe UI', 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Arabic', 'sans-serif'],
+				display: ['"Bricolage Grotesque"', 'Figtree', 'system-ui', 'sans-serif'],
+				mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -62,17 +67,45 @@ export default {
 					accent: 'hsl(var(--sidebar-accent))',
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+					ring: 'hsl(var(--sidebar-ring))',
+					muted: 'hsl(var(--sidebar-muted))'
+				},
+				harvest: {
+					DEFAULT: 'hsl(var(--harvest))',
+					foreground: 'hsl(var(--harvest-foreground))'
+				},
+				leaf: {
+					DEFAULT: 'hsl(var(--leaf))',
+					tint: 'hsl(var(--leaf-tint))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					tint: 'hsl(var(--warning-tint))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					tint: 'hsl(var(--info-tint))'
+				},
+				rust: {
+					DEFAULT: 'hsl(var(--rust))',
+					tint: 'hsl(var(--rust-tint))'
+				},
+				/* Chart series: income/growing and expense/harvest. Validated for colour-blind separation. */
+				chart: {
+					income: '#2E7D4F',
+					expense: '#E39B34',
+					planned: '#D5DED3'
 				},
 				farm: {
-					green: '#4CAF50',
-					brown: '#8D6E63',
-					yellow: '#FFC107',
-					lightGreen: '#81C784',
-					darkGreen: '#2E7D32',
-					soil: '#795548',
-					wheat: '#F9A825',
-					sky: '#64B5F6'
+					/* Legacy names, remapped onto the Field Ledger palette */
+					green: '#1F6B3A',
+					brown: '#8A5300',
+					yellow: '#E9A23B',
+					lightGreen: '#2E7D4F',
+					darkGreen: '#11261A',
+					soil: '#5A4520',
+					wheat: '#E39B34',
+					sky: '#1F4F8A'
 				}
 			},
 			backgroundImage: {

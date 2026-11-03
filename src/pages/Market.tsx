@@ -196,7 +196,7 @@ const Market = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Market Ecosystem</h1>
+          <h1 className="page-title">Market</h1>
           <p className="text-muted-foreground mt-1">
             Connect with buyers, sellers, and suppliers.
           </p>

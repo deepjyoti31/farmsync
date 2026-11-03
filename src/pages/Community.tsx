@@ -198,11 +198,11 @@ const Community = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="w-full">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
           <div>
-            <h1 className="text-3xl font-bold">FarmSync Community</h1>
+            <h1 className="page-title">Community</h1>
             <p className="text-muted-foreground">Connect with other farmers, share knowledge and learn from experts</p>
           </div>
         </div>

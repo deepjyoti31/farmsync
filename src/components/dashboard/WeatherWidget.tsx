@@ -1,11 +1,11 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw, CloudSun, Droplets, Wind, Cloud, CloudRain, Sun } from 'lucide-react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { Cloud, CloudRain, CloudSun, Droplets, Loader2, RefreshCw, Sun } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { rainAdvice } from '@/lib/dashboard';
+import { cn } from '@/lib/utils';
 
 interface WeatherWidgetProps {
   farmId: string | null;
@@ -28,182 +28,142 @@ interface WeatherData {
   }>;
 }
 
+const iconFor = (condition: string | undefined, className: string) => {
+  const c = (condition || '').toLowerCase();
+  if (c.includes('rain') || c.includes('thunder') || c.includes('drizzle') || c.includes('shower')) return <CloudRain className={cn(className, 'text-info')} aria-hidden="true" />;
+  if (c.includes('clear') || c.includes('sunny')) return <Sun className={cn(className, 'text-[#B26B00]')} aria-hidden="true" />;
+  if (c.includes('cloud') || c.includes('overcast')) return <Cloud className={cn(className, 'text-muted-foreground')} aria-hidden="true" />;
+  return <CloudSun className={cn(className, 'text-[#B26B00]')} aria-hidden="true" />;
+};
+
+const weekday = (date: string, lang: string) => new Date(date).toLocaleDateString(lang, { weekday: 'short' });
+
+/** Wide weather band for the Today screen: now, five days, and a rain tip. */
 const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { t, i18n } = useTranslation();
 
   const { data: farm } = useQuery({
     queryKey: ['farm', farmId],
     queryFn: async () => {
       if (!farmId) return null;
-
       const { data, error } = await supabase
         .from('farms')
         .select('name, village, district, state, gps_latitude, gps_longitude')
         .eq('id', farmId)
         .single();
-
       if (error) throw error;
       return data;
     },
     enabled: !!farmId,
   });
 
-  const {
-    data: weather,
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
+  const hasCoords = !!farm?.gps_latitude && !!farm?.gps_longitude;
+
+  const { data: weather, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['weather', farmId, farm?.gps_latitude, farm?.gps_longitude],
     queryFn: async () => {
-      if (!farmId || !farm) return null;
-
-      // Only fetch weather if we have valid coordinates
-      if (!farm.gps_latitude || !farm.gps_longitude) {
-        return null;
-      }
-
+      if (!farm || !hasCoords) return null;
       try {
         const { data, error } = await supabase.functions.invoke('get-weather', {
-          body: {
-            latitude: farm.gps_latitude,
-            longitude: farm.gps_longitude
-          },
+          body: { latitude: farm.gps_latitude, longitude: farm.gps_longitude },
         });
-
         if (error) throw error;
         return data as WeatherData;
-      } catch (error) {
+      } catch {
         return null;
       }
     },
-    enabled: !!farm && !!farm.gps_latitude && !!farm.gps_longitude,
-    refetchInterval: 1000 * 60 * 30, // Refetch every 30 minutes
-    refetchOnMount: true,
-    staleTime: 0, // Always fetch fresh data on mount
+    enabled: !!farm && hasCoords,
+    refetchInterval: 1000 * 60 * 30,
     retry: false,
   });
 
-  const handleRefresh = async () => {
-    try {
-      setIsRefreshing(true);
-      await refetch();
-      toast({
-        title: 'Weather updated',
-        description: 'Weather data has been refreshed',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to refresh weather data.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const getWeatherIcon = (condition: string) => {
-    if (!condition) return <CloudSun className="h-10 w-10 text-primary" />;
-
-    const conditionLower = condition.toLowerCase();
-
-    if (conditionLower.includes('clear') || conditionLower.includes('sunny')) {
-      return <Sun className="h-10 w-10 text-farm-yellow" />;
-    } else if (conditionLower.includes('cloud') || conditionLower.includes('partly')) {
-      return <Cloud className="h-10 w-10 text-gray-400" />;
-    } else if (conditionLower.includes('rain') || conditionLower.includes('thunder')) {
-      return <CloudRain className="h-10 w-10 text-farm-sky" />;
-    } else {
-      return <CloudSun className="h-10 w-10 text-primary" />;
-    }
-  };
-
-  if (error) {
-    console.error('Weather error:', error);
-  }
+  const wet = rainAdvice(weather?.forecast);
+  const place = [farm?.village, farm?.district].filter(Boolean).join(', ');
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium">
-          {farm?.name ? (
-            <span title={`${farm.village || ''} ${farm.district || ''} ${farm.state || ''}`}>
-              {farm.name}
-            </span>
-          ) : (
-            "Weather"
-          )}
-        </CardTitle>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isLoading || isRefreshing || !farmId || !farm?.gps_latitude || !farm?.gps_longitude}
-        >
-          {isLoading || isRefreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <section aria-label={t('today.weather.label', 'Weather')} className="surface flex flex-wrap items-stretch gap-5 p-5 md:gap-6 md:px-6">
+      {isLoading && hasCoords ? (
+        <div className="flex flex-1 items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> {t('today.weather.loading', 'Getting the forecast…')}
+        </div>
+      ) : !weather ? (
+        <div className="flex flex-1 flex-wrap items-center gap-4">
+          <CloudSun className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
+          <div className="flex-1">
+            <p className="font-semibold">{t('today.weather.none', 'No forecast yet')}</p>
+            <p className="text-sm text-muted-foreground">
+              {hasCoords
+                ? t('today.weather.retry', 'The forecast service did not answer. Try again in a moment.')
+                : t('today.weather.no_gps', 'Draw your farm on the map, or add its GPS location, to see local weather.')}
+            </p>
           </div>
-        ) : !weather ? (
-          <div className="flex flex-col justify-center items-center py-8 text-center">
-            <CloudSun className="h-12 w-12 text-muted-foreground mb-2" />
-            <p className="text-muted-foreground">Weather information not available</p>
-            {!farm?.gps_latitude || !farm?.gps_longitude ? (
-              <p className="text-xs text-muted-foreground mt-1">
-                No GPS coordinates available for this farm
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground mt-1">
-                Click refresh to try again
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {getWeatherIcon(weather.current.condition)}
-                <div>
-                  <p className="text-3xl font-bold">{weather.current.temperature}°C</p>
-                  <p className="text-muted-foreground">{weather.current.condition}</p>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <Droplets className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm">{weather.current.humidity}% Humidity</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Wind className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm">{weather.current.wind_speed} km/h Wind</span>
-                </div>
-              </div>
+          {hasCoords && (
+            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={cn(isFetching && 'animate-spin')} /> {t('today.weather.refresh', 'Try again')}
+            </Button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="flex min-w-[200px] flex-[0_1_220px] items-center gap-4">
+            {iconFor(weather.current.condition, 'h-14 w-14 shrink-0')}
+            <div className="flex flex-col">
+              <span className="font-display text-[40px] font-bold leading-none">{Math.round(weather.current.temperature)}°</span>
+              <span className="text-sm text-muted-foreground">{weather.current.condition}</span>
+              {place && <span className="text-xs text-muted-foreground">{place}</span>}
             </div>
+          </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-2">
-              {weather.forecast.slice(0, 3).map((day) => (
-                <div key={day.date} className="text-center p-2 bg-muted/30 rounded-md">
-                  <p className="text-xs">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                  <p className="text-sm font-medium">
-                    {day.temperature_min}° / {day.temperature_max}°
-                  </p>
-                  <p className="text-xs text-muted-foreground">{day.condition.split(' ')[0]}</p>
-                </div>
-              ))}
+          <dl className="grid flex-[0_1_200px] grid-cols-[auto_auto] content-center gap-x-4 gap-y-1.5 text-sm">
+            <dt className="text-muted-foreground">{t('today.weather.humidity', 'Humidity')}</dt>
+            <dd className="font-mono">{weather.current.humidity}%</dd>
+            <dt className="text-muted-foreground">{t('today.weather.wind', 'Wind')}</dt>
+            <dd className="font-mono">{weather.current.wind_speed} km/h</dd>
+            <dt className="text-muted-foreground">{t('today.weather.rain', 'Rain')}</dt>
+            <dd className="font-mono">{weather.current.precipitation} mm</dd>
+          </dl>
+
+          <ol aria-label={t('today.weather.forecast', 'Forecast')} className="grid min-w-[280px] flex-[1_1_320px] grid-cols-5 gap-1.5">
+            {weather.forecast.slice(0, 5).map((day) => {
+              const rainy = day.precipitation_chance >= 60;
+              return (
+                <li key={day.date} className={cn('flex flex-col items-center justify-center gap-1 rounded-[10px] px-1 py-2.5', rainy ? 'bg-info-tint' : 'bg-background')}>
+                  <span className="text-[13px] font-semibold">{weekday(day.date, i18n.language)}</span>
+                  {iconFor(day.condition, 'h-5 w-5')}
+                  <span className="font-mono text-[13px] leading-tight">
+                    <span className="sr-only">{t('today.weather.high', 'High')} </span>
+                    {Math.round(day.temperature_max)}°
+                    <span className="text-muted-foreground">
+                      <span className="sr-only"> {t('today.weather.low', 'low')} </span>
+                      <span aria-hidden="true"> </span>
+                      {Math.round(day.temperature_min)}°
+                    </span>
+                  </span>
+                  <span className="font-mono text-xs text-info">{day.precipitation_chance}%</span>
+                </li>
+              );
+            })}
+          </ol>
+
+          {wet && (
+            <div className="flex flex-[1_1_240px] items-start gap-3 rounded-xl bg-info-tint px-4 py-3.5 text-[#173E6B] dark:text-info">
+              <Droplets className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+              <div className="flex flex-col gap-1 text-sm leading-snug">
+                <strong>
+                  {t('today.weather.rain_title', {
+                    day: new Date(wet.date).toLocaleDateString(i18n.language, { weekday: 'long' }),
+                    chance: wet.precipitation_chance,
+                    defaultValue: 'Rain likely on {{day}} ({{chance}}%)',
+                  })}
+                </strong>
+                <span>{t('today.weather.rain_tip', 'You may be able to skip the irrigation before it.')}</span>
+              </div>
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </>
+      )}
+    </section>
   );
 };
 

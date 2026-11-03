@@ -97,7 +97,7 @@ const Tasks = () => {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold">Tasks</h1>
+          <h1 className="page-title">Tasks</h1>
           <p className="mt-1 text-muted-foreground">
             Plan farm work, assign it to your team and keep routine jobs on schedule.
           </p>

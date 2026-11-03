@@ -168,7 +168,7 @@ const Finances = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Financial Records</h1>
+          <h1 className="page-title">Finances</h1>
           <p className="text-muted-foreground mt-1">
             Track income and expenses for your farm operations.
           </p>

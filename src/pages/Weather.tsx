@@ -181,7 +181,7 @@ const Weather = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Weather Forecast</h1>
+          <h1 className="page-title">Weather</h1>
           <p className="text-muted-foreground mt-1">
             View current weather conditions and forecast for your farm
           </p>

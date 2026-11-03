@@ -101,11 +101,11 @@ const FarmsList = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="w-full">
       <div className="flex flex-col space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Manage Farms</h1>
+            <h1 className="page-title">Farms</h1>
             <p className="text-muted-foreground">View, edit, and delete your farms</p>
           </div>
           <Button onClick={() => setIsAddFarmOpen(true)}>
