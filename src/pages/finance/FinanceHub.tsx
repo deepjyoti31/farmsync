@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { calculateCreditScore, calculateLoanEligibility, creditScoreLabel } from '@/lib/financialCalc';
+import { totalOfType } from '@/lib/financeSummary';
 import { Loader2, TrendingUp, Shield, CreditCard, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -18,16 +19,18 @@ const FinanceHub = () => {
     const { data: summary, isLoading: loading } = useQuery({
         queryKey: ['finance_hub_summary', user?.id],
         queryFn: async () => {
-            const [harvests, income, payments] = await Promise.all([
+            const [harvests, transactions, payments] = await Promise.all([
                 supabase.from('harvests').select('id', { count: 'exact', head: true }),
-                supabase.from('financial_transactions').select('amount').eq('type', 'income'),
+                // The add-transaction form sets only category_id, so the type may live on the category.
+                // Fetch both and classify client-side rather than filtering on financial_transactions.type.
+                supabase.from('financial_transactions').select('amount, type, category:financial_categories(type)'),
                 supabase.from('payments').select('*').order('created_at', { ascending: false }).limit(5),
             ]);
             if (harvests.error) throw harvests.error;
-            if (income.error) throw income.error;
+            if (transactions.error) throw transactions.error;
             if (payments.error) throw payments.error;
 
-            const totalRevenue = (income.data || []).reduce((sum, t) => sum + Number(t.amount), 0);
+            const totalRevenue = totalOfType(transactions.data || [], 'income');
             const score = calculateCreditScore(harvests.count ?? 0, totalRevenue);
             return {
                 score,

@@ -15,6 +15,14 @@ export function transactionType(t: Pick<TransactionLike, 'type' | 'category'>): 
   return raw === 'income' || raw === 'expense' ? raw : null;
 }
 
+/** Sum of amounts for one type, using the same type rule as `transactionType`. */
+export function totalOfType(
+  rows: Pick<TransactionLike, 'amount' | 'type' | 'category'>[],
+  type: MoneyType,
+): number {
+  return rows.reduce((sum, r) => (transactionType(r) === type ? sum + (Number(r.amount) || 0) : sum), 0);
+}
+
 export interface MonthBucket {
   /** yyyy-MM */
   key: string;
