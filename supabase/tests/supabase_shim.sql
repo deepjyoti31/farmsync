@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS auth.users (
     email TEXT,
     raw_user_meta_data JSONB DEFAULT '{}'::jsonb
 );
+ALTER TABLE auth.users ADD COLUMN IF NOT EXISTS email_confirmed_at TIMESTAMPTZ;
 
 -- Supabase reads the caller's identity from the request JWT; tests set it with
 -- SET request.jwt.claim.sub = '<uuid>'.

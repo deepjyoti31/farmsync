@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-device-api-key',
 }
 
 serve(async (req) => {
@@ -30,7 +30,7 @@ serve(async (req) => {
         // Find device by API key
         const { data: device, error: deviceError } = await supabaseClient
             .from('devices')
-            .select('id, farm_id')
+            .select('id, farm_id, is_active')
             .eq('api_key', deviceApiKey)
             .single()
 
@@ -41,8 +41,22 @@ serve(async (req) => {
             )
         }
 
-        // Parse body
+        // A device switched off in FarmSync must not keep writing readings.
+        if (device.is_active === false) {
+            return new Response(
+                JSON.stringify({ error: 'Device is inactive' }),
+                { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+
+        // Parse body: readings must be a JSON object of named values.
         const payload = await req.json()
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+            return new Response(
+                JSON.stringify({ error: 'Body must be a JSON object' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
 
         // Insert telemetry
         const { error: insertError } = await supabaseClient
@@ -51,7 +65,7 @@ serve(async (req) => {
                 device_id: device.id,
                 data: payload,
                 timestamp: new Date().toISOString(),
-                type: payload.type || 'interval_reading'
+                type: typeof payload.type === 'string' ? payload.type : 'interval_reading'
             })
 
         if (insertError) {

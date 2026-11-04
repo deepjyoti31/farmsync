@@ -149,7 +149,51 @@ SELECT pg_temp.expect_denied('user cannot upload into another user''s avatar fol
     format('INSERT INTO storage.objects (bucket_id, name) VALUES (%L, %L)',
            'avatars', 'aaaaaaaa-0000-0000-0000-000000000001/avatar.png'));
 
--- 6. Every public table has RLS enabled and at least one policy -----------------
+-- 6. Teams: no strangers' organizations, no owner escalation, invites work ----
+\set carl '''cccccccc-1111-0000-0000-000000000007'''
+\set dave '''dddddddd-1111-0000-0000-000000000008'''
+RESET ROLE;
+INSERT INTO auth.users (id, email, raw_user_meta_data, email_confirmed_at) VALUES
+    (:carl, 'carl@example.com', '{"first_name": "Carl"}', now()),
+    (:dave, 'dave@example.com', '{"first_name": "Dave"}', now());
+SET LOCAL ROLE authenticated;
+
+-- Ben (a viewer) may not create farms in Asha's team or move his own farm there.
+SET LOCAL request.jwt.claim.sub = 'bbbbbbbb-0000-0000-0000-000000000002';
+SELECT pg_temp.expect_denied('viewer cannot create a farm in the team',
+    format('INSERT INTO public.farms (name, user_id, organization_id) VALUES (%L, %L, %L)',
+           'Sneaky', 'bbbbbbbb-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000003'));
+
+-- Asha makes Ben an admin. An admin cannot then make himself owner.
+SET LOCAL request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000001';
+UPDATE public.organization_members SET role = 'admin' WHERE organization_id = :team AND user_id = :ben;
+SET LOCAL request.jwt.claim.sub = 'bbbbbbbb-0000-0000-0000-000000000002';
+SELECT pg_temp.expect_denied('admin cannot promote himself to owner',
+    format('UPDATE public.organization_members SET role = %L WHERE organization_id = %L AND user_id = %L',
+           'owner', 'cccccccc-0000-0000-0000-000000000003', 'bbbbbbbb-0000-0000-0000-000000000002'));
+WITH removed AS (DELETE FROM public.organization_members WHERE organization_id = :team AND user_id = :asha RETURNING 1)
+SELECT pg_temp.expect('admin cannot remove the owner', (SELECT count(*) FROM removed), 0);
+SELECT pg_temp.expect_denied('admin cannot invite a new owner',
+    format('INSERT INTO public.organization_invites (organization_id, email, role, expires_at, created_by) VALUES (%L, %L, %L, now() + interval %L, %L)',
+           'cccccccc-0000-0000-0000-000000000003', 'carl@example.com', 'owner', '7 days', 'bbbbbbbb-0000-0000-0000-000000000002'));
+
+-- An admin can invite an editor, and the invitee joins on their next sign-in.
+INSERT INTO public.organization_invites (organization_id, email, role, expires_at, created_by)
+    VALUES (:team, 'Carl@Example.com', 'editor', now() + interval '7 days', :ben);
+SET LOCAL request.jwt.claim.sub = 'cccccccc-1111-0000-0000-000000000007';
+SELECT pg_temp.expect('invitee accepts one invitation', (SELECT public.accept_organization_invites()), 1);
+SELECT pg_temp.expect('invitee is now an editor of the team',
+    (SELECT count(*) FROM public.organization_members WHERE organization_id = :team AND user_id = :carl AND role = 'editor'), 1);
+SELECT pg_temp.expect('accepting twice joins nothing new', (SELECT public.accept_organization_invites()), 0);
+
+-- Listings may only name a farm the seller manages.
+SET LOCAL request.jwt.claim.sub = 'dddddddd-1111-0000-0000-000000000008';
+SELECT pg_temp.expect_denied('cannot list produce from another person''s farm',
+    format('INSERT INTO public.marketplace_listings (farm_id, seller_id, title, category, price_per_unit, unit, quantity_available) VALUES (%L, %L, %L, %L, 1, %L, 1)',
+           'dddddddd-0000-0000-0000-000000000004', 'dddddddd-1111-0000-0000-000000000008', 'x', 'grains', 'kg'));
+SELECT pg_temp.expect('the crop catalog is seeded', (SELECT count(*) FROM public.crops WHERE name IN ('Wheat', 'Rice', 'Tomato')), 3);
+
+-- 7. Every public table has RLS enabled and at least one policy -----------------
 RESET ROLE;
 SELECT pg_temp.expect('all public tables have RLS enabled',
     (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
