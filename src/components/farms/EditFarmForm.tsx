@@ -71,11 +71,11 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
       setBoundaries(boundaries);
 
       // Calculate initial area
-      const area = calculateArea(boundaries, form.getValues().areaUnit as 'acres' | 'hectares');
+      const area = calculateArea(boundaries, form.getValues().areaUnit);
       setCalculatedArea(area);
 
       // Set initial center coordinates
-      if (farm.gps_latitude && farm.gps_longitude) {
+      if (farm.gps_latitude != null && farm.gps_longitude != null) {
         setCenterCoordinates([farm.gps_latitude, farm.gps_longitude]);
       } else {
         const center = calculateCenter(boundaries);
@@ -89,7 +89,7 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
 
     if (newBoundaries) {
       // Calculate area based on the drawn boundaries
-      const area = calculateArea(newBoundaries, form.getValues().areaUnit as 'acres' | 'hectares');
+      const area = calculateArea(newBoundaries, form.getValues().areaUnit);
       setCalculatedArea(area);
 
       // Calculate center coordinates
@@ -104,7 +104,7 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
   // Recalculate area when area unit changes
   useEffect(() => {
     if (boundaries) {
-      const area = calculateArea(boundaries, form.getValues().areaUnit as 'acres' | 'hectares');
+      const area = calculateArea(boundaries, form.getValues().areaUnit);
       setCalculatedArea(area);
     }
   }, [form.watch('areaUnit'), boundaries]);
@@ -340,18 +340,22 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
           <div>
             <h3 className="text-lg font-medium mb-1">Edit Farm Boundaries</h3>
             <p className="text-muted-foreground text-sm mb-2">
-              {boundaries ?
-                "You can edit the existing boundaries by dragging the points or clear and redraw them." :
-                "Use the polygon tool <span className=\"inline-block bg-info-tint text-info px-1 rounded\">◻</span> in the top left corner of the map to draw your farm boundaries. Click on the map to add points and complete the polygon by clicking on the first point."
-              }
+              {boundaries ? (
+                "You can edit the existing boundaries by dragging the points or clear and redraw them."
+              ) : (
+                <>
+                  Use the polygon tool <span className="inline-block bg-info-tint text-info px-1 rounded">◻</span> in the top left corner of the map to draw your farm boundaries.
+                  Click on the map to add points and complete the polygon by clicking on the first point.
+                </>
+              )}
             </p>
 
             <BoundaryMap
               onBoundariesChange={handleBoundariesChange}
               existingBoundaries={boundaries}
-              initialCenter={farm.gps_latitude && farm.gps_longitude ?
+              initialCenter={farm.gps_latitude != null && farm.gps_longitude != null ?
                 [farm.gps_longitude, farm.gps_latitude] : undefined}
-              initialZoom={farm.gps_latitude && farm.gps_longitude ? 14 : 5}
+              initialZoom={farm.gps_latitude != null && farm.gps_longitude != null ? 14 : 5}
             />
           </div>
 
@@ -434,9 +438,9 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
                 <BoundaryMap
                   existingBoundaries={boundaries}
                   readOnly={true}
-                  initialCenter={farm.gps_latitude && farm.gps_longitude ?
+                  initialCenter={farm.gps_latitude != null && farm.gps_longitude != null ?
                     [farm.gps_longitude, farm.gps_latitude] : undefined}
-                  initialZoom={farm.gps_latitude && farm.gps_longitude ? 14 : 5}
+                  initialZoom={farm.gps_latitude != null && farm.gps_longitude != null ? 14 : 5}
                 />
               </div>
             </div>

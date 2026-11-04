@@ -1,4 +1,5 @@
 
+import { toDateValue } from '@/lib/dateRanges';
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -42,8 +43,9 @@ const formSchema = z.object({
   categoryId: z.string().uuid({
     message: "Please select a category"
   }),
-  quantity: z.number().positive({
-    message: "Quantity must be a positive number",
+  // Zero is allowed: an item can be recorded before it is restocked.
+  quantity: z.number().nonnegative({
+    message: "Quantity can't be negative",
   }),
   unit: z.string().optional(),
   purchaseDate: z.date().optional(),
@@ -107,9 +109,9 @@ const AddInventoryForm: React.FC<AddInventoryFormProps> = ({
           category_id: values.categoryId,
           quantity: values.quantity,
           unit: values.unit,
-          purchase_date: values.purchaseDate ? values.purchaseDate.toISOString().split('T')[0] : null,
+          purchase_date: values.purchaseDate ? toDateValue(values.purchaseDate) : null,
           purchase_price: values.purchasePrice,
-          expiry_date: values.expiryDate ? values.expiryDate.toISOString().split('T')[0] : null,
+          expiry_date: values.expiryDate ? toDateValue(values.expiryDate) : null,
           minimum_stock: values.minimumStock,
           storage_location: values.storageLocation,
           description: values.description,

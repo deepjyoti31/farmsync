@@ -83,9 +83,9 @@ const Market = () => {
 
   // Fetch Farms (for creating listings)
   const { data: farms = [] } = useQuery({
-    queryKey: ['farms'],
+    queryKey: ['farms', 'market'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('farms').select('*');
+      const { data, error } = await supabase.from('farms').select('id, name, village, district, state, gps_latitude, gps_longitude');
       if (error) throw error;
       return data;
     },
@@ -436,6 +436,7 @@ const Market = () => {
         open={inquiryOpen}
         onOpenChange={setInquiryOpen}
         listing={selectedListing}
+        isOwner={!!selectedListing && selectedListing.seller_id === currentUser}
       />
     </div>
   );

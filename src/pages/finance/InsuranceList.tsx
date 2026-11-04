@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { differenceInCalendarDays, format } from 'date-fns';
+import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { Loader2, Plus, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ const InsuranceList = () => {
             ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                     {policies.map((policy) => {
-                        const daysLeft = differenceInCalendarDays(new Date(policy.end_date), new Date());
+                        const daysLeft = differenceInCalendarDays(parseISO(policy.end_date), new Date());
                         const expired = policy.status === 'expired' || daysLeft < 0;
                         return (
                             <Card key={policy.id}>
@@ -80,7 +80,7 @@ const InsuranceList = () => {
                                         <div className="col-span-2">
                                             <dt className="text-muted-foreground">Period</dt>
                                             <dd className="font-semibold">
-                                                {format(new Date(policy.start_date), 'dd MMM yyyy')} to {format(new Date(policy.end_date), 'dd MMM yyyy')}
+                                                {format(parseISO(policy.start_date), 'dd MMM yyyy')} to {format(parseISO(policy.end_date), 'dd MMM yyyy')}
                                             </dd>
                                         </div>
                                     </dl>

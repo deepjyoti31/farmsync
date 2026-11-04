@@ -51,7 +51,7 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
   const [boundaries, setBoundaries] = useState<GeoJSON.Polygon | null>(null);
   const [calculatedArea, setCalculatedArea] = useState<number>(0);
   const [centerCoordinates, setCenterCoordinates] = useState<[number, number]>([0, 0]);
-  const { user } = useAuth();
+  const { user, currentOrganization } = useAuth();
 
   const form = useForm<FarmFormData>({
     resolver: zodResolver(farmFormSchema),
@@ -69,7 +69,7 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
 
     if (newBoundaries) {
       // Calculate area based on the drawn boundaries
-      const area = calculateArea(newBoundaries, form.getValues().areaUnit as 'acres' | 'hectares');
+      const area = calculateArea(newBoundaries, form.getValues().areaUnit);
       setCalculatedArea(area);
 
       // Calculate center coordinates
@@ -84,7 +84,7 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
   // Recalculate area when area unit changes
   useEffect(() => {
     if (boundaries) {
-      const area = calculateArea(boundaries, form.getValues().areaUnit as 'acres' | 'hectares');
+      const area = calculateArea(boundaries, form.getValues().areaUnit);
       setCalculatedArea(area);
     }
   }, [form.watch('areaUnit'), boundaries]);
@@ -149,6 +149,8 @@ const AddFarmForm: React.FC<AddFarmFormProps> = ({ onClose, onSuccess }) => {
         .from('farms')
         .insert({
           user_id: user.id,
+          // Without this the farm is invisible to the rest of the team workspace.
+          organization_id: currentOrganization?.id ?? null,
           name: data.name,
           village: data.village || null,
           district: data.district || null,

@@ -1,4 +1,5 @@
 
+import { toDateValue } from '@/lib/dateRanges';
 import React, { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
@@ -191,9 +192,9 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
         .insert({
           crop_id: values.cropId,
           field_id: values.fieldId,
-          planting_date: values.plantingDate.toISOString().split('T')[0],
+          planting_date: toDateValue(values.plantingDate),
           expected_harvest_date: values.expectedHarvestDate
-            ? values.expectedHarvestDate.toISOString().split('T')[0]
+            ? toDateValue(values.expectedHarvestDate)
             : null,
           status: values.status,
           notes: values.notes,

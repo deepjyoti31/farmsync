@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MarketplaceListing } from '@/types/marketplace';
 import { MapPin, Calendar, Scale, MessageCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface ListingCardProps {
     listing: MarketplaceListing;
@@ -57,7 +57,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onContact, isOwner }
                     </div>
                     <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>Available from: {format(new Date(listing.available_date), 'MMM d, yyyy')}</span>
+                        <span>Available from: {format(parseISO(listing.available_date), 'MMM d, yyyy')}</span>
                     </div>
                 </div>
             </CardContent>

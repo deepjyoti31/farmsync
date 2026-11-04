@@ -15,9 +15,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - **Audit report PDF** on the Sustainability page: input and water summaries, full logs and a declaration block for inspectors. jsPDF loads only when a report is downloaded.
 - **Profile pictures**: upload a JPG, PNG or WebP (up to 2 MB) to a per-user folder in the new `avatars` storage bucket.
 - Migration `20261102120000_tasks_livestock_records_avatars.sql`.
+- Migration `20261104000000_access_fixes_invites_and_crop_catalog.sql`: crop catalogue, invitation acceptance and access fixes.
 
 ### Fixed
 
+- **Security:** a viewer could create farms in, or move farms into, a team they did not manage; organization admins could make themselves owner, remove the owner or invite new owners; marketplace listings could name someone else's farm; Settings changed the password without checking the current one. Migration `20261104000000_access_fixes_invites_and_crop_catalog.sql` and new RLS tests cover the database side.
+- Signing out, or a different person signing in on the same device, left the previous user's records in the offline cache.
+- Dates picked in forms (crops, inventory, money, equipment, livestock, listings) were saved one day early east of UTC, including India; date-only values displayed a day early west of UTC.
+- New farms were not linked to the current workspace, so team members never saw them.
+- Team invitations could never be accepted. Invitees now join when they sign in with the invited (confirmed) email.
+- The crop catalogue was empty, so no crop could be planned on a fresh database.
+- The boundary map rebuilt itself after every edit, and the field boundary dialog centred the map on swapped coordinates.
+- Farm area was saved in square metres when the unit was bigha; field totals added different units together.
+- Several screens shared one cache entry for different queries (farms, fields, plantings, notifications), so they could show each other's data; the notifications page could show only five items.
+- Unticking and re-ticking a repeating task created its next occurrence twice; moving a done task to "In progress" put it in "To do"; cancelled tasks counted as due.
+- Failed plantings showed as growing or ready to harvest.
+- Health reminders kept appearing for animals that were sold or died; out-of-stock items without a reorder level were never flagged.
+- The money card counted future-dated entries as this month; switching between income and expense kept a category of the other kind.
+- Buttons that did nothing now work: logging inputs and water use (Sustainability), likes and replies (Community), renaming an organization, creating bulk orders and produce batches, viewing inquiries on your own listing, the Reports shortcuts. Placeholder UI with made-up data (community groups, an "active" certification) was removed or replaced with real data.
+- Settings: the language setting always failed (it wrote a column that does not exist) and notification preferences were never saved.
+- Sensors registered devices to an arbitrary farm and showed the one-time API key in a toast that vanished before it could be copied; inactive devices could still post readings, and browsers could not send the device key header.
+- Weather treated latitude or longitude 0 as missing.
+- Compliance checks used the input logs of every farm the user can see instead of the selected farm.
 - Deleting a machine from the equipment table did nothing.
 - Dashboard tasks without a due date showed as 1 January 1970, and dates could display a day early in timezones west of UTC.
 - The Crops table now shows the planting's own name when it is not linked to a catalogue crop.

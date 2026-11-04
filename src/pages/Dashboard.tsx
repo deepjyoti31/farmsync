@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { addDays, format, startOfDay, startOfMonth } from 'date-fns';
+import { addDays, endOfMonth, format, startOfDay, startOfMonth } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -81,7 +81,7 @@ const Dashboard = () => {
 
   const fieldIds = fields.map((f) => f.id);
   const { data: plantings = [] } = useQuery({
-    queryKey: ['field_crops', farmId, fieldIds.join(',')],
+    queryKey: ['field_crops', farmId, 'dashboard', fieldIds.join(',')],
     enabled: enabled && fieldIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -102,7 +102,7 @@ const Dashboard = () => {
         .from('tasks')
         .select('*')
         .eq('farm_id', farmId!)
-        .or(`and(status.neq.completed,due_date.lte.${soon}),completed_at.gte.${startOfDay(new Date()).toISOString()}`)
+        .or(`and(status.not.in.(completed,cancelled),due_date.lte.${soon}),completed_at.gte."${startOfDay(new Date()).toISOString()}"`)
         .order('due_date', { ascending: true, nullsFirst: false })
         .limit(8);
       if (error) throw error;
@@ -114,7 +114,12 @@ const Dashboard = () => {
     queryKey: ['livestock', farmId, 'count'],
     enabled,
     queryFn: async () => {
-      const { count } = await supabase.from('livestock').select('id', { count: 'exact', head: true }).eq('farm_id', farmId!);
+      // Animals on the farm now, not ones sold or dead.
+      const { count } = await supabase
+        .from('livestock')
+        .select('id', { count: 'exact', head: true })
+        .eq('farm_id', farmId!)
+        .or('status.is.null,status.eq.active');
       return count ?? 0;
     },
   });
@@ -127,7 +132,9 @@ const Dashboard = () => {
         .from('financial_transactions')
         .select('amount, type, category:financial_categories(name, type)')
         .eq('farm_id', farmId!)
-        .gte('transaction_date', format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+        .gte('transaction_date', format(startOfMonth(new Date()), 'yyyy-MM-dd'))
+        // Entries dated later this year are not "this month so far".
+        .lte('transaction_date', format(endOfMonth(new Date()), 'yyyy-MM-dd'));
       if (error) return monthTotals([]);
       return monthTotals(data ?? []);
     },
@@ -142,12 +149,16 @@ const Dashboard = () => {
         supabase.from('equipment').select('name, next_maintenance_date').eq('farm_id', farmId!),
         supabase
           .from('livestock_health_records')
-          .select('id, livestock_id, record_type, record_date, next_due_date, livestock!inner(farm_id, tag_id, breed, livestock_type:livestock_types(name))')
+          .select('id, livestock_id, record_type, record_date, next_due_date, livestock!inner(farm_id, status, tag_id, breed, livestock_type:livestock_types(name))')
           .eq('livestock.farm_id', farmId!)
           .order('record_date', { ascending: false })
           .limit(200),
       ]);
-      const due = upcomingHealthDue(health.data ?? []).map(({ record, daysUntilDue }) => ({
+      const live = (health.data ?? []).filter((r) => {
+        const status = (r.livestock as { status?: string | null } | null)?.status;
+        return !status || status === 'active';
+      });
+      const due = upcomingHealthDue(live).map(({ record, daysUntilDue }) => ({
         label: animalLabel(record.livestock as Parameters<typeof animalLabel>[0]),
         recordType: record.record_type.charAt(0).toUpperCase() + record.record_type.slice(1),
         daysUntilDue,
@@ -234,7 +245,7 @@ const Dashboard = () => {
   const planned = stages.filter((s) => s === 'planned').length;
   const totalArea = fields.reduce((s, f) => s + (Number(f.area) || 0), 0);
   const areaUnit = fields[0]?.area_unit ?? '';
-  const openTasks = tasks.filter((task) => task.status !== 'completed');
+  const openTasks = tasks.filter((task) => task.status !== 'completed' && task.status !== 'cancelled');
   const dueNow = openTasks.filter((task) => ['overdue', 'today'].includes(dueState(task.due_date))).length;
   const late = openTasks.filter((task) => dueState(task.due_date) === 'overdue').length;
 

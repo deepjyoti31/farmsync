@@ -35,7 +35,8 @@ const Weather = () => {
     },
   });
 
-  const hasCoords = !!farm?.gps_latitude && !!farm?.gps_longitude;
+  // 0 is a valid latitude or longitude, so test for presence rather than truthiness.
+  const hasCoords = farm?.gps_latitude != null && farm?.gps_longitude != null;
 
   // Same key as the Today screen's weather band, so the two share one cached forecast.
   const { data: weather, isLoading, isFetching, isError, refetch, dataUpdatedAt } = useQuery({

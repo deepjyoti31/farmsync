@@ -11,6 +11,7 @@ import { formatArea, formatCoordinates } from '@/utils/mapUtils';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import AddFieldForm from '@/components/fields/AddFieldForm';
+import { fromHectares, toHectares } from '@/lib/yieldAnalytics';
 
 interface FarmDetailsDialogProps {
   farmId: string | null;
@@ -78,10 +79,11 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
     enabled: !!farmId && isOpen,
   });
 
-  // Calculate total area of fields
-  const totalFieldsArea = fields.reduce((sum, field) => {
-    return sum + (field.area || 0);
-  }, 0);
+  // Fields can use different units, so add them up in hectares and show the
+  // total in the first field's unit.
+  const totalUnit = fields[0]?.area_unit || 'acres';
+  const totalHectares = fields.reduce((sum, field) => sum + (toHectares(Number(field.area) || 0, field.area_unit || 'acres') ?? 0), 0);
+  const totalFieldsArea = fromHectares(totalHectares, totalUnit) ?? totalHectares;
 
   if (!isOpen) return null;
 
@@ -125,7 +127,7 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
                           <dt className="font-medium text-muted-foreground mb-1">GPS Coordinates</dt>
                           <dd className="flex items-center">
                             <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
-                            {farm.gps_latitude && farm.gps_longitude
+                            {farm.gps_latitude != null && farm.gps_longitude != null
                               ? formatCoordinates(farm.gps_latitude, farm.gps_longitude)
                               : 'Not available'}
                           </dd>
@@ -179,11 +181,11 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
                           existingBoundaries={farm.boundaries}
                           readOnly={true}
                           initialCenter={
-                            farm.gps_latitude && farm.gps_longitude
+                            farm.gps_latitude != null && farm.gps_longitude != null
                               ? [farm.gps_longitude, farm.gps_latitude]
                               : undefined
                           }
-                          initialZoom={farm.gps_latitude && farm.gps_longitude ? 14 : 5}
+                          initialZoom={farm.gps_latitude != null && farm.gps_longitude != null ? 14 : 5}
                           onBoundariesChange={() => {}} // No-op since it's read-only
                         />
                       ) : (
@@ -235,7 +237,7 @@ const FarmDetailsDialog: React.FC<FarmDetailsDialogProps> = ({
                               <tr className="font-medium">
                                 <td className="py-2 px-4">Total</td>
                                 <td className="py-2 px-4">
-                                  {formatArea(totalFieldsArea)} {fields[0]?.area_unit || 'acres'}
+                                  {formatArea(totalFieldsArea)} {totalUnit}
                                 </td>
                               </tr>
                             </tbody>

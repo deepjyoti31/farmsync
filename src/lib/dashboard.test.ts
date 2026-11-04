@@ -101,3 +101,16 @@ describe('attentionItems', () => {
     expect(items[0].title).toBe('Seed has expired');
   });
 });
+
+describe('failed and out-of-stock edge cases', () => {
+  it('treats a failed planting as finished', () => {
+    const p = cropProgress({ planting_date: '2026-06-01', expected_harvest_date: '2026-12-01', status: 'failed' }, new Date(2026, 10, 4));
+    expect(p.stage).toBe('harvested');
+  });
+
+  it('flags out-of-stock items even without a reorder level', () => {
+    const items = attentionItems({ stock: [{ name: 'Urea', quantity: 0, minimum_stock: null, unit: 'bags', expiry_date: null }] }, new Date(2026, 10, 4));
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toBe('Urea is out of stock');
+  });
+});

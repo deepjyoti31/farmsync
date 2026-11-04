@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Farm } from '@/types';
 import { Loader2, Plus, ChevronDown } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,25 +29,16 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({
   const queryClient = useQueryClient();
 
   const { data: farms = [], isLoading, error } = useQuery({
-    queryKey: ['farms'],
+    // Each query shape needs its own key: components that share a key share one cache entry.
+    queryKey: ['farms', 'selector'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('farms')
-        .select('id, name, village, district, state');
+        .select('id, name')
+        .order('name');
 
       if (error) throw error;
-
-      return (data || []).map((farm: any): Farm => ({
-        id: farm.id,
-        name: farm.name,
-        location: [farm.village, farm.district, farm.state].filter(Boolean).join(', '),
-        totalArea: 0, // Will be calculated from fields
-        areaUnit: 'acres',
-        fields: [],
-        user_id: '',
-        created_at: '',
-        updated_at: ''
-      }));
+      return data ?? [];
     },
   });
 
@@ -70,13 +60,15 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({
 
   const selectedFarm = farms.find(farm => farm.id === selectedFarmId);
 
-  if (error) {
+  // Toast once per error, not on every render.
+  React.useEffect(() => {
+    if (!error) return;
     toast({
       title: 'Error',
       description: (error as Error).message || 'Failed to load farms.',
       variant: 'destructive',
     });
-  }
+  }, [error]);
 
   return (
     <div className="flex items-center space-x-2">

@@ -1,3 +1,4 @@
+import { toDateValue } from '@/lib/dateRanges';
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -16,15 +17,15 @@ import { isActivePath, navigationSections } from './navigation';
 const useDueTaskCount = () => {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ['tasks', 'due-count'],
+    queryKey: ['tasks', 'due-count', user?.id],
     enabled: !!user,
     staleTime: 60_000,
     queryFn: async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = toDateValue(new Date());
       const { count, error } = await supabase
         .from('tasks')
         .select('id', { count: 'exact', head: true })
-        .neq('status', 'completed')
+        .not('status', 'in', '(completed,cancelled)')
         .lte('due_date', today);
       if (error) return 0;
       return count ?? 0;

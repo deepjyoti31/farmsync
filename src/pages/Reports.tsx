@@ -1,4 +1,5 @@
 
+import { toDateValue } from '@/lib/dateRanges';
 import React, { useState } from 'react';
 import { transactionType, compactRupees } from '@/lib/financeSummary';
 import { AXIS_PROPS, CHART, GRID_PROPS, categoryColor, foldCategories, TOOLTIP_PROPS } from '@/lib/chartPalette';
@@ -8,7 +9,6 @@ import {
   CardHeader, 
   CardTitle,
   CardDescription,
-  CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -29,8 +29,6 @@ import {
 import {
   FileText,
   Download,
-  Filter,
-  Calendar,
   BarChart2,
   PieChart as PieChartIcon,
   TrendingUp,
@@ -45,6 +43,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { parseISO } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { getDateRange } from '@/lib/dateRanges';
 import { downloadCsv, toCsv } from '@/lib/csv';
@@ -142,7 +142,7 @@ const Reports = () => {
     const monthlyData: Record<string, { income: number; expenses: number }> = {};
     
     transactionsData.forEach(transaction => {
-      const date = new Date(transaction.transaction_date);
+      const date = parseISO(transaction.transaction_date);
       const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!monthlyData[monthYear]) {
@@ -217,12 +217,22 @@ const Reports = () => {
   }, [transactionsData]);
   
   const netProfit = totalIncome - totalExpenses;
+
+  // Empty statuses are left out so they don't draw 0% labels on the chart.
+  const equipmentStatusData = [
+    { name: 'Operational', status: 'operational', fill: '#2E7D4F' },
+    { name: 'Needs Maintenance', status: 'needs maintenance', fill: '#E39B34' },
+    { name: 'In Repair', status: 'in repair', fill: '#B4553A' },
+    { name: 'Inactive', status: 'inactive', fill: CHART.other },
+  ]
+    .map((s) => ({ ...s, value: equipmentData.filter((e) => e.status === s.status).length }))
+    .filter((s) => s.value > 0);
   
   // Colors for charts
   
   // Export the data behind the active report tab as CSV.
   const downloadReport = () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toDateValue(new Date());
     let csv: string | null = null;
 
     if (reportType === 'financial' && transactionsData.length > 0) {
@@ -315,14 +325,6 @@ const Reports = () => {
                   <SelectItem value="last-year">Last Year</SelectItem>
                 </SelectContent>
               </Select>
-              
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
-              
-              <Button variant="outline" size="icon">
-                <Calendar className="h-4 w-4" />
-              </Button>
             </div>
           </div>
           
@@ -529,7 +531,7 @@ const Reports = () => {
                   <p className="text-muted-foreground max-w-md mx-auto mb-4">
                     Track yields, growth patterns, and compare performance across different fields and seasons.
                   </p>
-                  <Button>View Detailed Reports</Button>
+                  <Button asChild><Link to="/dashboard/analytics">View yield analysis</Link></Button>
                 </CardContent>
               </Card>
             </>
@@ -555,12 +557,7 @@ const Reports = () => {
                     <ResponsiveContainer width="100%" height={400}>
                       <PieChart>
                         <Pie
-                          data={[
-                            { name: 'Operational', value: equipmentData.filter(e => e.status === 'operational').length },
-                            { name: 'Needs Maintenance', value: equipmentData.filter(e => e.status === 'needs maintenance').length },
-                            { name: 'In Repair', value: equipmentData.filter(e => e.status === 'in repair').length },
-                            { name: 'Inactive', value: equipmentData.filter(e => e.status === 'inactive').length },
-                          ]}
+                          data={equipmentStatusData}
                           cx="50%"
                           cy="50%"
                           labelLine={true}
@@ -569,10 +566,9 @@ const Reports = () => {
                           dataKey="value"
                         >
                           {/* Status colours: good, needs attention, out of action, not in use */}
-                          <Cell fill="#2E7D4F" stroke="#FFFFFF" strokeWidth={2} />
-                          <Cell fill="#E39B34" stroke="#FFFFFF" strokeWidth={2} />
-                          <Cell fill="#B4553A" stroke="#FFFFFF" strokeWidth={2} />
-                          <Cell fill={CHART.other} stroke="#FFFFFF" strokeWidth={2} />
+                          {equipmentStatusData.map((d) => (
+                            <Cell key={d.name} fill={d.fill} stroke="#FFFFFF" strokeWidth={2} />
+                          ))}
                         </Pie>
                         <Tooltip {...TOOLTIP_PROPS} />
                       </PieChart>
@@ -592,7 +588,7 @@ const Reports = () => {
                   <p className="text-muted-foreground max-w-md mx-auto mb-4">
                     Keep track of maintenance schedules and history for all your farm equipment.
                   </p>
-                  <Button>View Maintenance Schedule</Button>
+                  <Button asChild><Link to="/dashboard/equipment">View Maintenance Schedule</Link></Button>
                 </CardContent>
               </Card>
             </>
@@ -604,59 +600,47 @@ const Reports = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Button variant="outline" className="justify-start h-auto py-4 px-4">
+                <Button variant="outline" className="justify-start h-auto py-4 px-4" onClick={() => setReportType('financial')}>
                   <FileText className="h-5 w-5 mr-2" />
                   <div className="text-left">
                     <p className="font-semibold">Financial Summary</p>
                     <p className="text-sm text-muted-foreground">Income and expense details</p>
                   </div>
                 </Button>
-                
-                <Button variant="outline" className="justify-start h-auto py-4 px-4">
+                <Button variant="outline" className="justify-start h-auto py-4 px-4" asChild>
+                  <Link to="/dashboard/analytics">
                   <FileText className="h-5 w-5 mr-2" />
                   <div className="text-left">
                     <p className="font-semibold">Crop Production</p>
                     <p className="text-sm text-muted-foreground">Yield and harvest statistics</p>
                   </div>
+                  </Link>
                 </Button>
-                
-                <Button variant="outline" className="justify-start h-auto py-4 px-4">
+                <Button variant="outline" className="justify-start h-auto py-4 px-4" onClick={() => setReportType('equipment')}>
                   <FileText className="h-5 w-5 mr-2" />
                   <div className="text-left">
                     <p className="font-semibold">Equipment Usage</p>
                     <p className="text-sm text-muted-foreground">Maintenance and utilization</p>
                   </div>
                 </Button>
-                
-                <Button variant="outline" className="justify-start h-auto py-4 px-4">
+                <Button variant="outline" className="justify-start h-auto py-4 px-4" onClick={() => setReportType('production')}>
                   <FileText className="h-5 w-5 mr-2" />
                   <div className="text-left">
                     <p className="font-semibold">Field Analysis</p>
                     <p className="text-sm text-muted-foreground">Soil and productivity data</p>
                   </div>
                 </Button>
-                
-                <Button variant="outline" className="justify-start h-auto py-4 px-4">
+                <Button variant="outline" className="justify-start h-auto py-4 px-4" asChild>
+                  <Link to="/dashboard/inventory">
                   <FileText className="h-5 w-5 mr-2" />
                   <div className="text-left">
                     <p className="font-semibold">Inventory Status</p>
                     <p className="text-sm text-muted-foreground">Stock levels and usage</p>
                   </div>
-                </Button>
-                
-                <Button variant="outline" className="justify-start h-auto py-4 px-4">
-                  <FileText className="h-5 w-5 mr-2" />
-                  <div className="text-left">
-                    <p className="font-semibold">Tax Report</p>
-                    <p className="text-sm text-muted-foreground">Annual tax summary</p>
-                  </div>
+                  </Link>
                 </Button>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline">Generate Custom Report</Button>
-              <Button>Schedule Reports</Button>
-            </CardFooter>
           </Card>
         </>
       )}

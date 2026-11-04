@@ -23,7 +23,8 @@ const NotificationsDropdown = () => {
   const queryClient = useQueryClient();
   
   const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ['notifications'],
+    // Not the same key as the Notifications page, which loads every notification.
+    queryKey: ['notifications', 'latest', user?.id],
     queryFn: async () => {
       if (!user) return [];
 
@@ -46,7 +47,20 @@ const NotificationsDropdown = () => {
     enabled: !!user,
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Counted on the server: the list above holds only the latest five.
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['notifications', 'unread-count', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user!.id)
+        .eq('read', false);
+      if (error) return 0;
+      return count ?? 0;
+    },
+  });
 
   const getIcon = (type: string) => {
     switch (type) {

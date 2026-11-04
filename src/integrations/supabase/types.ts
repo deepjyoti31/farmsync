@@ -2095,6 +2095,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_organization_invites: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       can_access_farm: {
         Args: {
           p_farm_id: string

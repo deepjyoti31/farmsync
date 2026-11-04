@@ -55,7 +55,8 @@ const SupplierCard: React.FC<SupplierCardProps> = ({ supplier }) => {
                         </div>
                     )}
 
-                    {supplier.contact_info.website && (
+                    {/* Only http(s) links: a javascript: URL here would run in the user's session. */}
+                    {/^https?:\/\//i.test(supplier.contact_info.website ?? '') && (
                         <div className="flex items-center gap-2">
                             <Globe className="h-4 w-4 text-muted-foreground" />
                             <a href={supplier.contact_info.website} target="_blank" rel="noopener noreferrer" className="hover:text-info hover:underline">

@@ -10,6 +10,7 @@ import { ComplianceStandard, ComplianceRule } from '@/types/compliance';
 import { runAudit, type RuleResult } from '@/lib/complianceEngine';
 import { toast } from '@/hooks/use-toast';
 import PageHeader from '@/components/common/PageHeader';
+import FarmSelector from '@/components/farms/FarmSelector';
 
 const StandardDetail = () => {
     const { id } = useParams();
@@ -19,6 +20,10 @@ const StandardDetail = () => {
     const [loading, setLoading] = useState(true);
     const [isAuditing, setIsAuditing] = useState(false);
     const [results, setResults] = useState<Record<string, RuleResult>>({});
+    const [farmId, setFarmId] = useState<string | null>(null);
+
+    // Results belong to one farm; clear them when another farm is chosen.
+    useEffect(() => setResults({}), [farmId]);
 
     useEffect(() => {
         if (id) loadData();
@@ -38,12 +43,16 @@ const StandardDetail = () => {
         }
     };
 
-    // Check every rule against the products recorded in the input log
-    // (RLS limits this to farms the user can access).
+    // Check every rule against the products recorded in the selected farm's input log.
+    // Without the farm filter, one farm's inputs would fail another farm's audit.
     const handleRunAudit = async () => {
+        if (!farmId) return;
         setIsAuditing(true);
         try {
-            const { data, error } = await supabase.from('sustainability_logs').select('product_name');
+            const { data, error } = await supabase
+                .from('sustainability_logs')
+                .select('product_name, fields!inner(farm_id)')
+                .eq('fields.farm_id', farmId);
             if (error) throw error;
 
             const audit = runAudit(rules, (data || []).map((l) => l.product_name));
@@ -78,10 +87,13 @@ const StandardDetail = () => {
                 title={standard.name}
                 description={standard.description}
                 actions={
-                    <Button onClick={handleRunAudit} size="lg" disabled={isAuditing || rules.length === 0}>
+                    <>
+                    <FarmSelector selectedFarmId={farmId} onFarmChange={setFarmId} />
+                    <Button onClick={handleRunAudit} size="lg" disabled={isAuditing || rules.length === 0 || !farmId}>
                         <PlayCircle className="h-5 w-5" />
                         {isAuditing ? 'Checking...' : 'Run compliance check'}
                     </Button>
+                    </>
                 }
             />
 

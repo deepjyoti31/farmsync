@@ -1,4 +1,5 @@
 
+import { toDateValue } from '@/lib/dateRanges';
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -80,8 +81,17 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
     }
   }, [selectedCategoryId, categories]);
 
+  // Switching between income and expense clears a category of the other kind,
+  // which would otherwise be saved while the list no longer shows it.
+  const chooseType = (type: 'income' | 'expense') => {
+    setSelectedCategoryType(type);
+    const current = categories.find((cat) => cat.id === selectedCategoryId);
+    if (current && current.type !== type) setValue('category_id', '');
+  };
+
   const onSubmit = async (data: TransactionFormValues) => {
     if (!farmId) return;
+    const category = categories.find((cat) => cat.id === data.category_id);
     
     setIsSubmitting(true);
     
@@ -91,7 +101,8 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
         .insert({
           farm_id: farmId,
           category_id: data.category_id,
-          transaction_date: data.transaction_date.toISOString().split('T')[0],
+          type: category?.type === 'income' || category?.type === 'expense' ? category.type : selectedCategoryType,
+          transaction_date: toDateValue(data.transaction_date),
           amount: data.amount,
           description: data.description || null,
           payment_method: data.payment_method || null,
@@ -131,7 +142,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
             <Button
               type="button"
               variant={selectedCategoryType === 'expense' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategoryType('expense')}
+              onClick={() => chooseType('expense')}
               className="flex-1"
             >
               Expense
@@ -139,7 +150,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
             <Button
               type="button"
               variant={selectedCategoryType === 'income' ? 'default' : 'outline'}
-              onClick={() => setSelectedCategoryType('income')}
+              onClick={() => chooseType('income')}
               className="flex-1"
             >
               Income
@@ -149,7 +160,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
         
         <div className="space-y-2">
           <Label htmlFor="category">Category*</Label>
-          <Select onValueChange={(value) => setValue('category_id', value)} required>
+          <Select value={selectedCategoryId || ''} onValueChange={(value) => setValue('category_id', value, { shouldValidate: true })} required>
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
@@ -187,8 +198,10 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
                 mode="single"
                 selected={transactionDate}
                 onSelect={(date) => {
-                  setTransactionDate(date as Date);
-                  setValue("transaction_date", date as Date);
+                  // Clicking the selected day again deselects it; keep the date instead.
+                  if (!date) return;
+                  setTransactionDate(date);
+                  setValue("transaction_date", date);
                 }}
                 initialFocus
               />
@@ -203,7 +216,7 @@ const AddTransactionForm: React.FC<AddTransactionFormProps> = ({ farmId, onSucce
             placeholder="0.00"
             type="number"
             step="0.01"
-            onChange={(e) => setValue('amount', parseFloat(e.target.value))}
+            onChange={(e) => setValue('amount', e.target.value === '' ? undefined : parseFloat(e.target.value), { shouldValidate: true })}
             required
           />
           {errors.amount && (

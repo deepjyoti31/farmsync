@@ -1,4 +1,5 @@
 
+import { toDateValue } from '@/lib/dateRanges';
 import React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -95,9 +96,9 @@ const AddLivestockForm: React.FC<AddLivestockFormProps> = ({ farmId, onSuccess, 
           gender: values.gender,
           status: values.status,
           tag_id: values.tagId,
-          birth_date: values.birthDate ? values.birthDate.toISOString().split('T')[0] : null,
+          birth_date: values.birthDate ? toDateValue(values.birthDate) : null,
           acquisition_date: values.acquisitionDate 
-            ? values.acquisitionDate.toISOString().split('T')[0] 
+            ? toDateValue(values.acquisitionDate) 
             : null,
           acquisition_cost: values.acquisitionCost,
           notes: values.notes,

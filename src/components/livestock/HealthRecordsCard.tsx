@@ -16,6 +16,7 @@ import { HEALTH_RECORD_TYPES, animalLabel, upcomingHealthDue, type AnimalLike } 
 
 export interface Animal extends AnimalLike {
   id: string;
+  status?: string | null;
 }
 
 interface HealthRecordsCardProps {
@@ -58,7 +59,11 @@ const HealthRecordsCard: React.FC<HealthRecordsCardProps> = ({ farmId, animals }
   });
 
   const animalsById = useMemo(() => new Map(animals.map((a) => [a.id, a])), [animals]);
-  const reminders = useMemo(() => upcomingHealthDue(records), [records]);
+  // No reminders for animals that were sold or died.
+  const reminders = useMemo(() => {
+    const live = new Set(animals.filter((a) => !a.status || a.status === 'active').map((a) => a.id));
+    return upcomingHealthDue(records.filter((r) => live.has(r.livestock_id)));
+  }, [records, animals]);
 
   const set = (key: keyof ReturnType<typeof emptyForm>) => (value: string) => setForm((f) => ({ ...f, [key]: value }));
 

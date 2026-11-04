@@ -63,7 +63,7 @@ const Fields = () => {
     queryKey: ['farm', farmId],
     enabled: !!farmId,
     queryFn: async () => {
-      const { data, error } = await supabase.from('farms').select('name, gps_latitude, gps_longitude').eq('id', farmId!).single();
+      const { data, error } = await supabase.from('farms').select('name, village, district, state, gps_latitude, gps_longitude').eq('id', farmId!).single();
       if (error) throw error;
       return data;
     },
@@ -130,7 +130,7 @@ const Fields = () => {
   };
 
   const farmCenter: [number, number] | null =
-    farm?.gps_longitude && farm?.gps_latitude ? [Number(farm.gps_longitude), Number(farm.gps_latitude)] : null;
+    farm?.gps_longitude != null && farm?.gps_latitude != null ? [Number(farm.gps_longitude), Number(farm.gps_latitude)] : null;
 
   return (
     <div>

@@ -2,13 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { BulkOrder } from '@/types/coop';
-import { Plus, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
 import PageHeader from '@/components/common/PageHeader';
+import CreateCoopItemDialog from '@/components/coop/CreateCoopItemDialog';
 
 const BulkOrdersList = () => {
     const { currentOrganization, userRole } = useAuth();
@@ -18,6 +18,8 @@ const BulkOrdersList = () => {
     useEffect(() => {
         if (currentOrganization) {
             loadOrders();
+        } else {
+            setLoading(false);
         }
     }, [currentOrganization]);
 
@@ -47,11 +49,8 @@ const BulkOrdersList = () => {
               description={<>Manage group purchases for {currentOrganization?.name}</>}
               actions={
                 <>
-                  {(userRole === 'owner' || userRole === 'admin') && (
-                      <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Order
-                      </Button>
+                  {(userRole === 'owner' || userRole === 'admin') && currentOrganization && (
+                      <CreateCoopItemDialog kind="order" organizationId={currentOrganization.id} onCreated={loadOrders} />
                   )}
                 </>
               }
@@ -82,11 +81,6 @@ const BulkOrdersList = () => {
                                     {order.status}
                                 </Badge>
                             </CardHeader>
-                            <CardContent>
-                                <div className="flex justify-end">
-                                    <Button variant="outline">View Details</Button>
-                                </div>
-                            </CardContent>
                         </Card>
                     ))
                 )}

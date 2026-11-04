@@ -12,17 +12,32 @@ import { Label } from '@/components/ui/label';
 import { AlertCircle, Key, Loader2, Bell, Lock, Globe, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import PageHeader from '@/components/common/PageHeader';
+import { useTranslation } from 'react-i18next';
+
+const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'hi', name: 'हिंदी (Hindi)' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'ar', name: 'العربية' },
+  { code: 'zh', name: '中文' },
+];
 
 const Settings = () => {
   const { user } = useAuth();
+  const { i18n } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [smsNotifications, setSmsNotifications] = useState(false);
+  // Stored in the user's auth metadata so they follow the account across devices.
+  const [emailNotifications, setEmailNotifications] = useState<boolean>(user?.user_metadata?.email_notifications ?? true);
+  const [smsNotifications, setSmsNotifications] = useState<boolean>(user?.user_metadata?.sms_notifications ?? false);
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
-  const [language, setLanguage] = useState('english');
+  const [language, setLanguage] = useState(() => {
+    const active = i18n.resolvedLanguage ?? i18n.language ?? 'en';
+    return LANGUAGES.some((l) => l.code === active) ? active : 'en';
+  });
   const [isUpdatingLanguage, setIsUpdatingLanguage] = useState(false);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -48,6 +63,12 @@ const Settings = () => {
     
     setIsUpdatingPassword(true);
     try {
+      // Confirm the current password first, so an unattended signed-in device
+      // cannot be used to take over the account.
+      if (!user?.email) throw new Error('Your account has no email address to confirm the password against.');
+      const { error: verifyError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+      if (verifyError) throw new Error('Your current password is not correct.');
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
@@ -78,21 +99,21 @@ const Settings = () => {
     
     setIsUpdatingNotifications(true);
     try {
-      // In a real app, we would save these preferences to the database
-      // This is a placeholder for demonstration
-      setTimeout(() => {
-        toast({
-          title: "Notification settings updated",
-          description: "Your notification preferences have been saved.",
-        });
-        setIsUpdatingNotifications(false);
-      }, 1000);
+      const { error } = await supabase.auth.updateUser({
+        data: { email_notifications: emailNotifications, sms_notifications: smsNotifications },
+      });
+      if (error) throw error;
+      toast({
+        title: "Notification settings updated",
+        description: "Your notification preferences have been saved.",
+      });
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to update notification settings",
         variant: "destructive",
       });
+    } finally {
       setIsUpdatingNotifications(false);
     }
   };
@@ -102,14 +123,10 @@ const Settings = () => {
     
     setIsUpdatingLanguage(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          language: language,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
-      
+      // profiles has no language column; the interface language lives in i18next
+      // (saved in this browser) and in the account metadata.
+      await i18n.changeLanguage(language);
+      const { error } = await supabase.auth.updateUser({ data: { language } });
       if (error) throw error;
       
       toast({
@@ -327,11 +344,9 @@ const Settings = () => {
                       value={language}
                       onChange={e => setLanguage(e.target.value)}
                     >
-                      <option value="english">English</option>
-                      <option value="hindi">Hindi</option>
-                      <option value="punjabi">Punjabi</option>
-                      <option value="tamil">Tamil</option>
-                      <option value="telugu">Telugu</option>
+                      {LANGUAGES.map((l) => (
+                        <option key={l.code} value={l.code}>{l.name}</option>
+                      ))}
                     </select>
                   </div>
                   

@@ -1,3 +1,4 @@
+import { toDateValue } from '@/lib/dateRanges';
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,7 +56,7 @@ const UpdateCropStatusForm: React.FC<UpdateCropStatusFormProps> = ({
 
     try {
       setIsUpdating(true);
-      const today = new Date().toISOString().split('T')[0];
+      const today = toDateValue(new Date());
       const recordHarvest = isHarvesting && harvestQuantity !== '';
 
       const { error } = await supabase

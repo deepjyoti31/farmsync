@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Calendar, Sprout, MapPin, FileText } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import UpdateCropStatusForm from './UpdateCropStatusForm';
@@ -155,7 +155,7 @@ const CropDetailsDialog: React.FC<CropDetailsDialogProps> = ({
                         <dt className="font-medium text-muted-foreground mb-1">Planting Date</dt>
                         <dd className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
-                          {cropDetails.planting_date ? format(new Date(cropDetails.planting_date), 'PPP') : 'Not set'}
+                          {cropDetails.planting_date ? format(parseISO(cropDetails.planting_date), 'PPP') : 'Not set'}
                         </dd>
                       </div>
                       
@@ -164,7 +164,7 @@ const CropDetailsDialog: React.FC<CropDetailsDialogProps> = ({
                         <dd className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1 text-muted-foreground" />
                           {cropDetails.expected_harvest_date 
-                            ? format(new Date(cropDetails.expected_harvest_date), 'PPP') 
+                            ? format(parseISO(cropDetails.expected_harvest_date), 'PPP') 
                             : 'Not set'}
                         </dd>
                       </div>

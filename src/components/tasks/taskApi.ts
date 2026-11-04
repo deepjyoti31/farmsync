@@ -21,10 +21,24 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
     .eq('id', task.id);
   if (error) throw error;
 
-  if (!completed) return null;
+  // Only a task that was open moves the series on. Ticking an already-done
+  // task again changes nothing.
+  if (!completed || task.status === 'completed') return null;
 
   const next = nextDueDate(task.due_date, task.recurrence);
   if (!next) return null;
+
+  // Unticking and re-ticking a repeating task must not create the next one twice.
+  const { data: existing, error: lookupError } = await supabase
+    .from('tasks')
+    .select('id')
+    .eq('farm_id', task.farm_id)
+    .eq('title', task.title)
+    .eq('recurrence', task.recurrence ?? 'none')
+    .eq('due_date', next)
+    .limit(1);
+  if (lookupError) throw lookupError;
+  if (existing && existing.length > 0) return next;
 
   const { error: insertError } = await supabase.from('tasks').insert({
     farm_id: task.farm_id,
@@ -42,7 +56,7 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
   return next;
 }
 
-/** Move an open task between "To do" and "In progress" on the board. */
+/** Move a task to "To do" or "In progress" on the board (reopening it if it was done). */
 export async function setTaskStatus(task: TaskRow, status: 'pending' | 'in_progress'): Promise<void> {
   const { error } = await supabase.from('tasks').update({ status, completed_at: null }).eq('id', task.id);
   if (error) throw error;
