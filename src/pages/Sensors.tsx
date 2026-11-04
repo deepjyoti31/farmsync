@@ -14,6 +14,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AXIS_PROPS, GRID_PROPS, categoryColor, TOOLTIP_PROPS } from '@/lib/chartPalette';
 import { generateDeviceApiKey, metricLabel, toTelemetrySeries } from '@/lib/telemetry';
 import PageHeader from '@/components/common/PageHeader';
+import FarmSelector from '@/components/farms/FarmSelector';
 
 
 type Device = {
@@ -26,22 +27,26 @@ type Device = {
 };
 
 const Sensors = () => {
+    const [farmId, setFarmId] = useState<string | null>(null);
     const [isAddingDevice, setIsAddingDevice] = useState(false);
+    // Shown once in the dialog after registering; a toast disappears before it can be copied.
+    const [createdKey, setCreatedKey] = useState<string | null>(null);
     const [newDeviceName, setNewDeviceName] = useState('');
     const [newDeviceType, setNewDeviceType] = useState('weather_station');
 
     // Fetch Devices
     const { data: devices, refetch: refetchDevices } = useQuery({
-        queryKey: ['devices'],
+        queryKey: ['devices', farmId],
+        enabled: !!farmId,
         queryFn: async () => {
-            const { data, error } = await supabase.from('devices').select('*');
+            const { data, error } = await supabase.from('devices').select('*').eq('farm_id', farmId!).order('name');
             if (error) throw error;
             return data as Device[];
         },
     });
 
     const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
-    const activeDeviceId = selectedDeviceId ?? devices?.[0]?.id ?? null;
+    const activeDeviceId = (selectedDeviceId && devices?.some((d) => d.id === selectedDeviceId) ? selectedDeviceId : null) ?? devices?.[0]?.id ?? null;
     const activeDevice = devices?.find((d) => d.id === activeDeviceId);
 
     // Latest readings for the selected device, refreshed every minute
@@ -62,37 +67,27 @@ const Sensors = () => {
     });
 
     const handleAddDevice = async () => {
+        const name = newDeviceName.trim();
+        if (!farmId) return;
+        if (!name) {
+            toast({ title: "Name the device", description: "Give it a name you will recognise, e.g. North Field Station.", variant: "destructive" });
+            return;
+        }
         try {
-            // In a real app, we would select the farm properly. 
-            // For now, we'll try to get the first farm or show error
-            const { data: farms } = await supabase.from('farms').select('id').limit(1);
-
-            if (!farms || farms.length === 0) {
-                toast({
-                    title: "Error",
-                    description: "Please create a farm first using the Farms page.",
-                    variant: "destructive"
-                });
-                return;
-            }
-
             const apiKey = generateDeviceApiKey();
 
             const { error } = await supabase.from('devices').insert({
-                name: newDeviceName,
+                name,
                 type: newDeviceType,
-                farm_id: farms[0].id,
+                farm_id: farmId,
                 api_key: apiKey
             });
 
             if (error) throw error;
 
-            toast({
-                title: "Device Added",
-                description: `API Key: ${apiKey} (Save this, it won't be shown again!)`,
-            });
-
-            setIsAddingDevice(false);
+            setCreatedKey(apiKey);
+            setNewDeviceName('');
+            setNewDeviceType('weather_station');
             refetchDevices();
         } catch (error: any) {
             toast({
@@ -103,6 +98,11 @@ const Sensors = () => {
         }
     };
 
+    const closeAddDialog = (open: boolean) => {
+        setIsAddingDevice(open);
+        if (!open) setCreatedKey(null);
+    };
+
     return (
         <div className="space-y-6">
             <PageHeader
@@ -110,9 +110,10 @@ const Sensors = () => {
               description="Manage your hardware devices and monitor real-time telemetry."
               actions={
                 <>
-                  <Dialog open={isAddingDevice} onOpenChange={setIsAddingDevice}>
+                  <FarmSelector selectedFarmId={farmId} onFarmChange={setFarmId} />
+                  <Dialog open={isAddingDevice} onOpenChange={closeAddDialog}>
                       <DialogTrigger asChild>
-                          <Button className="gap-2">
+                          <Button className="gap-2" disabled={!farmId}>
                               <Plus className="h-4 w-4" /> Add Device
                           </Button>
                       </DialogTrigger>
@@ -120,6 +121,17 @@ const Sensors = () => {
                           <DialogHeader>
                               <DialogTitle>Register New Device</DialogTitle>
                           </DialogHeader>
+                          {createdKey ? (
+                              <div className="space-y-3 py-4">
+                                  <p className="text-sm">Device registered. Copy its API key now and put it in the device's settings; it is sent in the <code className="font-mono">x-device-api-key</code> header.</p>
+                                  <Input readOnly value={createdKey} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} aria-label="Device API key" />
+                                  <DialogFooter>
+                                      <Button variant="outline" onClick={() => navigator.clipboard?.writeText(createdKey).then(() => toast({ title: 'API key copied' }))}>Copy key</Button>
+                                      <Button onClick={() => closeAddDialog(false)}>Done</Button>
+                                  </DialogFooter>
+                              </div>
+                          ) : (
+                          <>
                           <div className="grid gap-4 py-4">
                               <div className="grid gap-2">
                                   <Label>Device Name</Label>
@@ -152,6 +164,8 @@ const Sensors = () => {
                           <DialogFooter>
                               <Button onClick={handleAddDevice}>Register Device</Button>
                           </DialogFooter>
+                          </>
+                          )}
                       </DialogContent>
                   </Dialog>
                 </>
@@ -182,7 +196,7 @@ const Sensors = () => {
                 </Card>
             </div>
 
-            {devices?.length === 0 ? (
+            {!farmId ? null : devices?.length === 0 ? (
                 <Card className="p-8 text-center text-muted-foreground">
                     <p>No devices registered yet. Click "Add Device" to get started.</p>
                 </Card>

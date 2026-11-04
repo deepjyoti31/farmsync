@@ -60,7 +60,7 @@ const FarmsList = () => {
   const [addFieldFor, setAddFieldFor] = useState<string | null>(null);
 
   const { data: farms = [], isLoading } = useQuery({
-    queryKey: ['farms'],
+    queryKey: ['farms', 'list'],
     queryFn: async () => {
       const { data, error } = await supabase.from('farms').select('*').order('created_at', { ascending: false });
       if (error) throw error;
@@ -131,7 +131,7 @@ const FarmsList = () => {
           {farms.map((farm) => {
             const farmFields = byFarm.get(farm.id) ?? [];
             const fieldHa = farmFields.reduce((s, f) => s + (toHectares(Number(f.area) || 0, f.area_unit) ?? 0), 0);
-            const located = !!farm.gps_latitude && !!farm.gps_longitude;
+            const located = farm.gps_latitude != null && farm.gps_longitude != null;
             const place = [farm.village, farm.district, farm.state].filter(Boolean).join(', ');
             return (
               <li key={farm.id} className="surface flex flex-col gap-3.5 p-4">

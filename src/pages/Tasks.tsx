@@ -122,7 +122,8 @@ const Tasks = () => {
 
   const move = async (task: TaskRow, to: BoardColumn) => {
     if (to === boardColumn(task)) return;
-    if (to === 'completed' || boardColumn(task) === 'completed') return toggle(task, to === 'completed');
+    if (to === 'completed') return toggle(task, true);
+    // Moving a done task back goes straight to the chosen column; setTaskStatus also clears completed_at.
     setPendingId(task.id);
     try {
       await setTaskStatus(task, to);

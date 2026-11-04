@@ -33,137 +33,111 @@ const BoundaryMap: React.FC<BoundaryMapProps> = ({
   const draw = useRef<MapboxDraw | null>(null);
   const [boundaries, setBoundaries] = useState<GeoJSON.Polygon | null>(existingBoundaries);
 
+  // The map is built once per mount. Callers pass new arrays and callbacks on
+  // every render (and existingBoundaries changes as the user draws), so these
+  // are read through refs instead of being effect dependencies; otherwise the
+  // whole map is torn down and rebuilt after every edit.
+  const onChangeRef = useRef(onBoundariesChange);
+  onChangeRef.current = onBoundariesChange;
+  const initial = useRef({ center: initialCenter, zoom: initialZoom, boundaries: existingBoundaries });
+
+  const report = (polygon: GeoJSON.Polygon | null) => {
+    setBoundaries(polygon);
+    onChangeRef.current?.(polygon);
+  };
+
   useEffect(() => {
     if (!mapContainer.current) return;
+    const { center, zoom, boundaries: startBoundaries } = initial.current;
 
-    // Initialize map
-    map.current = new mapboxgl.Map({
+    const m = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: initialCenter,
-      zoom: initialZoom,
+      center,
+      zoom,
     });
+    map.current = m;
 
     // Handle missing images (like "in-state-4") to prevent console errors
-    map.current.on('styleimagemissing', (e) => {
-      const id = e.id;
-      if (!map.current?.hasImage(id)) {
-        // Create a 1x1 transparent image
-        const width = 1;
-        const height = 1;
-        const data = new Uint8Array(width * height * 4);
-        map.current?.addImage(id, { width, height, data });
+    m.on('styleimagemissing', (e) => {
+      if (!m.hasImage(e.id)) {
+        m.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
       }
     });
 
-    // Add navigation controls
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    // Add geolocate control
-    map.current.addControl(
+    m.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    m.addControl(
       new mapboxgl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
+        positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
       }),
       'top-right'
     );
 
     if (!readOnly) {
-      // Initialize draw control
-      draw.current = new MapboxDraw({
+      const d = new MapboxDraw({
         displayControlsDefault: false,
-        controls: {
-          polygon: true,
-          trash: true,
-        },
+        controls: { polygon: true, trash: true },
       });
+      draw.current = d;
+      m.addControl(d, 'top-left');
 
-      // Add draw controls
-      map.current.addControl(draw.current, 'top-left');
-
-      // Add event listeners for drawing
-      map.current.on('draw.create', updateBoundaries);
-      map.current.on('draw.update', updateBoundaries);
-      map.current.on('draw.delete', () => {
-        setBoundaries(null);
-        onBoundariesChange?.(null);
+      const update = () => {
+        const all = d.getAll();
+        report(all.features.length > 0 ? (all.features[0].geometry as GeoJSON.Polygon) : null);
+      };
+      // Only one boundary is kept: drawing a new shape replaces the old one.
+      m.on('draw.create', (e: { features: { id?: string | number }[] }) => {
+        const keep = e.features[0]?.id;
+        const others = d.getAll().features.map((f) => f.id).filter((id) => id !== keep);
+        if (others.length > 0) d.delete(others as string[]);
+        update();
       });
+      m.on('draw.update', update);
+      m.on('draw.delete', update);
     }
 
-    // Add existing boundaries if available
-    map.current.on('load', () => {
-      if (existingBoundaries && map.current) {
-        if (!readOnly && draw.current) {
-          // Add existing boundaries to draw control
-          draw.current.add({
-            type: 'Feature',
-            geometry: existingBoundaries,
-            properties: {},
-          });
-        } else {
-          // Just display the boundaries without editing capability
-          map.current.addSource('existing-boundaries', {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              geometry: existingBoundaries,
-              properties: {},
-            },
-          });
-
-          map.current.addLayer({
-            id: 'existing-boundaries-fill',
-            type: 'fill',
-            source: 'existing-boundaries',
-            paint: {
-              'fill-color': '#0080ff',
-              'fill-opacity': 0.5,
-            },
-          });
-
-          map.current.addLayer({
-            id: 'existing-boundaries-outline',
-            type: 'line',
-            source: 'existing-boundaries',
-            paint: {
-              'line-color': '#0080ff',
-              'line-width': 2,
-            },
-          });
-        }
+    m.on('load', () => {
+      if (!startBoundaries) return;
+      const feature = { type: 'Feature' as const, geometry: startBoundaries, properties: {} };
+      if (!readOnly && draw.current) {
+        draw.current.add(feature);
+        return;
       }
+      m.addSource('existing-boundaries', { type: 'geojson', data: feature });
+      m.addLayer({
+        id: 'existing-boundaries-fill',
+        type: 'fill',
+        source: 'existing-boundaries',
+        paint: { 'fill-color': '#0080ff', 'fill-opacity': 0.5 },
+      });
+      m.addLayer({
+        id: 'existing-boundaries-outline',
+        type: 'line',
+        source: 'existing-boundaries',
+        paint: { 'line-color': '#0080ff', 'line-width': 2 },
+      });
     });
 
-    // Cleanup
     return () => {
-      if (map.current) {
-        map.current.remove();
-      }
+      m.remove();
+      map.current = null;
+      draw.current = null;
     };
-  }, [initialCenter, initialZoom, existingBoundaries, readOnly, onBoundariesChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readOnly]);
 
-  const updateBoundaries = () => {
-    if (!draw.current || !map.current) return;
-
-    const data = draw.current.getAll();
-    if (data.features.length > 0) {
-      // Get the first polygon (we only allow one)
-      const polygon = data.features[0].geometry as GeoJSON.Polygon;
-      setBoundaries(polygon);
-      onBoundariesChange?.(polygon);
-    } else {
-      setBoundaries(null);
-      onBoundariesChange?.(null);
-    }
-  };
+  // A read-only map follows changes to the boundary it shows.
+  useEffect(() => {
+    if (!readOnly || !existingBoundaries) return;
+    const source = map.current?.getSource('existing-boundaries') as mapboxgl.GeoJSONSource | undefined;
+    source?.setData({ type: 'Feature', geometry: existingBoundaries, properties: {} });
+  }, [readOnly, existingBoundaries]);
 
   const clearBoundaries = () => {
     if (!draw.current) return;
     draw.current.deleteAll();
-    setBoundaries(null);
-    onBoundariesChange(null);
+    report(null);
   };
 
   return (

@@ -26,7 +26,9 @@ const LanguageSwitcher = () => {
         i18n.changeLanguage(langCode);
     };
 
-    const currentLang = languages.find((l) => l.code === i18n.language) || languages[0];
+    // i18n.language can be a regional code such as "en-US"; resolvedLanguage is the one actually in use.
+    const active = i18n.resolvedLanguage ?? i18n.language;
+    const currentLang = languages.find((l) => l.code === active) || languages[0];
 
     return (
         <DropdownMenu>
@@ -41,10 +43,10 @@ const LanguageSwitcher = () => {
                     <DropdownMenuItem
                         key={lang.code}
                         onClick={() => changeLanguage(lang.code)}
-                        className={`cursor-pointer ${i18n.language === lang.code ? 'bg-accent' : ''}`}
+                        className={`cursor-pointer ${currentLang.code === lang.code ? 'bg-accent' : ''}`}
                     >
                         <span className="mr-2">{lang.name}</span>
-                        {i18n.language === lang.code && <span className="ml-auto text-xs">✓</span>}
+                        {currentLang.code === lang.code && <span className="ml-auto text-xs">✓</span>}
                     </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>

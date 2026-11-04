@@ -21,7 +21,7 @@ const priorityVariant = { high: 'destructive', medium: 'warning', low: 'secondar
 /** Open work that is late, due today, or coming up in the next few days. */
 const DueToday = ({ tasks, memberNames, onToggle }: DueTodayProps) => {
   const { t } = useTranslation();
-  const open = tasks.filter((task) => task.status !== 'completed');
+  const open = tasks.filter((task) => task.status !== 'completed' && task.status !== 'cancelled');
   const late = open.filter((task) => dueState(task.due_date) === 'overdue').length;
 
   const meta = [

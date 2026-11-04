@@ -23,8 +23,10 @@ import {
 import PageHeader from '@/components/common/PageHeader';
 
 const OrgSettings = () => {
-    const { currentOrganization, userRole } = useAuth();
-    const [members, setMembers] = useState<OrganizationMember[]>([]);
+    const { currentOrganization, userRole, user, refreshOrganizations } = useAuth();
+    const [members, setMembers] = useState<(OrganizationMember & { name?: string })[]>([]);
+    const [orgName, setOrgName] = useState('');
+    const [savingName, setSavingName] = useState(false);
     const [loading, setLoading] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState('viewer');
@@ -32,9 +34,28 @@ const OrgSettings = () => {
 
     useEffect(() => {
         if (currentOrganization) {
+            setOrgName(currentOrganization.name);
             loadMembers();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentOrganization]);
+
+    const canManage = userRole === 'owner' || userRole === 'admin';
+
+    const handleRename = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const name = orgName.trim();
+        if (!currentOrganization || !name || name === currentOrganization.name) return;
+        setSavingName(true);
+        const { error } = await supabase.from('organizations').update({ name }).eq('id', currentOrganization.id);
+        setSavingName(false);
+        if (error) {
+            toast({ title: 'Could not rename', description: error.message, variant: 'destructive' });
+            return;
+        }
+        await refreshOrganizations();
+        toast({ title: 'Organization renamed' });
+    };
 
     const loadMembers = async () => {
         if (!currentOrganization) return;
@@ -50,7 +71,12 @@ const OrgSettings = () => {
                 .eq('organization_id', currentOrganization.id);
 
             if (error) throw error;
-            setMembers(data as OrganizationMember[]);
+            const ids = (data ?? []).map((m) => m.user_id);
+            const { data: profiles } = ids.length
+                ? await supabase.from('profiles').select('id, first_name, last_name').in('id', ids)
+                : { data: [] };
+            const names = new Map((profiles ?? []).map((p) => [p.id, [p.first_name, p.last_name].filter(Boolean).join(' ')]));
+            setMembers((data as OrganizationMember[]).map((m) => ({ ...m, name: names.get(m.user_id) || undefined })));
         } catch (error: any) {
             console.error('Error loading members:', error);
             toast({
@@ -72,17 +98,19 @@ const OrgSettings = () => {
                 .from('organization_invites')
                 .insert({
                     organization_id: currentOrganization.id,
-                    email: inviteEmail.trim(),
+                    email: inviteEmail.trim().toLowerCase(),
                     role: inviteRole,
                     expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-                    created_by: (await supabase.auth.getUser()).data.user?.id
+                    created_by: user?.id
                 });
 
             if (error) throw error;
 
             toast({
-                title: "Invite sent",
-                description: `Invitation sent to ${inviteEmail}`,
+                // FarmSync does not send email: the person joins automatically the next
+                // time they sign in with this address (within 7 days).
+                title: "Invitation created",
+                description: `Ask ${inviteEmail.trim()} to sign in to FarmSync with that email within 7 days to join.`,
             });
             setIsInviteOpen(false);
             setInviteEmail('');
@@ -113,13 +141,18 @@ const OrgSettings = () => {
                     <CardDescription>Manage your organization details</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
+                    <form onSubmit={handleRename} className="grid w-full max-w-sm items-center gap-1.5">
                         <Label htmlFor="orgName">Organization Name</Label>
                         <div className="flex gap-2">
-                            <Input id="orgName" defaultValue={currentOrganization.name} disabled={userRole !== 'owner'} />
-                            {userRole === 'owner' && <Button>Update</Button>}
+                            <Input id="orgName" value={orgName} onChange={(e) => setOrgName(e.target.value)} disabled={!canManage} />
+                            {canManage && (
+                                <Button type="submit" disabled={savingName || !orgName.trim() || orgName.trim() === currentOrganization.name}>
+                                    {savingName && <Loader2 className="h-4 w-4 animate-spin" />}
+                                    Update
+                                </Button>
+                            )}
                         </div>
-                    </div>
+                    </form>
                 </CardContent>
             </Card>
 
@@ -190,10 +223,10 @@ const OrgSettings = () => {
                                 <div key={member.id} className="flex items-center justify-between p-2 border rounded-lg">
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-8 w-8">
-                                            <AvatarFallback>U</AvatarFallback>
+                                            <AvatarFallback>{(member.name || '?').charAt(0).toUpperCase()}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <p className="text-sm font-medium">User ID: {member.user_id.substring(0, 8)}...</p>
+                                            <p className="text-sm font-medium">{member.name || `Member ${member.user_id.substring(0, 8)}`}{member.user_id === user?.id ? ' (you)' : ''}</p>
                                             <p className="text-xs text-muted-foreground">Joined {new Date(member.joined_at).toLocaleDateString()}</p>
                                         </div>
                                     </div>

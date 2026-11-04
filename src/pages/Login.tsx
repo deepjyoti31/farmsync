@@ -1,9 +1,8 @@
 
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { useForm } from "react-hook-form";
@@ -22,14 +21,16 @@ import { useTranslation } from 'react-i18next';
 
 const Login = () => {
   const { t } = useTranslation();
-  const { signIn } = useAuth();
-  const navigate = useNavigate();
+  const { signIn, user, loading } = useAuth();
+  const location = useLocation();
+  // ProtectedRoute sends people here with the page they were trying to open.
+  const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+  const redirectTo = from?.pathname?.startsWith('/dashboard') ? `${from.pathname}${from.search ?? ''}` : '/dashboard';
   const [isLoading, setIsLoading] = React.useState(false);
 
   const loginSchema = z.object({
     email: z.string().email({ message: t('auth.validation.email_invalid') }),
     password: z.string().min(6, { message: t('auth.validation.password_length') }),
-    rememberMe: z.boolean().default(false),
   });
 
   type LoginFormValues = z.infer<typeof loginSchema>;
@@ -39,21 +40,21 @@ const Login = () => {
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
     },
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setIsLoading(true);
-      await signIn(data.email, data.password);
-      // Navigation is handled in the auth context
+      await signIn(data.email, data.password, redirectTo);
     } catch (error) {
       console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!loading && user) return <Navigate to={redirectTo} replace />;
 
   return (
     <AuthLayout
@@ -105,30 +106,6 @@ const Login = () => {
                   </FormItem>
                 )}
               />
-
-              <div className="flex items-center justify-between">
-                <FormField
-                  control={form.control}
-                  name="rememberMe"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal cursor-pointer">
-                        {t('auth.remember_me')}
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-                <a href="#" className="text-sm text-primary hover:underline">
-                  {t('auth.forgot_password')}
-                </a>
-              </div>
 
               <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
                 {isLoading ? (

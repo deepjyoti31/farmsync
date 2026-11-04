@@ -22,7 +22,7 @@ import { deleteEntity } from '@/utils/deleteUtils';
 
 type View = 'timeline' | 'calendar' | 'list';
 
-const STAGE_BADGE: Record<CropStage, { variant: 'outline' | 'default' | 'warning' | 'info'; label: string }> = {
+const STAGE_BADGE: Record<CropStage, { variant: 'outline' | 'default' | 'warning' | 'info' | 'destructive'; label: string }> = {
   planned: { variant: 'outline', label: 'Planned' },
   growing: { variant: 'default', label: 'Growing' },
   ready: { variant: 'warning', label: 'Ready' },
@@ -204,7 +204,7 @@ const Crops = () => {
                 </TableHeader>
                 <TableBody>
                   {timeline.map((p) => {
-                    const stage = STAGE_BADGE[cropProgress(p, now).stage];
+                    const stage = p.status === 'failed' ? { variant: 'destructive' as const, label: 'Failed' } : STAGE_BADGE[cropProgress(p, now).stage];
                     return (
                       <TableRow key={p.id}>
                         <TableCell className="font-semibold">{p.label}</TableCell>

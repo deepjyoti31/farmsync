@@ -30,7 +30,9 @@ const FieldBoundaryDialog = ({ open, onOpenChange, field, fallbackCenter }: Fiel
 
   const existing = field ? outerRings(field.boundaries)[0] : undefined;
   const existingPolygon: GeoJSON.Polygon | null = existing ? { type: 'Polygon', coordinates: [existing] } : null;
-  const center = existingPolygon ? calculateCenter(existingPolygon) : fallbackCenter ?? undefined;
+  // calculateCenter gives [lat, lng]; the map wants [lng, lat].
+  const existingCenter = existingPolygon ? calculateCenter(existingPolygon) : null;
+  const center: [number, number] | undefined = existingCenter ? [existingCenter[1], existingCenter[0]] : fallbackCenter ?? undefined;
 
   const hectares = polygon ? calculateArea(polygon, 'hectares') : 0;
   const inUnit = field && polygon ? fromHectares(hectares, field.area_unit) : null;

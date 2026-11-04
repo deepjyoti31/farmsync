@@ -19,6 +19,13 @@ export interface DateRange {
 // midnight on the 1st back to the previous day for users east of UTC (e.g. India).
 const ymd = (d: Date) => format(d, 'yyyy-MM-dd');
 
+/**
+ * A Date as a yyyy-MM-dd value for a DATE column, in local time.
+ * Use this instead of toISOString().split('T')[0], which gives the previous
+ * day for a date picked at local midnight anywhere east of UTC.
+ */
+export const toDateValue = (d: Date): string => ymd(d);
+
 /** Date range covered by a report period, relative to `now`. Unknown periods mean year to date. */
 export function getDateRange(period: string, now: Date = new Date()): DateRange {
   const year = now.getFullYear();

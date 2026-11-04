@@ -7,14 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Leaf, Droplets, FileText, Download, Loader2 } from 'lucide-react';
 import FarmSelector from '@/components/farms/FarmSelector';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { downloadBlob, downloadCsv, toCsv } from '@/lib/csv';
 import { buildComplianceReport } from '@/lib/complianceReport';
 import PageHeader from '@/components/common/PageHeader';
+import LogEntryDialog, { type LogKind } from '@/components/sustainability/LogEntryDialog';
 
 const Sustainability = () => {
     const [selectedFarmId, setSelectedFarmId] = useState<string | null>(null);
+    const [logKind, setLogKind] = useState<LogKind | null>(null);
 
     // Fetch Sustainability Logs
     const { data: logs, isLoading: isLoadingLogs } = useQuery({
@@ -138,7 +140,7 @@ const Sustainability = () => {
                                     <CardTitle>Chemical & Fertilizer Log</CardTitle>
                                     <CardDescription>Track all inputs applied to your fields.</CardDescription>
                                 </div>
-                                <Button>Log Input</Button>
+                                <Button onClick={() => setLogKind('input')}>Log Input</Button>
                             </CardHeader>
                             <CardContent>
                                 <Table>
@@ -161,7 +163,7 @@ const Sustainability = () => {
                                             </TableRow>
                                         ) : logs?.map((log: any) => (
                                             <TableRow key={log.id}>
-                                                <TableCell>{format(new Date(log.log_date), 'dd MMM yyyy')}</TableCell>
+                                                <TableCell>{format(parseISO(log.log_date), 'dd MMM yyyy')}</TableCell>
                                                 <TableCell>{log.fields?.name}</TableCell>
                                                 <TableCell className="capitalize">{log.type}</TableCell>
                                                 <TableCell>{log.product_name}</TableCell>
@@ -182,7 +184,7 @@ const Sustainability = () => {
                                     <CardTitle>Water Consumption</CardTitle>
                                     <CardDescription>Track irrigation volumes per field.</CardDescription>
                                 </div>
-                                <Button variant="outline">Log Usage</Button>
+                                <Button variant="outline" onClick={() => setLogKind('water')}>Log Usage</Button>
                             </CardHeader>
                             <CardContent>
                                 <Table>
@@ -203,7 +205,7 @@ const Sustainability = () => {
                                             </TableRow>
                                         ) : waterUsage?.map((record: any) => (
                                             <TableRow key={record.id}>
-                                                <TableCell>{format(new Date(record.usage_date), 'dd MMM yyyy')}</TableCell>
+                                                <TableCell>{format(parseISO(record.usage_date), 'dd MMM yyyy')}</TableCell>
                                                 <TableCell>{record.fields?.name}</TableCell>
                                                 <TableCell className="capitalize">{record.source}</TableCell>
                                                 <TableCell>{record.volume} {record.unit}</TableCell>
@@ -258,6 +260,14 @@ const Sustainability = () => {
                         </Card>
                     </TabsContent>
                 </Tabs>
+            )}
+            {selectedFarmId && (
+                <LogEntryDialog
+                    kind={logKind ?? 'input'}
+                    farmId={selectedFarmId}
+                    open={logKind !== null}
+                    onOpenChange={(o) => !o && setLogKind(null)}
+                />
             )}
         </div>
     );

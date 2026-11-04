@@ -47,7 +47,7 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
 
   // Fetch all farms
   const { data: farms = [], isLoading: isLoadingFarms } = useQuery({
-    queryKey: ['farms'],
+    queryKey: ['farms', 'field-form'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('farms')

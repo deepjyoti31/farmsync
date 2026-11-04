@@ -1,5 +1,6 @@
 import * as GeoJSON from 'geojson';
 import geojsonArea from '@mapbox/geojson-area';
+import { fromHectares } from '@/lib/yieldAnalytics';
 
 /**
  * Calculate area in square meters from a GeoJSON polygon
@@ -27,25 +28,19 @@ export const squareMetersToHectares = (squareMeters: number): number => {
 };
 
 /**
- * Calculate area from a GeoJSON polygon and convert to the specified unit
+ * Calculate area from a GeoJSON polygon in the given unit: acres, hectares,
+ * bigha (any unit known to yieldAnalytics) or square_meters.
+ * Unknown units fall back to square metres.
  */
 export const calculateArea = (
-  polygon: GeoJSON.Polygon | null, 
-  unit: 'acres' | 'hectares' | 'square_meters' = 'acres'
+  polygon: GeoJSON.Polygon | null,
+  unit: string = 'acres'
 ): number => {
   if (!polygon) return 0;
-  
+
   const areaInSquareMeters = calculateAreaInSquareMeters(polygon);
-  
-  switch (unit) {
-    case 'acres':
-      return squareMetersToAcres(areaInSquareMeters);
-    case 'hectares':
-      return squareMetersToHectares(areaInSquareMeters);
-    case 'square_meters':
-    default:
-      return areaInSquareMeters;
-  }
+  if (unit === 'square_meters') return areaInSquareMeters;
+  return fromHectares(squareMetersToHectares(areaInSquareMeters), unit) ?? areaInSquareMeters;
 };
 
 /**
@@ -56,26 +51,31 @@ export const formatArea = (area: number): string => {
 };
 
 /**
- * Calculate center point of a GeoJSON polygon
+ * Average of a polygon's outer ring vertices, as [latitude, longitude].
+ * Note the order: map libraries such as Mapbox want [longitude, latitude].
  */
 export const calculateCenter = (polygon: GeoJSON.Polygon): [number, number] => {
   if (!polygon || !polygon.coordinates || polygon.coordinates.length === 0) {
     return [0, 0];
   }
-  
-  const coordinates = polygon.coordinates[0];
+
+  let coordinates = polygon.coordinates[0];
+  if (!coordinates || coordinates.length === 0) return [0, 0];
+  // GeoJSON rings repeat the first vertex at the end; counting it twice skews the centre.
+  const first = coordinates[0];
+  const last = coordinates[coordinates.length - 1];
+  if (coordinates.length > 1 && first[0] === last[0] && first[1] === last[1]) {
+    coordinates = coordinates.slice(0, -1);
+  }
+
   let sumLat = 0;
   let sumLng = 0;
-
   for (const coord of coordinates) {
     sumLng += coord[0]; // longitude is first in GeoJSON
     sumLat += coord[1]; // latitude is second in GeoJSON
   }
 
-  const centerLat = sumLat / coordinates.length;
-  const centerLng = sumLng / coordinates.length;
-  
-  return [centerLat, centerLng];
+  return [sumLat / coordinates.length, sumLng / coordinates.length];
 };
 
 /**

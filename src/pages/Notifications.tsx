@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Card, 
   CardContent, 
@@ -50,17 +51,11 @@ const Notifications = () => {
   const [activeTab, setActiveTab] = useState('all');
 
   // Fetch user data to get user_id
-  const { data: userData } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    },
-  });
+  const { user: userData } = useAuth();
 
   // Fetch notifications
   const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', 'all', userData?.id],
     queryFn: async () => {
       if (!userData?.id) return [];
       

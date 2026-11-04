@@ -25,6 +25,7 @@ import { MarketplaceListing } from '@/types/marketplace';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const inquirySchema = z.object({
     message: z.string().min(10, "Message must be at least 10 characters"),
@@ -37,9 +38,61 @@ interface InquiryDialogProps {
     listing: MarketplaceListing | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** The seller sees the inquiries on their listing instead of the contact form. */
+    isOwner?: boolean;
 }
 
-const InquiryDialog: React.FC<InquiryDialogProps> = ({ listing, open, onOpenChange }) => {
+/** Inquiries buyers sent about one of the user's own listings, with accept and decline. */
+const ListingInquiries: React.FC<{ listingId: string }> = ({ listingId }) => {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+    const { data: inquiries = [], isLoading } = useQuery({
+        queryKey: ['marketplace_inquiries', listingId],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('marketplace_inquiries')
+                .select('*')
+                .eq('listing_id', listingId)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            return data ?? [];
+        },
+    });
+
+    const respond = async (id: string, status: 'accepted' | 'rejected') => {
+        const { error } = await supabase.from('marketplace_inquiries').update({ status }).eq('id', id);
+        if (error) {
+            toast({ title: 'Could not update', description: error.message, variant: 'destructive' });
+            return;
+        }
+        queryClient.invalidateQueries({ queryKey: ['marketplace_inquiries', listingId] });
+    };
+
+    if (isLoading) return <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin" /></div>;
+    if (inquiries.length === 0) return <p className="py-6 text-center text-sm text-muted-foreground">No inquiries yet.</p>;
+    return (
+        <ul className="max-h-[50vh] space-y-3 overflow-y-auto">
+            {inquiries.map((q) => (
+                <li key={q.id} className="space-y-2 rounded-md border p-3 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-muted-foreground">{q.created_at ? new Date(q.created_at).toLocaleString() : ''}</span>
+                        <span className="text-xs font-medium capitalize">{q.status}</span>
+                    </div>
+                    <p className="whitespace-pre-line">{q.message}</p>
+                    {q.offer_price != null && <p className="font-medium">Offer: ₹{q.offer_price}</p>}
+                    {q.status === 'pending' && (
+                        <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="outline" onClick={() => respond(q.id, 'rejected')}>Decline</Button>
+                            <Button size="sm" onClick={() => respond(q.id, 'accepted')}>Accept</Button>
+                        </div>
+                    )}
+                </li>
+            ))}
+        </ul>
+    );
+};
+
+const InquiryDialog: React.FC<InquiryDialogProps> = ({ listing, open, onOpenChange, isOwner = false }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
 
@@ -89,7 +142,7 @@ const InquiryDialog: React.FC<InquiryDialogProps> = ({ listing, open, onOpenChan
 
             toast({
                 title: "Inquiry Sent",
-                description: "The seller has been notified of your interest.",
+                description: "The seller will see it with their listing.",
             });
             onOpenChange(false);
             form.reset();
@@ -105,6 +158,22 @@ const InquiryDialog: React.FC<InquiryDialogProps> = ({ listing, open, onOpenChan
     };
 
     if (!listing) return null;
+
+    if (isOwner) {
+        return (
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Inquiries</DialogTitle>
+                        <DialogDescription>
+                            Messages from buyers about <strong>{listing.title}</strong>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ListingInquiries listingId={listing.id} />
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

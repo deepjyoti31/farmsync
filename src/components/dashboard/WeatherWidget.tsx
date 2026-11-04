@@ -52,7 +52,8 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ farmId }) => {
     enabled: !!farmId,
   });
 
-  const hasCoords = !!farm?.gps_latitude && !!farm?.gps_longitude;
+  // 0 is a valid latitude or longitude, so test for presence rather than truthiness.
+  const hasCoords = farm?.gps_latitude != null && farm?.gps_longitude != null;
 
   const { data: weather, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['weather', farmId, farm?.gps_latitude, farm?.gps_longitude],

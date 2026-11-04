@@ -36,6 +36,7 @@ export interface CropProgress {
 /**
  * Where a planting is in its season. "Ready" is the last 10% of the season or
  * any time after the expected harvest date, until a harvest is recorded.
+ * A failed planting is finished, like a harvested one: it is no longer in the ground.
  */
 export function cropProgress(p: PlantingLike, today: Date = new Date()): CropProgress {
   const sown = parseISO(p.planting_date);
@@ -45,7 +46,7 @@ export function cropProgress(p: PlantingLike, today: Date = new Date()): CropPro
   const daysToHarvest = expected ? differenceInCalendarDays(expected, today) : null;
 
   const status = (p.status || '').toLowerCase();
-  if (status === 'harvested' || p.actual_harvest_date) {
+  if (status === 'harvested' || status === 'failed' || p.actual_harvest_date) {
     return { stage: 'harvested', day, totalDays, percent: 100, daysToHarvest };
   }
   if (status === 'planned' || differenceInCalendarDays(sown, today) > 0) {
@@ -132,11 +133,14 @@ export function attentionItems(
 
   for (const s of input.stock ?? []) {
     const unit = s.unit ? ` ${s.unit}` : '';
-    if (s.minimum_stock !== null && s.minimum_stock !== undefined && s.quantity <= s.minimum_stock) {
+    const hasMin = s.minimum_stock !== null && s.minimum_stock !== undefined;
+    const out = Number(s.quantity) <= 0;
+    // Out of stock always needs attention, even without a reorder level.
+    if (out || (hasMin && s.quantity <= s.minimum_stock!)) {
       items.push({
-        kind: 'stock', tone: 'warning', href: '/dashboard/inventory', urgency: s.quantity <= 0 ? -1 : 2,
-        title: `${s.name}: ${s.quantity}${unit} left`,
-        detail: `Reorder level is ${s.minimum_stock}${unit}`,
+        kind: 'stock', tone: 'warning', href: '/dashboard/inventory', urgency: out ? -1 : 2,
+        title: out ? `${s.name} is out of stock` : `${s.name}: ${s.quantity}${unit} left`,
+        detail: hasMin ? `Reorder level is ${s.minimum_stock}${unit}` : 'No stock left',
       });
     }
     if (s.expiry_date) {

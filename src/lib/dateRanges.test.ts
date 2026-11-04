@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDateRange } from './dateRanges';
+import { getDateRange, toDateValue } from './dateRanges';
 
 // Months are zero-based in the Date constructor.
 const at = (y: number, m: number, d: number) => new Date(y, m - 1, d, 10, 30);
@@ -49,5 +49,12 @@ describe('getDateRange', () => {
       startDate: '2026-01-01',
       endDate: '2026-03-04',
     });
+  });
+});
+
+describe('toDateValue', () => {
+  it('keeps the local calendar day for a date picked at local midnight', () => {
+    expect(toDateValue(new Date(2026, 10, 4))).toBe('2026-11-04');
+    expect(toDateValue(new Date(2026, 0, 1, 0, 0, 0))).toBe('2026-01-01');
   });
 });

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { toDateValue } from '@/lib/dateRanges';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -51,6 +52,9 @@ const listingSchema = z.object({
     description: z.string().optional(),
     available_date: z.string().min(1, "Please select a date"),
     farm_id: z.string().min(1, "Please select a farm"),
+}).refine((v) => Number(v.min_order_quantity) <= Number(v.quantity_available), {
+    message: "Min order can't be more than the quantity available",
+    path: ["min_order_quantity"],
 });
 
 interface CreateListingDialogProps {
@@ -74,10 +78,15 @@ const CreateListingDialog: React.FC<CreateListingDialogProps> = ({ farms, onSucc
             quantity_available: "",
             min_order_quantity: "1",
             description: "",
-            available_date: new Date().toISOString().split('T')[0],
+            available_date: toDateValue(new Date()),
             farm_id: farms.length > 0 ? farms[0].id : "",
         },
     });
+
+    // Farms usually arrive after the form is created; pick the first once they do.
+    useEffect(() => {
+        if (!form.getValues('farm_id') && farms.length > 0) form.setValue('farm_id', farms[0].id);
+    }, [farms, form]);
 
     const onSubmit = async (values: z.infer<typeof listingSchema>) => {
         setIsSubmitting(true);
@@ -100,7 +109,12 @@ const CreateListingDialog: React.FC<CreateListingDialogProps> = ({ farms, onSucc
                     available_date: values.available_date,
                     farm_id: values.farm_id,
                     seller_id: user.id,
-                    location: selectedFarm?.location || {}, // Using farm location if available? Or just JSON
+                    // ListingCard reads location.address, so store the farm's place as an object.
+                    location: {
+                        address: [selectedFarm?.village, selectedFarm?.district, selectedFarm?.state].filter(Boolean).join(', '),
+                        lat: selectedFarm?.gps_latitude ?? null,
+                        lng: selectedFarm?.gps_longitude ?? null,
+                    },
                     status: 'active'
                 });
 
@@ -111,7 +125,7 @@ const CreateListingDialog: React.FC<CreateListingDialogProps> = ({ farms, onSucc
                 description: "Your product is now listed on the marketplace.",
             });
             setOpen(false);
-            form.reset();
+            form.reset({ ...form.formState.defaultValues, farm_id: values.farm_id });
             onSuccess();
         } catch (error: any) {
             toast({

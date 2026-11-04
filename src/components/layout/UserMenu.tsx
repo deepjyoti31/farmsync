@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -42,24 +41,9 @@ const UserMenu = ({ variant = 'default', onNavigate }: UserMenuProps) => {
   }, [user]);
 
   const handleLogout = async () => {
-    try {
-      await signOut();
-      toast({
-        title: t('layout.user_menu.logout_success'),
-        description: t('layout.user_menu.redirecting'),
-      });
-
-      // Redirect to login page after a short delay
-      setTimeout(() => {
-        navigate('/landing');
-      }, 1500);
-    } catch (error) {
-      toast({
-        title: t('layout.user_menu.logout_error'),
-        description: t('layout.user_menu.logout_error_desc'),
-        variant: "destructive",
-      });
-    }
+    // signOut shows its own toast and takes the user to the login page.
+    onNavigate?.();
+    await signOut();
   };
 
   const getInitials = () => {

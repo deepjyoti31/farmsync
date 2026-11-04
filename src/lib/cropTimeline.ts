@@ -76,5 +76,5 @@ export function plantingSegments(p: PlantingLike, win: TimelineWindow, today: Da
 /** Today's position in the window, or null when today is outside it. */
 export function todayOffset(win: TimelineWindow, today: Date = new Date()): number | null {
   const d = differenceInCalendarDays(today, win.start);
-  return d < 0 || d > win.days ? null : (d / win.days) * 100;
+  return d < 0 || d >= win.days ? null : (d / win.days) * 100;
 }

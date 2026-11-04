@@ -1,4 +1,5 @@
 
+import { toDateValue } from '@/lib/dateRanges';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { Equipment } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -47,7 +48,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(
-    equipment.purchase_date ? new Date(equipment.purchase_date) : undefined
+    equipment.purchase_date ? parseISO(equipment.purchase_date) : undefined
   );
 
   // Convert numeric purchase price to string for the form
@@ -61,7 +62,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
       equipment_type: equipment.equipment_type,
       manufacturer: equipment.manufacturer || '',
       model: equipment.model || '',
-      purchase_date: equipment.purchase_date ? new Date(equipment.purchase_date) : undefined,
+      purchase_date: equipment.purchase_date ? parseISO(equipment.purchase_date) : undefined,
       purchase_price: purchasePriceString,
       status: equipment.status,
       notes: equipment.notes || '',
@@ -83,7 +84,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
           equipment_type: data.equipment_type,
           manufacturer: data.manufacturer || null,
           model: data.model || null,
-          purchase_date: data.purchase_date ? data.purchase_date.toISOString().split('T')[0] : null,
+          purchase_date: data.purchase_date ? toDateValue(data.purchase_date) : null,
           purchase_price: purchasePrice,
           status: data.status,
           notes: data.notes || null,

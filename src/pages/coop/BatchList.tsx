@@ -2,13 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { ProduceBatch } from '@/types/coop';
-import { Plus, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { format } from 'date-fns';
 import PageHeader from '@/components/common/PageHeader';
+import CreateCoopItemDialog from '@/components/coop/CreateCoopItemDialog';
 
 const BatchList = () => {
     const { currentOrganization, userRole } = useAuth();
@@ -18,6 +18,8 @@ const BatchList = () => {
     useEffect(() => {
         if (currentOrganization) {
             loadBatches();
+        } else {
+            setLoading(false);
         }
     }, [currentOrganization]);
 
@@ -47,11 +49,8 @@ const BatchList = () => {
               description={<>Track aggregated produce for {currentOrganization?.name}</>}
               actions={
                 <>
-                  {(userRole === 'owner' || userRole === 'admin') && (
-                      <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Create Batch
-                      </Button>
+                  {(userRole === 'owner' || userRole === 'admin') && currentOrganization && (
+                      <CreateCoopItemDialog kind="batch" organizationId={currentOrganization.id} onCreated={loadBatches} />
                   )}
                 </>
               }
@@ -86,11 +85,6 @@ const BatchList = () => {
                                     <p className="text-sm font-bold">{batch.total_quantity} kg</p>
                                 </div>
                             </CardHeader>
-                            <CardContent>
-                                <div className="flex justify-end">
-                                    <Button variant="outline">View Traceability</Button>
-                                </div>
-                            </CardContent>
                         </Card>
                     ))
                 )}

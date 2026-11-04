@@ -55,7 +55,11 @@ const Livestock = () => {
   });
 
   const herd = useMemo(() => herdSummary(animals), [animals]);
-  const due = useMemo(() => upcomingHealthDue(healthRecords), [healthRecords]);
+  // Reminders only matter for animals still on the farm.
+  const due = useMemo(() => {
+    const live = new Set(animals.filter((a) => !a.status || a.status === 'active').map((a) => a.id));
+    return upcomingHealthDue(healthRecords.filter((r) => live.has(r.livestock_id)));
+  }, [healthRecords, animals]);
   const late = due.filter((d) => d.daysUntilDue < 0).length;
   const gone = animals.length - herd.active;
 

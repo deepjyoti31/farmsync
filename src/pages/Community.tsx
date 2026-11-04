@@ -2,13 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Tabs,
@@ -24,7 +24,6 @@ import {
   MessageSquare,
   ThumbsUp,
   Users,
-  Share2,
   SendHorizontal,
   Sprout,
   Tractor,
@@ -36,19 +35,15 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import PageHeader from '@/components/common/PageHeader';
+import PostComments from '@/components/community/PostComments';
 
 const Community = () => {
   const [newPost, setNewPost] = useState('');
   const [activeForum, setActiveForum] = useState('');
+  const [openComments, setOpenComments] = useState<string | null>(null);
 
   // Fetch user data
-  const { data: userData } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    },
-  });
+  const { user: userData } = useAuth();
 
   // Fetch forums 
   const { data: forums = [] } = useQuery({
@@ -88,7 +83,7 @@ const Community = () => {
 
   // Fetch posts for the active forum, with author profile and comment/like counts
   const { data: posts = [], isLoading: isLoadingPosts, refetch: refetchPosts } = useQuery({
-    queryKey: ['forum_posts', activeForum],
+    queryKey: ['forum_posts', activeForum, userData?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('forum_posts')
@@ -96,7 +91,7 @@ const Community = () => {
           *,
           user:profiles(first_name, last_name, avatar_url),
           comments:post_comments(count),
-          likes:post_likes(count)
+          likes:post_likes(user_id)
         `)
         .eq('forum_id', activeForum)
         .order('created_at', { ascending: false });
@@ -105,7 +100,8 @@ const Community = () => {
       return (data || []).map((post) => ({
         ...post,
         comment_count: post.comments?.[0]?.count ?? 0,
-        like_count: post.likes?.[0]?.count ?? 0,
+        like_count: post.likes?.length ?? 0,
+        liked: !!userData && (post.likes ?? []).some((l) => l.user_id === userData.id),
       }));
     },
     enabled: !!activeForum,
@@ -145,7 +141,20 @@ const Community = () => {
     },
   });
 
+  const toggleLike = async (post: { id: string; liked: boolean }) => {
+    if (!userData) return;
+    const { error } = post.liked
+      ? await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', userData.id)
+      : await supabase.from('post_likes').insert({ post_id: post.id, user_id: userData.id });
+    if (error) {
+      toast({ title: 'Could not update your like', description: error.message, variant: 'destructive' });
+      return;
+    }
+    refetchPosts();
+  };
+
   const handleCreatePost = async () => {
+    if (!activeForum) return;
     if (!newPost.trim() || !userData) {
       toast({
         title: "Error",
@@ -159,10 +168,11 @@ const Community = () => {
       const { error } = await supabase
         .from('forum_posts')
         .insert({
-          content: newPost,
+          content: newPost.trim(),
           forum_id: activeForum,
           user_id: userData.id,
-          title: newPost.split('.')[0] || 'New post',  // Use first sentence as title
+          // First sentence as the title, kept to a heading's length
+          title: (newPost.trim().split(/[.\n]/)[0] || 'New post').slice(0, 120),
         });
 
       if (error) throw error;
@@ -214,7 +224,7 @@ const Community = () => {
               <CardContent className="pt-6">
                 <div className="flex gap-4">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src="/avatar.png" />
+                    <AvatarImage src={userData?.user_metadata?.avatar_url || undefined} />
                     <AvatarFallback>
                       {userData ? getInitials(userData.user_metadata?.first_name, userData.user_metadata?.last_name) : 'US'}
                     </AvatarFallback>
@@ -289,19 +299,29 @@ const Community = () => {
                                   <h3 className="font-medium mt-2">{post.title}</h3>
                                   <p className="text-sm mt-1">{post.content}</p>
                                   <div className="flex items-center gap-4 mt-4">
-                                    <Button variant="ghost" size="sm">
-                                      <ThumbsUp className="h-4 w-4 mr-1" />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      aria-pressed={post.liked}
+                                      className={post.liked ? 'text-primary' : undefined}
+                                      onClick={() => toggleLike(post)}
+                                    >
+                                      <ThumbsUp className={`h-4 w-4 mr-1 ${post.liked ? 'fill-current' : ''}`} />
                                       {post.like_count || 0}
                                     </Button>
-                                    <Button variant="ghost" size="sm">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      aria-expanded={openComments === post.id}
+                                      onClick={() => setOpenComments((id) => (id === post.id ? null : post.id))}
+                                    >
                                       <MessageCircle className="h-4 w-4 mr-1" />
                                       {post.comment_count || 0}
                                     </Button>
-                                    <Button variant="ghost" size="sm">
-                                      <Share2 className="h-4 w-4 mr-1" />
-                                      Share
-                                    </Button>
                                   </div>
+                                  {openComments === post.id && (
+                                    <PostComments postId={post.id} userId={userData?.id ?? null} onChanged={() => refetchPosts()} />
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -339,9 +359,6 @@ const Community = () => {
                   ))}
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button variant="outline" className="w-full" size="sm">View All Tips</Button>
-              </CardFooter>
             </Card>
 
             {/* Community Stats */}
@@ -370,40 +387,6 @@ const Community = () => {
               </CardContent>
             </Card>
 
-            {/* Join Groups */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Popular Groups</CardTitle>
-                <CardDescription>Join specialized farming groups</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 border rounded-md">
-                    <div className="flex items-center gap-3">
-                      <Sprout className="h-5 w-5 text-leaf" />
-                      <div>
-                        <p className="font-medium">Organic Farming</p>
-                        <p className="text-xs text-muted-foreground">342 members</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">Join</Button>
-                  </div>
-                  <div className="flex justify-between items-center p-3 border rounded-md">
-                    <div className="flex items-center gap-3">
-                      <Tractor className="h-5 w-5 text-[#B26B00]" />
-                      <div>
-                        <p className="font-medium">Modern Equipment</p>
-                        <p className="text-xs text-muted-foreground">215 members</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm">Join</Button>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button variant="outline" className="w-full" size="sm">View All Groups</Button>
-              </CardFooter>
-            </Card>
           </div>
         </div>
       </div>

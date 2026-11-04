@@ -60,7 +60,6 @@ const Signup = () => {
         first_name: data.firstName,
         last_name: data.lastName
       });
-      // Redirect to dashboard is handled in the auth context after signup
     } catch (error) {
       console.error("Signup error:", error);
     } finally {

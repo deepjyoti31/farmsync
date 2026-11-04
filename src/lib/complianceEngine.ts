@@ -15,8 +15,8 @@ export interface RuleResult {
  * active ingredient, e.g. "Roundup (glyphosate 41%)" matches "Glyphosate".
  */
 export const validateBannedChemicals = (usedChemicals: string[], rule: ComplianceRule): string[] => {
-    const logic = rule.validation_logic as { banned?: string[] };
-    if (!logic.banned?.length) return [];
+    const logic = rule.validation_logic as { banned?: string[] } | null;
+    if (!logic?.banned?.length) return [];
     const banned = logic.banned.map((b) => b.toLowerCase());
 
     return Array.from(new Set(usedChemicals)).filter((chem) => {

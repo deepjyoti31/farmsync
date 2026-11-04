@@ -12,6 +12,7 @@ import PageHeader from '@/components/common/PageHeader';
 const Compass = () => {
     const [standards, setStandards] = useState<ComplianceStandard[]>([]);
     const [loading, setLoading] = useState(true);
+    const [subscriptions, setSubscriptions] = useState<{ id: string; standardName: string; farmName: string }[]>([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -20,8 +21,22 @@ const Compass = () => {
 
     const loadStandards = async () => {
         try {
-            const { data } = await supabase.from('compliance_standards').select('*');
+            const [{ data }, { data: subs }] = await Promise.all([
+                supabase.from('compliance_standards').select('*'),
+                // Real subscriptions on farms the user can access (RLS).
+                supabase
+                    .from('farm_subscriptions')
+                    .select('id, farm:farms(name), standard:compliance_standards(name)')
+                    .eq('status', 'active'),
+            ]);
             if (data) setStandards(data as ComplianceStandard[]);
+            setSubscriptions(
+                (subs ?? []).map((s) => ({
+                    id: s.id,
+                    standardName: (s.standard as { name?: string } | null)?.name ?? 'Standard',
+                    farmName: (s.farm as { name?: string } | null)?.name ?? 'Farm',
+                })),
+            );
         } catch (e) {
             console.error(e);
         } finally {
@@ -46,13 +61,16 @@ const Compass = () => {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {standards.slice(0, 1).map(std => (
-                                <div key={std.id} className="flex justify-between items-center p-3 bg-background rounded-lg border">
-                                    <span className="font-medium">{std.name}</span>
+                            {subscriptions.map(sub => (
+                                <div key={sub.id} className="flex justify-between items-center gap-2 p-3 bg-background rounded-lg border">
+                                    <span className="flex flex-col">
+                                        <span className="font-medium">{sub.standardName}</span>
+                                        <span className="text-xs text-muted-foreground">{sub.farmName}</span>
+                                    </span>
                                     <Badge variant="outline" className="text-leaf border-leaf/30 bg-leaf-tint">Active</Badge>
                                 </div>
                             ))}
-                            {standards.length === 0 && <p className="text-sm text-muted-foreground">No active subscriptions.</p>}
+                            {!loading && subscriptions.length === 0 && <p className="text-sm text-muted-foreground">No active subscriptions.</p>}
                         </div>
                     </CardContent>
                 </Card>

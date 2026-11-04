@@ -19,7 +19,7 @@ async function getWeatherData(latitude: number, longitude: number) {
 
   try {
     const response = await fetch(
-      `https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=${latitude},${longitude}&days=5`
+      `https://api.weatherapi.com/v1/forecast.json?key=${encodeURIComponent(WEATHER_API_KEY)}&q=${latitude},${longitude}&days=5`
     );
 
     if (!response.ok) throw new Error('Weather API request failed');
@@ -57,17 +57,21 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { latitude, longitude } = await req.json();
+    const body = await req.json();
+    const latitude = Number(body?.latitude);
+    const longitude = Number(body?.longitude);
 
-    // Validate the input
-    if (!latitude || !longitude) {
+    // Validate the input. 0 is a real latitude (the equator) and longitude, so
+    // check for numbers in range rather than truthiness.
+    const missing = body?.latitude == null || body?.longitude == null;
+    if (missing || !Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
       return new Response(
-        JSON.stringify({ error: 'Missing latitude or longitude parameters' }),
+        JSON.stringify({ error: 'Missing or invalid latitude or longitude parameters' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
 
-    // Fetch weather data from Open-Meteo
+    // Fetch weather data from WeatherAPI.com
     const weatherData = await getWeatherData(latitude, longitude);
 
     return new Response(

@@ -1,4 +1,5 @@
 
+import { toDateValue } from '@/lib/dateRanges';
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -43,7 +44,7 @@ const AddEquipmentForm: React.FC<AddEquipmentFormProps> = ({ farmId, onSuccess, 
   const defaultValues: Partial<EquipmentFormValues> = {
     status: 'operational',
     farm_id: farmId || '',
-    purchase_date: new Date().toISOString().split('T')[0],
+    purchase_date: toDateValue(new Date()),
   };
 
   const form = useForm<EquipmentFormValues>({
