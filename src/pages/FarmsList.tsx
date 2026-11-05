@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Info, Loader2, MapPin, MoreHorizontal, Pencil, Plus, Rows3, Trash2, TriangleAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { deleteById } from '@/utils/deleteUtils';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, VisuallyHidden } from '@/components/ui/dialog';
@@ -88,10 +89,10 @@ const FarmsList = () => {
   const removeFarm = async () => {
     if (!deleting) return;
     setIsDeleting(true);
-    const { error } = await supabase.from('farms').delete().eq('id', deleting.id);
+    const problem = await deleteById('farms', deleting.id, deleting.name);
     setIsDeleting(false);
-    if (error) {
-      toast({ title: 'Could not delete the farm', description: error.message, variant: 'destructive' });
+    if (problem) {
+      toast({ title: 'Could not delete the farm', description: problem, variant: 'destructive' });
     } else {
       queryClient.invalidateQueries({ queryKey: ['farms'] });
       toast({ title: `${deleting.name} deleted` });

@@ -15,6 +15,7 @@ import { setTaskCompleted, setTaskStatus, type TaskRow } from '@/components/task
 import { toast } from '@/hooks/use-toast';
 import { useFarmMembers } from '@/hooks/useFarmMembers';
 import { supabase } from '@/integrations/supabase/client';
+import { deleteById } from '@/utils/deleteUtils';
 import {
   PRIORITY_LABELS,
   RECURRENCE_LABELS,
@@ -136,9 +137,9 @@ const Tasks = () => {
   };
 
   const remove = async (task: TaskRow) => {
-    const { error } = await supabase.from('tasks').delete().eq('id', task.id);
-    if (error) {
-      toast({ title: 'Could not delete the task', description: error.message, variant: 'destructive' });
+    const problem = await deleteById('tasks', task.id, 'This task');
+    if (problem) {
+      toast({ title: 'Could not delete the task', description: problem, variant: 'destructive' });
       return;
     }
     if (selectedId === task.id) setSelectedId(null);

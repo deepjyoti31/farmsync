@@ -14,12 +14,14 @@ interface DueTodayProps {
   tasks: TaskRow[];
   memberNames: Map<string, string>;
   onToggle: (task: TaskRow, completed: boolean) => void;
+  /** Most rows to list. The open and late counts always cover every task. */
+  limit?: number;
 }
 
 const priorityVariant = { high: 'destructive', medium: 'warning', low: 'secondary' } as const;
 
 /** Open work that is late, due today, or coming up in the next few days. */
-const DueToday = ({ tasks, memberNames, onToggle }: DueTodayProps) => {
+const DueToday = ({ tasks, memberNames, onToggle, limit }: DueTodayProps) => {
   const { t } = useTranslation();
   const open = tasks.filter((task) => task.status !== 'completed' && task.status !== 'cancelled');
   const late = open.filter((task) => dueState(task.due_date) === 'overdue').length;
@@ -37,7 +39,7 @@ const DueToday = ({ tasks, memberNames, onToggle }: DueTodayProps) => {
         <p className="px-5 py-8 text-center text-muted-foreground md:px-6">{t('today.due.none', 'Nothing due. Enjoy the quiet, or plan the week ahead.')}</p>
       ) : (
         <ul>
-          {tasks.map((task) => {
+          {(limit === undefined ? tasks : tasks.slice(0, limit)).map((task) => {
             const done = task.status === 'completed';
             const state = dueState(task.due_date);
             const prio = (task.priority || 'medium') as Priority;

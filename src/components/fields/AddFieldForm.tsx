@@ -23,6 +23,7 @@ import {
 import { FieldFormData, Farm } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { AREA_UNITS, SOIL_TYPE_OPTIONS, withCurrent } from '@/lib/fieldOptions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const fieldFormSchema = z.object({
@@ -220,9 +221,9 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="acres">Acres</SelectItem>
-                      <SelectItem value="hectares">Hectares</SelectItem>
-                      <SelectItem value="bigha">Bigha</SelectItem>
+                      {withCurrent(AREA_UNITS, field.value).map((u) => (
+                        <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {selectedFarm && (
@@ -254,15 +255,9 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Clay">Clay</SelectItem>
-                      <SelectItem value="Sandy">Sandy</SelectItem>
-                      <SelectItem value="Loamy">Loamy</SelectItem>
-                      <SelectItem value="Silty">Silty</SelectItem>
-                      <SelectItem value="Peaty">Peaty</SelectItem>
-                      <SelectItem value="Chalky">Chalky</SelectItem>
-                      <SelectItem value="Black">Black</SelectItem>
-                      <SelectItem value="Red">Red</SelectItem>
-                      <SelectItem value="Alluvial">Alluvial</SelectItem>
+                      {SOIL_TYPE_OPTIONS.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

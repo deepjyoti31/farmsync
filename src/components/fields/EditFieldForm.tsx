@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Field } from '@/types';
+import { AREA_UNITS, SOIL_TYPE_OPTIONS, withCurrent } from '@/lib/fieldOptions';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -44,6 +45,9 @@ interface EditFieldFormProps {
 const EditFieldForm: React.FC<EditFieldFormProps> = ({ field, onClose, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
+  // Values saved by older versions of the app stay selectable.
+  const unitOptions = withCurrent(AREA_UNITS, field.areaUnit);
+  const soilOptions = withCurrent(SOIL_TYPE_OPTIONS, field.soilType);
 
   const form = useForm<FieldFormData>({
     resolver: zodResolver(fieldFormSchema),
@@ -152,10 +156,9 @@ const EditFieldForm: React.FC<EditFieldFormProps> = ({ field, onClose, onSuccess
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="acres">Acres</SelectItem>
-                      <SelectItem value="hectares">Hectares</SelectItem>
-                      <SelectItem value="sq_meters">Square Meters</SelectItem>
-                      <SelectItem value="sq_feet">Square Feet</SelectItem>
+                      {unitOptions.map((u) => (
+                        <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -182,13 +185,9 @@ const EditFieldForm: React.FC<EditFieldFormProps> = ({ field, onClose, onSuccess
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Clay">Clay</SelectItem>
-                      <SelectItem value="Sandy">Sandy</SelectItem>
-                      <SelectItem value="Loamy">Loamy</SelectItem>
-                      <SelectItem value="Silty">Silty</SelectItem>
-                      <SelectItem value="Peaty">Peaty</SelectItem>
-                      <SelectItem value="Chalky">Chalky</SelectItem>
-                      <SelectItem value="Alluvial">Alluvial</SelectItem>
+                      {soilOptions.map((o) => (
+                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

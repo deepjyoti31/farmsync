@@ -26,3 +26,19 @@ describe('toCsv', () => {
     expect(toCsv(['Date', 'Qty'], [['2026-11-01', 5]])).toBe('Date,Qty\r\n2026-11-01,5');
   });
 });
+
+describe('escapeCsvValue edge cases', () => {
+  it('neutralises every formula prefix in text but not in numbers or booleans', () => {
+    expect(escapeCsvValue('+1')).toBe("'+1");
+    expect(escapeCsvValue('-1')).toBe("'-1");
+    expect(escapeCsvValue('@SUM(A1)')).toBe("'@SUM(A1)");
+    expect(escapeCsvValue('\tx')).toBe("'\tx");
+    expect(escapeCsvValue('\rx')).toBe(`"'\rx"`);
+    expect(escapeCsvValue(true)).toBe('true');
+    expect(escapeCsvValue(0)).toBe('0');
+  });
+
+  it('writes empty cells for missing values inside a row', () => {
+    expect(toCsv(['A', 'B', 'C'], [[null, 'x', undefined]])).toBe('A,B,C\r\n,x,');
+  });
+});

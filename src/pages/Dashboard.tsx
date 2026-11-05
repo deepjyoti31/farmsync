@@ -22,8 +22,11 @@ import { attentionItems, cropProgress, fieldStage, greetingKey, monthTotals } fr
 import { animalLabel, upcomingHealthDue } from '@/lib/livestockRecords';
 import { summarizeCommodities, toMarketPrice } from '@/lib/marketPrices';
 import { dueState } from '@/lib/tasks';
+import { totalAreaIn } from '@/lib/yieldAnalytics';
 
 const FARM_KEY = 'farmsync.dashboard.farm';
+/** Tasks listed in the "Due today" card; the counts above it cover every task. */
+const DUE_TODAY_ROWS = 8;
 
 const readStoredFarm = () => {
   try {
@@ -103,8 +106,9 @@ const Dashboard = () => {
         .select('*')
         .eq('farm_id', farmId!)
         .or(`and(status.not.in.(completed,cancelled),due_date.lte.${soon}),completed_at.gte."${startOfDay(new Date()).toISOString()}"`)
-        .order('due_date', { ascending: true, nullsFirst: false })
-        .limit(8);
+        // No row limit: the counts in the headline and the KPI tile come from
+        // this list. The date filter keeps it short; the card shows the first few.
+        .order('due_date', { ascending: true, nullsFirst: false });
       if (error) throw error;
       return (data ?? []) as TaskRow[];
     },
@@ -243,8 +247,9 @@ const Dashboard = () => {
   const stages = plantings.map((p) => cropProgress(p, now).stage);
   const growing = stages.filter((s) => s === 'growing' || s === 'ready').length;
   const planned = stages.filter((s) => s === 'planned').length;
-  const totalArea = fields.reduce((s, f) => s + (Number(f.area) || 0), 0);
+  // Fields can be measured in different units: convert before adding them up.
   const areaUnit = fields[0]?.area_unit ?? '';
+  const totalArea = totalAreaIn(fields, areaUnit) ?? fields.reduce((s, f) => s + (Number(f.area) || 0), 0);
   const openTasks = tasks.filter((task) => task.status !== 'completed' && task.status !== 'cancelled');
   const dueNow = openTasks.filter((task) => ['overdue', 'today'].includes(dueState(task.due_date))).length;
   const late = openTasks.filter((task) => dueState(task.due_date) === 'overdue').length;
@@ -298,7 +303,7 @@ const Dashboard = () => {
 
           <div className="flex flex-wrap items-start gap-6">
             <div className="flex min-w-0 flex-[2_1_560px] flex-col gap-6">
-              <DueToday tasks={tasks} memberNames={memberNames} onToggle={handleToggle} />
+              <DueToday tasks={tasks} limit={DUE_TODAY_ROWS} memberNames={memberNames} onToggle={handleToggle} />
               {fields.length > 0 && <FieldsGlance fields={glanceFields} />}
               <SeasonProgress rows={seasonRows} />
             </div>

@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { forecastUrl, parseCoordinates, toWeather, type Coordinates } from "./weather.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +8,7 @@ const corsHeaders = {
 };
 
 // Get weather data from the API
-async function getWeatherData(latitude: number, longitude: number) {
+async function getWeatherData(place: Coordinates) {
   // Get the API key from environment variables
   const WEATHER_API_KEY = Deno.env.get("WEATHER_API_KEY");
 
@@ -18,31 +19,12 @@ async function getWeatherData(latitude: number, longitude: number) {
   }
 
   try {
-    const response = await fetch(
-      `https://api.weatherapi.com/v1/forecast.json?key=${encodeURIComponent(WEATHER_API_KEY)}&q=${latitude},${longitude}&days=5`
-    );
+    const response = await fetch(forecastUrl(WEATHER_API_KEY, place));
 
     if (!response.ok) throw new Error('Weather API request failed');
 
-    const data = await response.json();
-
     // Transform the API response to match our expected format
-    return {
-      current: {
-        temperature: data.current.temp_c,
-        humidity: data.current.humidity,
-        precipitation: data.current.precip_mm,
-        wind_speed: data.current.wind_kph,
-        condition: data.current.condition.text
-      },
-      forecast: data.forecast.forecastday.map(day => ({
-        date: day.date,
-        temperature_min: day.day.mintemp_c,
-        temperature_max: day.day.maxtemp_c,
-        condition: day.day.condition.text,
-        precipitation_chance: day.day.daily_chance_of_rain
-      }))
-    };
+    return toWeather(await response.json());
   } catch (error) {
     console.error("Error fetching weather data:", error);
     throw error;
@@ -56,15 +38,9 @@ serve(async (req) => {
   }
 
   try {
-    // Parse the request body
-    const body = await req.json();
-    const latitude = Number(body?.latitude);
-    const longitude = Number(body?.longitude);
-
-    // Validate the input. 0 is a real latitude (the equator) and longitude, so
-    // check for numbers in range rather than truthiness.
-    const missing = body?.latitude == null || body?.longitude == null;
-    if (missing || !Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+    // Parse and validate the request body
+    const place = parseCoordinates(await req.json());
+    if (!place) {
       return new Response(
         JSON.stringify({ error: 'Missing or invalid latitude or longitude parameters' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -72,7 +48,7 @@ serve(async (req) => {
     }
 
     // Fetch weather data from WeatherAPI.com
-    const weatherData = await getWeatherData(latitude, longitude);
+    const weatherData = await getWeatherData(place);
 
     return new Response(
       JSON.stringify(weatherData),

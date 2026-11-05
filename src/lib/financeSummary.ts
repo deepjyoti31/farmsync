@@ -71,10 +71,25 @@ export function niceMax(value: number): number {
   return step * pow;
 }
 
-/** Compact rupee label for chart axes: ₹1.5L, ₹50k, ₹0. */
+const COMPACT_UNITS = [
+  { size: 1e7, suffix: 'Cr' },
+  { size: 1e5, suffix: 'L' },
+  { size: 1e3, suffix: 'k' },
+  { size: 1, suffix: '' },
+];
+
+/**
+ * Compact rupee label for chart axes: ₹1.5L, ₹50k, ₹0, -₹2k.
+ * A value that rounds up to the next unit uses that unit (₹99,999 is ₹1L, not ₹100k).
+ */
 export function compactRupees(n: number): string {
-  if (n >= 1e7) return `₹${+(n / 1e7).toFixed(1)}Cr`;
-  if (n >= 1e5) return `₹${+(n / 1e5).toFixed(1)}L`;
-  if (n >= 1e3) return `₹${+(n / 1e3).toFixed(1)}k`;
-  return `₹${Math.round(n)}`;
+  const abs = Math.abs(n);
+  const shown = (size: number) => (size === 1 ? Math.round(abs) : +(abs / size).toFixed(1));
+  // The largest unit the value reaches, stepping up one when rounding reaches the next.
+  let i = COMPACT_UNITS.findIndex((u) => abs >= u.size);
+  if (i === -1) i = COMPACT_UNITS.length - 1;
+  if (i > 0 && shown(COMPACT_UNITS[i].size) * COMPACT_UNITS[i].size >= COMPACT_UNITS[i - 1].size) i -= 1;
+  const value = shown(COMPACT_UNITS[i].size);
+  if (value === 0) return '₹0';
+  return `${n < 0 ? '-' : ''}₹${value}${COMPACT_UNITS[i].suffix}`;
 }

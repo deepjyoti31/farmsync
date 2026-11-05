@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { compactRupees } from '@/lib/financeSummary';
+import { categoryTotals, compactRupees, totalOfType } from '@/lib/financeSummary';
 import { AXIS_PROPS, CHART, GRID_PROPS, categoryColor, foldCategories, TOOLTIP_PROPS } from '@/lib/chartPalette';
 import { Loader2, TrendingUp, TrendingDown, DollarSign, Sprout } from 'lucide-react';
 import FarmSelector from '@/components/farms/FarmSelector';
@@ -28,20 +28,10 @@ const Analytics = () => {
 
             if (error) throw error;
 
-            // A transaction's own type wins; fall back to its category's type.
-            const typeOf = (t: (typeof data)[number]) => t.type ?? t.category?.type;
-            const income = data.filter(t => typeOf(t) === 'income').reduce((acc, curr) => acc + Number(curr.amount), 0);
-            const expense = data.filter(t => typeOf(t) === 'expense').reduce((acc, curr) => acc + Number(curr.amount), 0);
-
-            // Category Breakdown
-            const categoryMap = new Map<string, number>();
-            data.filter(t => typeOf(t) === 'expense').forEach(t => {
-                const catName = t.category?.name ?? 'Uncategorized';
-                const current = categoryMap.get(catName) || 0;
-                categoryMap.set(catName, current + Number(t.amount));
-            });
-
-            const expenseByCategory = Array.from(categoryMap.entries()).map(([name, value]) => ({ name, value }));
+            // Same rules as the Finances page: a transaction's own type wins, then its category's.
+            const income = totalOfType(data, 'income');
+            const expense = totalOfType(data, 'expense');
+            const expenseByCategory = categoryTotals(data, 'expense').map(({ name, total }) => ({ name, value: total }));
 
             return { income, expense, expenseByCategory, transactions: data };
         },

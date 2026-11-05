@@ -1,4 +1,6 @@
 import { toDateValue } from '@/lib/dateRanges';
+import { planCropStatusChange } from '@/lib/cropStatus';
+import { errorMessage } from '@/utils/deleteUtils';
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,46 +38,42 @@ const UpdateCropStatusForm: React.FC<UpdateCropStatusFormProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (status === currentStatus) {
-      toast({
-        title: "No changes",
-        description: "The status is already set to this value.",
-      });
-      return;
-    }
+    const plan = planCropStatusChange({
+      currentStatus,
+      status,
+      harvestQuantity,
+      harvestUnit,
+      today: toDateValue(new Date()),
+    });
 
-    const quantity = Number(harvestQuantity);
-    if (isHarvesting && harvestQuantity !== '' && (!Number.isFinite(quantity) || quantity <= 0)) {
-      toast({
-        title: "Invalid quantity",
-        description: "Enter a harvested quantity greater than zero, or leave it blank.",
-        variant: "destructive",
-      });
+    if ('reason' in plan) {
+      toast(
+        plan.reason === 'unchanged'
+          ? { title: "No changes", description: "The status is already set to this value." }
+          : {
+              title: "Invalid quantity",
+              description: "Enter a harvested quantity greater than zero, or leave it blank.",
+              variant: "destructive",
+            },
+      );
       return;
     }
 
     try {
       setIsUpdating(true);
-      const today = toDateValue(new Date());
-      const recordHarvest = isHarvesting && harvestQuantity !== '';
 
       const { error } = await supabase
         .from('field_crops')
-        .update({
-          status,
-          ...(isHarvesting ? { actual_harvest_date: today } : {}),
-          ...(recordHarvest ? { yield_amount: quantity, yield_unit: harvestUnit } : {}),
-          updated_at: new Date().toISOString()
-        })
+        .update({ ...plan.update, updated_at: new Date().toISOString() })
         .eq('id', cropId);
 
       if (error) throw error;
 
       // Harvest records feed the yield charts in Analytics.
-      if (recordHarvest) {
+      if (plan.harvest) {
         const { error: harvestError } = await supabase
           .from('harvests')
-          .insert({ field_crop_id: cropId, quantity, unit: harvestUnit, harvest_date: today });
+          .insert({ field_crop_id: cropId, ...plan.harvest });
         if (harvestError) throw harvestError;
         queryClient.invalidateQueries({ queryKey: ['analytics_yield'] });
       }
@@ -88,10 +86,10 @@ const UpdateCropStatusForm: React.FC<UpdateCropStatusFormProps> = ({
         title: "Status updated",
         description: `Crop status has been updated to ${status}.`,
       });
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error updating status",
-        description: error.message || "An error occurred while updating the status.",
+        description: errorMessage(error, "An error occurred while updating the status."),
         variant: "destructive",
       });
     } finally {
