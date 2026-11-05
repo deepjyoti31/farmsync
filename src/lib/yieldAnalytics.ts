@@ -7,7 +7,10 @@
 /** Conversion of supported harvest units to tonnes. */
 const TONNES_PER_UNIT: Record<string, number> = {
   kg: 0.001,
+  kgs: 0.001,
   quintal: 0.1,
+  quintals: 0.1,
+  tonne: 1,
   tonnes: 1,
   t: 1,
 };
@@ -16,30 +19,62 @@ const TONNES_PER_UNIT: Record<string, number> = {
  * Conversion of supported area units to hectares.
  * Bigha varies by region; 0.25 ha is the common value in north India
  * (Punjab, Haryana, Uttar Pradesh). Adjust here if your region differs.
+ * Square metres and feet are accepted because older versions of the field
+ * edit form could save them.
  */
 const HECTARES_PER_UNIT: Record<string, number> = {
   hectares: 1,
+  hectare: 1,
   ha: 1,
   acres: 0.404686,
+  acre: 0.404686,
   bigha: 0.25,
+  bighas: 0.25,
+  sq_meters: 0.0001,
+  square_meters: 0.0001,
+  sq_feet: 0.0000092903,
 };
 
 export const HARVEST_UNITS = ['kg', 'quintal', 'tonnes'] as const;
 
-export function toTonnes(quantity: number, unit: string): number | null {
-  const factor = TONNES_PER_UNIT[unit.toLowerCase()];
+/** Area units offered when adding or editing a farm or field. */
+export const AREA_UNITS = [
+  { value: 'acres', label: 'Acres' },
+  { value: 'hectares', label: 'Hectares' },
+  { value: 'bigha', label: 'Bigha' },
+] as const;
+
+const factorOf = (table: Record<string, number>, unit: string | null | undefined): number | undefined =>
+  unit ? table[unit.trim().toLowerCase()] : undefined;
+
+export function toTonnes(quantity: number, unit: string | null | undefined): number | null {
+  const factor = factorOf(TONNES_PER_UNIT, unit);
   return factor === undefined ? null : quantity * factor;
 }
 
-export function toHectares(area: number, unit: string): number | null {
-  const factor = HECTARES_PER_UNIT[unit.toLowerCase()];
+export function toHectares(area: number, unit: string | null | undefined): number | null {
+  const factor = factorOf(HECTARES_PER_UNIT, unit);
   return factor === undefined ? null : area * factor;
 }
 
 /** Area in `unit` for a value in hectares, or null for an unknown unit. */
-export function fromHectares(hectares: number, unit: string): number | null {
-  const factor = HECTARES_PER_UNIT[unit.toLowerCase()];
+export function fromHectares(hectares: number, unit: string | null | undefined): number | null {
+  const factor = factorOf(HECTARES_PER_UNIT, unit);
   return factor === undefined ? null : hectares / factor;
+}
+
+/**
+ * Total area of several plots expressed in `unit`, converting each plot from
+ * its own unit first, so a field in acres and one in bigha add up correctly.
+ * Plots in an unknown unit are left out. Returns null when `unit` is unknown.
+ */
+export function totalAreaIn(
+  plots: { area: number | string | null; area_unit: string | null | undefined }[],
+  unit: string | null | undefined,
+): number | null {
+  if (factorOf(HECTARES_PER_UNIT, unit) === undefined) return null;
+  const hectares = plots.reduce((sum, p) => sum + (toHectares(Number(p.area) || 0, p.area_unit) ?? 0), 0);
+  return fromHectares(hectares, unit);
 }
 
 export interface HarvestRecord {

@@ -27,3 +27,31 @@ describe('renderComplianceReportPdf', () => {
     expect(text).toContain('Page 1 of');
   });
 });
+
+describe('renderComplianceReportPdf edge cases', () => {
+  const pdfText = async (blob: Blob) => Buffer.from(await blob.arrayBuffer()).toString('latin1');
+
+  it('renders an empty record for a farm without location or area', async () => {
+    const text = await pdfText(renderComplianceReportPdf({ name: 'Bare Farm' }, buildComplianceReport([], []), new Date(2026, 10, 2)));
+    expect(text).toContain('Bare Farm');
+    expect(text).toContain('No inputs recorded');
+    expect(text).toContain('No water use recorded');
+    expect(text).toContain('Period covered: - to -');
+    expect(text).not.toContain('Location:');
+    expect(text).not.toContain('Area:');
+  });
+
+  it('spreads a long log over several pages and still ends with the declaration', async () => {
+    const inputs = Array.from({ length: 40 }, (_, i) => ({
+      log_date: `2026-06-${String((i % 28) + 1).padStart(2, '0')}`,
+      type: 'fertilizer',
+      product_name: `Product ${i}`,
+      quantity: i + 1,
+      unit: 'kg',
+    }));
+    const text = await pdfText(renderComplianceReportPdf({ name: 'Busy Farm', area_unit: null, total_area: 2 }, buildComplianceReport(inputs, [])));
+    expect(text).toContain('Area: 2 ');
+    expect(text).toMatch(/Page 1 of [2-9]/);
+    expect(text).toContain('I declare that the records above are complete and accurate.');
+  });
+});

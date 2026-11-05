@@ -15,6 +15,7 @@ import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
 import EditEquipmentForm from '@/components/equipment/EditEquipmentForm';
 import MaintenanceDialog from '@/components/equipment/MaintenanceDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { deleteById } from '@/utils/deleteUtils';
 import { useToast } from '@/hooks/use-toast';
 import { formatMoney } from '@/lib/dashboard';
 import { maintenanceCostByEquipment, serviceState, sortByService, type ServiceState } from '@/lib/maintenance';
@@ -100,9 +101,9 @@ const EquipmentPage = () => {
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['equipment'] });
 
   const remove = async (m: Equipment) => {
-    const { error } = await supabase.from('equipment').delete().eq('id', m.id);
-    if (error) {
-      toast({ title: 'Could not delete the machine', description: error.message, variant: 'destructive' });
+    const problem = await deleteById('equipment', m.id, m.name);
+    if (problem) {
+      toast({ title: 'Could not delete the machine', description: problem, variant: 'destructive' });
       return;
     }
     refresh();

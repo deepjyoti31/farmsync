@@ -1,8 +1,11 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { transactionType, type TransactionLike } from './financeSummary';
 
-/** Rupees with Indian digit grouping, e.g. ₹1,24,550 */
-export const formatMoney = (n: number) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+/** Rupees with Indian digit grouping, e.g. ₹1,24,550 or -₹2,000 */
+export const formatMoney = (n: number) => {
+  const rounded = Math.round(n);
+  return `${rounded < 0 ? '-' : ''}₹${Math.abs(rounded).toLocaleString('en-IN')}`;
+};
 
 /** Time-of-day greeting key for the Today screen. */
 export function greetingKey(now: Date = new Date()): 'morning' | 'afternoon' | 'evening' {

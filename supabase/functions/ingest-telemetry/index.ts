@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { checkPayload } from './payload.ts'
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -50,10 +51,10 @@ serve(async (req) => {
         }
 
         // Parse body: readings must be a JSON object of named values.
-        const payload = await req.json()
-        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        const check = checkPayload(await req.json())
+        if (!check.ok) {
             return new Response(
-                JSON.stringify({ error: 'Body must be a JSON object' }),
+                JSON.stringify({ error: check.error }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
@@ -63,9 +64,9 @@ serve(async (req) => {
             .from('telemetry')
             .insert({
                 device_id: device.id,
-                data: payload,
+                data: check.payload,
                 timestamp: new Date().toISOString(),
-                type: typeof payload.type === 'string' ? payload.type : 'interval_reading'
+                type: check.type
             })
 
         if (insertError) {

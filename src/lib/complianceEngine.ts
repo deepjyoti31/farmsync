@@ -16,12 +16,17 @@ export interface RuleResult {
  */
 export const validateBannedChemicals = (usedChemicals: string[], rule: ComplianceRule): string[] => {
     const logic = rule.validation_logic as { banned?: string[] } | null;
-    if (!logic?.banned?.length) return [];
-    const banned = logic.banned.map((b) => b.toLowerCase());
+    if (!Array.isArray(logic?.banned)) return [];
+    // A blank entry would match every product ("x".includes("") is true), so drop it.
+    const banned = logic.banned
+        .filter((b): b is string => typeof b === 'string')
+        .map((b) => b.trim().toLowerCase())
+        .filter(Boolean);
+    if (banned.length === 0) return [];
 
     return Array.from(new Set(usedChemicals)).filter((chem) => {
-        const name = chem.toLowerCase();
-        return banned.some((b) => name.includes(b));
+        const name = (chem ?? '').toLowerCase();
+        return name !== '' && banned.some((b) => name.includes(b));
     });
 };
 
