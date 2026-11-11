@@ -77,9 +77,12 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ farmId, open, onOpenCha
       assigned_to: form.assigned_to === UNASSIGNED ? null : form.assigned_to,
     };
 
+    // Changing the date or the rhythm starts the series afresh from the new date.
+    const restartsSeries = !!task && task.recurrence_day != null && (values.due_date !== task.due_date || values.recurrence !== task.recurrence);
+
     setSaving(true);
     const { error } = task
-      ? await supabase.from('tasks').update(values).eq('id', task.id)
+      ? await supabase.from('tasks').update(restartsSeries ? { ...values, recurrence_day: null } : values).eq('id', task.id)
       : await supabase.from('tasks').insert({ ...values, farm_id: farmId, status: 'pending' });
     setSaving(false);
 

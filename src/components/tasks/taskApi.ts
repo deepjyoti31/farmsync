@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
-import { nextDueDate } from '@/lib/tasks';
+import { nextDueDate, nextRecurrenceDay } from '@/lib/tasks';
 
 export type TaskRow = Tables<'tasks'>;
 
@@ -25,7 +25,7 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
   // task again changes nothing.
   if (!completed || task.status === 'completed') return null;
 
-  const next = nextDueDate(task.due_date, task.recurrence);
+  const next = nextDueDate(task.due_date, task.recurrence, task.recurrence_day);
   if (!next) return null;
 
   // Unticking and re-ticking a repeating task must not create the next one twice.
@@ -40,7 +40,7 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
   if (lookupError) throw lookupError;
   if (existing && existing.length > 0) return next;
 
-  const { error: insertError } = await supabase.from('tasks').insert({
+  const occurrence = {
     farm_id: task.farm_id,
     title: task.title,
     description: task.description,
@@ -51,7 +51,16 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
     recurrence: task.recurrence,
     due_date: next,
     status: 'pending',
-  });
+  };
+  // Remember the day the series aims for when a short month moved this
+  // occurrence earlier (31 Jan, 28 Feb, then 31 Mar again, not 28 Mar).
+  const anchor = nextRecurrenceDay(task.due_date, task.recurrence, task.recurrence_day);
+  let { error: insertError } = await supabase.from('tasks').insert(anchor ? { ...occurrence, recurrence_day: anchor } : occurrence);
+  // A database without the recurrence_day column (migration not applied yet)
+  // must still get its next occurrence.
+  if (insertError && anchor && (insertError.code === 'PGRST204' || insertError.code === '42703')) {
+    ({ error: insertError } = await supabase.from('tasks').insert(occurrence));
+  }
   if (insertError) throw insertError;
   return next;
 }

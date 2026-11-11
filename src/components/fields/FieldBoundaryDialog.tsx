@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,16 @@ const FieldBoundaryDialog = ({ open, onOpenChange, field, fallbackCenter }: Fiel
   const [polygon, setPolygon] = useState<GeoJSON.Polygon | null>(null);
   const [updateArea, setUpdateArea] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Saving and Cancel close the dialog without passing through the Dialog's own
+  // close handler, so the drawn shape used to survive. Opened next for another
+  // field, Save was enabled straight away and wrote the previous field's
+  // boundary and area onto it.
+  const fieldId = field?.id;
+  useEffect(() => {
+    setPolygon(null);
+    setUpdateArea(true);
+  }, [open, fieldId]);
 
   const existing = field ? outerRings(field.boundaries)[0] : undefined;
   const existingPolygon: GeoJSON.Polygon | null = existing ? { type: 'Polygon', coordinates: [existing] } : null;

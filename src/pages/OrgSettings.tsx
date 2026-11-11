@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,10 @@ const OrgSettings = () => {
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState('viewer');
     const [isInviteOpen, setIsInviteOpen] = useState(false);
+    // Answers for a workspace the user has since switched away from are dropped,
+    // so a slow reply can never show one team's data under another team's name.
+    const orgIdRef = useRef(currentOrganization?.id);
+    orgIdRef.current = currentOrganization?.id;
 
     useEffect(() => {
         if (currentOrganization) {
@@ -59,6 +63,7 @@ const OrgSettings = () => {
 
     const loadMembers = async () => {
         if (!currentOrganization) return;
+        const orgId = currentOrganization.id;
         setLoading(true);
         try {
             // Improved query to join profile data if available, falling back to auth metadata if needed
@@ -76,6 +81,7 @@ const OrgSettings = () => {
                 ? await supabase.from('profiles').select('id, first_name, last_name').in('id', ids)
                 : { data: [] };
             const names = new Map((profiles ?? []).map((p) => [p.id, [p.first_name, p.last_name].filter(Boolean).join(' ')]));
+            if (orgIdRef.current !== orgId) return;
             setMembers((data as OrganizationMember[]).map((m) => ({ ...m, name: names.get(m.user_id) || undefined })));
         } catch (error: any) {
             console.error('Error loading members:', error);
@@ -85,7 +91,7 @@ const OrgSettings = () => {
                 variant: "destructive",
             });
         } finally {
-            setLoading(false);
+            if (orgIdRef.current === orgId) setLoading(false);
         }
     };
 

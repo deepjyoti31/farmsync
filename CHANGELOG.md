@@ -29,6 +29,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - A harvest expected today was missing from "next harvest" on the Crops page.
 - Deleting a machine left its services in the equipment history and yearly spend until the page was reloaded; forum post counts did not update after posting.
 - Editing equipment dropped a purchase price of 0 and accepted text that is not a price; a health record accepted a negative or non-numeric cost.
+- A monthly task due on the 29th, 30th or 31st moved to the end of a shorter month and then stayed on that earlier day for good (31 Jan, 28 Feb, 28 Mar, ...); a yearly task due on 29 February never returned to it. Migration `20261111000000_task_recurrence_day.sql` adds `tasks.recurrence_day` to remember the intended day.
+- Drawing a field boundary, saving or cancelling, then opening the dialog for another field left Save enabled with the first field's shape, which could overwrite the second field's boundary and area.
+- Ticking a repeating task twice in quick succession on the Today screen could create its next occurrence twice.
+- Switching workspace while the team, co-op or batch pages were loading could show the previous workspace's members and figures under the new workspace's name.
 - `ingest-telemetry` answered 400 or 401 for failures on the server side (now 500, so devices retry) and `get-weather` answered 500 for a malformed request body (now 400).
 - Team invitations could never be accepted. Invitees now join when they sign in with the invited (confirmed) email.
 - The crop catalogue was empty, so no crop could be planned on a fresh database.

@@ -1,4 +1,4 @@
-import { addDays, addMonths, addWeeks, addYears, differenceInCalendarDays, format, parseISO } from 'date-fns';
+import { addDays, addMonths, addWeeks, addYears, differenceInCalendarDays, format, getDaysInMonth, parseISO, setDate } from 'date-fns';
 
 export const RECURRENCES = ['none', 'daily', 'weekly', 'monthly', 'yearly'] as const;
 export type Recurrence = (typeof RECURRENCES)[number];
@@ -24,6 +24,8 @@ export interface TaskLike {
   status: string | null;
   priority: string | null;
   recurrence?: string | null;
+  /** Day of the month a monthly or yearly series aims for, when a short month moved this occurrence earlier. */
+  recurrence_day?: number | null;
 }
 
 export const isCompleted = (task: Pick<TaskLike, 'status'>) => task.status === 'completed';
@@ -31,18 +33,40 @@ export const isCompleted = (task: Pick<TaskLike, 'status'>) => task.status === '
 /**
  * Due date of the next occurrence of a repeating task, as yyyy-MM-dd.
  * Returns null for non-repeating tasks or tasks without a due date.
+ *
  * Monthly tasks due on the 31st fall back to the last day of shorter months.
+ * `anchorDay` is the day of the month the series was set up for: without it a
+ * task due on the 31st would move to the 28th in February and then stay on the
+ * 28th for good (and a yearly task due on 29 February would never return to it).
  */
-export function nextDueDate(dueDate: string | null, recurrence: string | null | undefined): string | null {
+export function nextDueDate(dueDate: string | null, recurrence: string | null | undefined, anchorDay?: number | null): string | null {
   if (!dueDate || !recurrence || recurrence === 'none') return null;
   const due = parseISO(dueDate);
+  // addMonths and addYears already clamp to the end of a shorter month.
+  const onAnchor = (d: Date) => setDate(d, Math.min(anchorDay && anchorDay >= 1 && anchorDay <= 31 ? anchorDay : due.getDate(), getDaysInMonth(d)));
   const next = {
     daily: () => addDays(due, 1),
     weekly: () => addWeeks(due, 1),
-    monthly: () => addMonths(due, 1),
-    yearly: () => addYears(due, 1),
+    monthly: () => onAnchor(addMonths(due, 1)),
+    yearly: () => onAnchor(addYears(due, 1)),
   }[recurrence as Exclude<Recurrence, 'none'>];
   return next ? format(next(), 'yyyy-MM-dd') : null;
+}
+
+/**
+ * The `recurrence_day` to store on the next occurrence: the day of the month
+ * the series aims for, or null when the next occurrence already falls on it.
+ */
+export function nextRecurrenceDay(
+  dueDate: string | null,
+  recurrence: string | null | undefined,
+  anchorDay?: number | null,
+): number | null {
+  if (recurrence !== 'monthly' && recurrence !== 'yearly') return null;
+  const next = nextDueDate(dueDate, recurrence, anchorDay);
+  if (!dueDate || !next) return null;
+  const anchor = anchorDay && anchorDay >= 1 && anchorDay <= 31 ? anchorDay : parseISO(dueDate).getDate();
+  return parseISO(next).getDate() === anchor ? null : anchor;
 }
 
 export type DueState = 'overdue' | 'today' | 'soon' | 'later' | 'none';

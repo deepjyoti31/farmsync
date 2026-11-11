@@ -76,6 +76,27 @@ describe('setTaskCompleted', () => {
     expect(mock.current.queries).toHaveLength(2);
   });
 
+  it('remembers the day of the month when a short month moves the next occurrence', async () => {
+    mock.current.respond({}, { data: [] }, {});
+    await expect(setTaskCompleted(task({ recurrence: 'monthly', due_date: '2026-01-31' }), true)).resolves.toBe('2026-02-28');
+    expect(mock.current.argsOf(mock.current.queries[2], 'insert')![0]).toMatchObject({ due_date: '2026-02-28', recurrence_day: 31 });
+  });
+
+  it('goes back to the remembered day in the next long month', async () => {
+    mock.current.respond({}, { data: [] }, {});
+    const feb = task({ recurrence: 'monthly', due_date: '2026-02-28', recurrence_day: 31 });
+    await expect(setTaskCompleted(feb, true)).resolves.toBe('2026-03-31');
+    // Back on the 31st, so nothing needs remembering.
+    expect(mock.current.argsOf(mock.current.queries[2], 'insert')![0]).not.toHaveProperty('recurrence_day');
+  });
+
+  it('still creates the next occurrence on a database without the recurrence_day column', async () => {
+    mock.current.respond({}, { data: [] }, { error: { code: 'PGRST204', message: 'no such column' } }, {});
+    await expect(setTaskCompleted(task({ recurrence: 'monthly', due_date: '2026-01-31' }), true)).resolves.toBe('2026-02-28');
+    expect(mock.current.queries).toHaveLength(4);
+    expect(mock.current.argsOf(mock.current.queries[3], 'insert')![0]).not.toHaveProperty('recurrence_day');
+  });
+
   it('does nothing more for a task that was already done', async () => {
     mock.current.respond({});
     await expect(setTaskCompleted(task({ status: 'completed' }), true)).resolves.toBeNull();

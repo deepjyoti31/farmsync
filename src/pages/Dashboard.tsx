@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { addDays, endOfMonth, format, startOfDay, startOfMonth } from 'date-fns';
@@ -196,12 +196,20 @@ const Dashboard = () => {
   const { data: members = [] } = useFarmMembers(farmId);
   const memberNames = useMemo(() => new Map(members.map((m) => [m.id, m.name])), [members]);
 
+  // A second tap before the first save returns would create the next
+  // occurrence of a repeating task twice: both saves see that none exists yet.
+  const toggling = useRef(new Set<string>());
   const handleToggle = async (task: TaskRow, completed: boolean) => {
+    if (toggling.current.has(task.id)) return;
+    toggling.current.add(task.id);
     try {
       await setTaskCompleted(task, completed);
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      // Wait for the refreshed list, so the next tap acts on the new status.
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
     } catch (e) {
       toast({ title: t('today.due.error', 'Could not update the task'), description: (e as Error).message, variant: 'destructive' });
+    } finally {
+      toggling.current.delete(task.id);
     }
   };
 
