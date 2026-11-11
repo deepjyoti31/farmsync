@@ -15,6 +15,8 @@ interface AuthContextType {
   setCurrentOrganization: (org: Organization) => void;
   userRole: string | null;
   isLoadingOrganizations: boolean;
+  /** True once the signed-in user's workspaces have been loaded (or loading them has failed). */
+  organizationsReady: boolean;
   refreshOrganizations: () => Promise<void>;
   signUp: (email: string, password: string, metadata: { first_name: string; last_name: string }) => Promise<void>;
   /** Signs in and navigates to `redirectTo` (default /dashboard). */
@@ -29,6 +31,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Remember whose data it holds, so the next person on a shared phone never sees it.
 const CACHE_OWNER_KEY = 'farmsync.cache-owner';
 const orgKey = (userId: string) => `farmsync.org.${userId}`;
+// The last workspace list that loaded, so the app still knows which workspace
+// it is in (and which farms belong to it) when it is opened without a connection.
+const orgListKey = (userId: string) => `farmsync.orgs.${userId}`;
+
+const readCachedOrganizations = (userId: string): { orgs: Organization[]; roles: Record<string, string> } | null => {
+  try {
+    const cached = JSON.parse(readStorage(orgListKey(userId)) ?? 'null');
+    return cached && Array.isArray(cached.orgs) && cached.roles && typeof cached.roles === 'object' ? cached : null;
+  } catch {
+    return null;
+  }
+};
 
 const readStorage = (key: string) => {
   try {
@@ -57,6 +71,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // so the role always matches the selected organization.
   const [roles, setRoles] = useState<Record<string, string>>({});
   const [isLoadingOrganizations, setIsLoadingOrganizations] = useState(false);
+  // Whose workspaces are in state; compared with the current user below.
+  const [organizationsLoadedFor, setOrganizationsLoadedFor] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -66,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setOrganizations([]);
     setCurrentOrganizationState(null);
     setRoles({});
+    setOrganizationsLoadedFor(null);
   }, []);
 
   const setCurrentOrganization = useCallback(
@@ -89,21 +106,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('role, organization:organizations(*)')
         .eq('user_id', userId);
 
+      let orgs: Organization[];
+      let nextRoles: Record<string, string>;
       if (error) {
         console.error('Error fetching organizations:', error);
-        return;
+        // Offline or the request failed: carry on with the last list that loaded.
+        const cached = readCachedOrganizations(userId);
+        if (!cached) return;
+        ({ orgs, roles: nextRoles } = cached);
+      } else {
+        orgs = Array.from(
+          new Map(
+            (members ?? [])
+              .map((m) => m.organization as Organization | null)
+              .filter((o): o is Organization => !!o)
+              .map((o) => [o.id, o]),
+          ).values(),
+        );
+        nextRoles = Object.fromEntries((members ?? []).filter((m) => m.organization).map((m) => [(m.organization as Organization).id, m.role]));
+        writeStorage(orgListKey(userId), JSON.stringify({ orgs, roles: nextRoles }));
       }
-
-      const orgs = Array.from(
-        new Map(
-          (members ?? [])
-            .map((m) => m.organization as Organization | null)
-            .filter((o): o is Organization => !!o)
-            .map((o) => [o.id, o]),
-        ).values(),
-      );
       setOrganizations(orgs);
-      setRoles(Object.fromEntries((members ?? []).filter((m) => m.organization).map((m) => [(m.organization as Organization).id, m.role])));
+      setRoles(nextRoles);
 
       // Keep the selected organization if the user still belongs to it (with its
       // latest name), otherwise fall back to the last one used, then personal.
@@ -117,6 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Unexpected error loading organizations:', err);
     } finally {
       setIsLoadingOrganizations(false);
+      setOrganizationsLoadedFor(userId);
     }
   }, [userId]);
 
@@ -235,6 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const userRole = currentOrganization ? roles[currentOrganization.id] ?? null : null;
+  const organizationsReady = !!userId && organizationsLoadedFor === userId;
 
   const value = useMemo(
     () => ({
@@ -245,6 +271,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentOrganization,
       userRole,
       isLoadingOrganizations,
+      organizationsReady,
       refreshOrganizations,
       signUp,
       signIn,
@@ -253,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }),
     // signUp/signIn/signOut only close over navigate and toast.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session, user, organizations, currentOrganization, setCurrentOrganization, userRole, isLoadingOrganizations, refreshOrganizations, loading],
+    [session, user, organizations, currentOrganization, setCurrentOrganization, userRole, isLoadingOrganizations, organizationsReady, refreshOrganizations, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

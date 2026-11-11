@@ -16,7 +16,7 @@ https://<project-ref>.supabase.co/functions/v1/ingest-telemetry
 
 ## 2. Register a device
 
-In FarmSync, open **Sensors > Add Device**, give it a name and type, and click **Register Device**. A device API key (`dev_` followed by 48 hex characters) is shown once. Store it on the device.
+In FarmSync, open **Sensors > Add Device**, give it a name and type, and click **Register Device**. A device API key (`dev_` followed by 48 hex characters) is shown once. Store it on the device: it cannot be read back afterwards, by you or by anyone else on the farm. If it is lost, register the device again.
 
 Treat the key like a password: anyone holding it can post readings for that device. To rotate a key, register a new device and retire the old one.
 
@@ -95,7 +95,9 @@ requests.post(
 | 401 | `Missing device API key` | The `x-device-api-key` header is absent |
 | 401 | `Invalid API key or device not found` | The key does not match any device |
 | 401 | (Supabase gateway error) | The `Authorization` header is missing or not a valid project key |
-| 400 | `{ "error": "..." }` | The body is not valid JSON or the insert failed |
+| 403 | `Device is inactive` | The device has been switched off in FarmSync |
+| 400 | `{ "error": "..." }` | The body is not valid JSON, or not a JSON object |
+| 500 | `Internal server error` | FarmSync could not look the device up or store the reading. Retry later |
 
 ## Recommended reporting interval
 

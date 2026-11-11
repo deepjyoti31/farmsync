@@ -9,6 +9,7 @@ import PageHeader from '@/components/common/PageHeader';
 import Segmented from '@/components/common/Segmented';
 import { DeleteButton } from '@/components/common/DeleteButton';
 import FarmSelector from '@/components/farms/FarmSelector';
+import NoFarmState from '@/components/farms/NoFarmState';
 import AddFieldForm from '@/components/fields/AddFieldForm';
 import EditFieldForm from '@/components/fields/EditFieldForm';
 import FieldBoundaryDialog from '@/components/fields/FieldBoundaryDialog';
@@ -151,7 +152,9 @@ const Fields = () => {
         }
       />
 
-      {!farmId || isLoading ? (
+      {!farmId ? (
+        <NoFarmState />
+      ) : isLoading ? (
         <div className="flex justify-center p-12" role="status" aria-label="Loading fields">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { FieldFormData, Farm } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { useFarmScope } from '@/hooks/useFarmScope';
 import { toast } from '@/hooks/use-toast';
 import { AREA_UNITS, SOIL_TYPE_OPTIONS, withCurrent } from '@/lib/fieldOptions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -47,12 +48,14 @@ const AddFieldForm: React.FC<AddFieldFormProps> = ({ farmId: initialFarmId, onCl
   const queryClient = useQueryClient();
 
   // Fetch all farms
-  const { data: farms = [], isLoading: isLoadingFarms } = useQuery({
-    queryKey: ['farms', 'field-form'],
+  const scope = useFarmScope();
+  const { data: farms = [], isPending: isLoadingFarms } = useQuery({
+    queryKey: ['farms', 'field-form', scope.key],
+    enabled: scope.ready,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('farms')
-        .select('id, name, village, district, state, area_unit');
+      const { data, error } = await scope.apply(
+        supabase.from('farms').select('id, name, village, district, state, area_unit'),
+      );
 
       if (error) throw error;
 

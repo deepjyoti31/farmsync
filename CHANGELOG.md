@@ -19,6 +19,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Fixed
 
+- **Security:** every member of a farm, viewers included, could read the API keys of its devices and so post readings as those devices. Migration `20261111120000_hide_device_api_keys.sql` makes the key unreadable to app users (it is still shown once at registration), and the Sensors page no longer fetches or caches it.
+- Farm lists and the farm picker showed every farm the person can see, whatever workspace was selected. They now show the selected workspace's farms; farms with no workspace (created before workspaces existed) appear in the personal workspace. Switching workspace moves each page to a farm of that workspace.
+- Farm pages (Tasks, Fields, Crops, Livestock, Equipment, Inventory, Finances, Weather) showed a spinner for ever when there was no farm; they now offer to add one.
+- Opening the app without a connection no longer loses the selected workspace: the last loaded workspace list is kept on the device.
 - **Security:** a viewer could create farms in, or move farms into, a team they did not manage; organization admins could make themselves owner, remove the owner or invite new owners; marketplace listings could name someone else's farm; Settings changed the password without checking the current one. Migration `20261104000000_access_fixes_invites_and_crop_catalog.sql` and new RLS tests cover the database side.
 - Signing out, or a different person signing in on the same device, left the previous user's records in the offline cache.
 - Dates picked in forms (crops, inventory, money, equipment, livestock, listings) were saved one day early east of UTC, including India; date-only values displayed a day early west of UTC.

@@ -7,6 +7,7 @@ import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContai
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/common/PageHeader';
 import FarmSelector from '@/components/farms/FarmSelector';
+import NoFarmState from '@/components/farms/NoFarmState';
 import WeatherIcon from '@/components/weather/WeatherIcon';
 import { supabase } from '@/integrations/supabase/client';
 import { AXIS_PROPS, CATEGORICAL, CHART, GRID_PROPS, TOOLTIP_PROPS } from '@/lib/chartPalette';
@@ -71,7 +72,9 @@ const Weather = () => {
         }
       />
 
-      {!farmId || loadingFarm || (hasCoords && isLoading) ? (
+      {!farmId ? (
+        <NoFarmState />
+      ) : loadingFarm || (hasCoords && isLoading) ? (
         <div className="flex justify-center p-12" role="status" aria-label="Loading weather">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

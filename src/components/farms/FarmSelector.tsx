@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useWorkspaceFarms } from '@/hooks/useWorkspaceFarms';
 import { Button } from '@/components/ui/button';
 import { Loader2, Plus, ChevronDown } from 'lucide-react';
 import {
@@ -16,7 +16,8 @@ import { toast } from '@/hooks/use-toast';
 
 interface FarmSelectorProps {
   selectedFarmId: string | null;
-  onFarmChange: (farmId: string) => void;
+  /** Called with null when the workspace has no farms, so the page stops showing the previous workspace's farm. */
+  onFarmChange: (farmId: string | null) => void;
   showAddButtonWhenEmpty?: boolean;
 }
 
@@ -28,26 +29,19 @@ const FarmSelector: React.FC<FarmSelectorProps> = ({
   const [isAddFarmOpen, setIsAddFarmOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: farms = [], isLoading, error } = useQuery({
-    // Each query shape needs its own key: components that share a key share one cache entry.
-    queryKey: ['farms', 'selector'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('farms')
-        .select('id, name')
-        .order('name');
+  const { farms, isPending, isFetching, error } = useWorkspaceFarms();
+  // Also "loading" while waiting for the workspaces, when the query has not started.
+  const isLoading = isPending;
 
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  // Only set the first farm as selected if we have farms and no selection
+  // Keep the selection inside this workspace: pick the first farm when nothing
+  // (or a farm of another workspace, or a deleted one) is selected, and clear
+  // it when the workspace has no farms.
   React.useEffect(() => {
-    if (farms.length > 0 && !selectedFarmId && !isLoading) {
-      onFarmChange(farms[0].id);
-    }
-  }, [farms, selectedFarmId, onFarmChange, isLoading]);
+    if (isPending || isFetching || error) return;
+    if (farms.some((farm) => farm.id === selectedFarmId)) return;
+    const next = farms[0]?.id ?? null;
+    if (next !== selectedFarmId) onFarmChange(next);
+  }, [farms, selectedFarmId, onFarmChange, isPending, isFetching, error]);
 
   const handleAddFarm = () => {
     setIsAddFarmOpen(true);

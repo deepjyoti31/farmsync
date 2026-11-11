@@ -10,6 +10,7 @@ import PageHeader from '@/components/common/PageHeader';
 import Segmented from '@/components/common/Segmented';
 import { DeleteButton } from '@/components/common/DeleteButton';
 import FarmSelector from '@/components/farms/FarmSelector';
+import NoFarmState from '@/components/farms/NoFarmState';
 import { KpiTile } from '@/components/dashboard/SideCards';
 import AddEquipmentForm from '@/components/equipment/AddEquipmentForm';
 import EditEquipmentForm from '@/components/equipment/EditEquipmentForm';
@@ -137,7 +138,9 @@ const EquipmentPage = () => {
         }
       />
 
-      {!farmId || isLoading ? (
+      {!farmId ? (
+        <NoFarmState />
+      ) : isLoading ? (
         <div className="flex justify-center p-12" role="status" aria-label="Loading equipment">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

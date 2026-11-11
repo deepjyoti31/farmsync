@@ -132,12 +132,23 @@ INSERT INTO public.livestock_production (livestock_id, production_type, quantity
 SELECT pg_temp.expect('per-animal production entries inherit the farm',
     (SELECT count(*) FROM public.livestock_production WHERE farm_id = :farm), 2);
 INSERT INTO public.tasks (farm_id, title, recurrence) VALUES (:farm, 'Clean water troughs', 'weekly');
+INSERT INTO public.tasks (farm_id, title, recurrence, due_date, recurrence_day)
+    VALUES (:farm, 'Pay the lease', 'monthly', '2026-02-28', 31);
+SELECT pg_temp.expect_invalid('tasks reject an impossible day of the month',
+    format('INSERT INTO public.tasks (farm_id, title, recurrence_day) VALUES (%L, %L, 32)',
+           'dddddddd-0000-0000-0000-000000000004', 'x'));
+INSERT INTO public.devices (farm_id, name, type, api_key) VALUES (:farm, 'North station', 'weather_station', 'dev_secret');
+SELECT pg_temp.expect('owner sees the device', (SELECT count(*) FROM public.devices WHERE farm_id = :farm), 1);
+SELECT pg_temp.expect_denied('owner cannot read a device API key back', 'SELECT api_key FROM public.devices');
 SELECT pg_temp.expect_invalid('tasks reject an unknown recurrence',
     format('INSERT INTO public.tasks (farm_id, title, recurrence) VALUES (%L, %L, %L)',
            'dddddddd-0000-0000-0000-000000000004', 'x', 'fortnightly'));
 
 SET LOCAL request.jwt.claim.sub = 'bbbbbbbb-0000-0000-0000-000000000002';
 SELECT pg_temp.expect('viewer sees production entries', (SELECT count(*) FROM public.livestock_production), 2);
+SELECT pg_temp.expect('viewer sees the device', (SELECT count(*) FROM public.devices WHERE name = 'North station'), 1);
+SELECT pg_temp.expect_denied('viewer cannot read device API keys', 'SELECT api_key FROM public.devices');
+SELECT pg_temp.expect_denied('viewer cannot read device API keys with select *', 'SELECT * FROM public.devices');
 SELECT pg_temp.expect_denied('viewer cannot log production',
     format('INSERT INTO public.livestock_production (farm_id, production_type, quantity, unit) VALUES (%L, %L, 1, %L)',
            'dddddddd-0000-0000-0000-000000000004', 'eggs', 'pieces'));

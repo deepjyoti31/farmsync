@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useFarmScope } from '@/hooks/useFarmScope';
 import { toast } from '@/hooks/use-toast';
 import FarmSelector from '@/components/farms/FarmSelector';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -82,10 +83,12 @@ const Market = () => {
   }, []);
 
   // Fetch Farms (for creating listings)
+  const scope = useFarmScope();
   const { data: farms = [] } = useQuery({
-    queryKey: ['farms', 'market'],
+    queryKey: ['farms', 'market', scope.key],
+    enabled: scope.ready,
     queryFn: async () => {
-      const { data, error } = await supabase.from('farms').select('id, name, village, district, state, gps_latitude, gps_longitude');
+      const { data, error } = await scope.apply(supabase.from('farms').select('id, name, village, district, state, gps_latitude, gps_longitude'));
       if (error) throw error;
       return data;
     },

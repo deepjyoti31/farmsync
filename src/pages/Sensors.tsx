@@ -21,7 +21,6 @@ type Device = {
     id: string;
     name: string;
     type: string;
-    api_key: string;
     is_active: boolean;
     farm_id: string;
 };
@@ -39,7 +38,8 @@ const Sensors = () => {
         queryKey: ['devices', farmId],
         enabled: !!farmId,
         queryFn: async () => {
-            const { data, error } = await supabase.from('devices').select('*').eq('farm_id', farmId!).order('name');
+            // Never the api_key: it is shown once at registration and is not readable afterwards.
+            const { data, error } = await supabase.from('devices').select('id, name, type, is_active, farm_id').eq('farm_id', farmId!).order('name');
             if (error) throw error;
             return data as Device[];
         },

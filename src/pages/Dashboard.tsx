@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFarmMembers } from '@/hooks/useFarmMembers';
+import { useFarmScope } from '@/hooks/useFarmScope';
 import { toast } from '@/hooks/use-toast';
 import PageHeader from '@/components/common/PageHeader';
 import FarmSelector from '@/components/farms/FarmSelector';
@@ -45,10 +46,13 @@ const Dashboard = () => {
 
   const now = new Date();
 
-  const { data: farms = [], isLoading: loadingFarms } = useQuery({
-    queryKey: ['farms', 'dashboard'],
+  const scope = useFarmScope();
+  // Pending also covers the wait for the workspaces, before the query starts.
+  const { data: farms = [], isPending: loadingFarms } = useQuery({
+    queryKey: ['farms', 'dashboard', scope.key],
+    enabled: scope.ready,
     queryFn: async () => {
-      const { data, error } = await supabase.from('farms').select('id, name, village, district, state');
+      const { data, error } = await scope.apply(supabase.from('farms').select('id, name, village, district, state'));
       if (error) throw error;
       return data ?? [];
     },
