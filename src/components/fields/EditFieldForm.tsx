@@ -30,8 +30,13 @@ const fieldFormSchema = z.object({
   name: z.string().min(2, { message: 'Field name must be at least 2 characters' }),
   area: z.coerce.number().positive({ message: 'Area must be a positive number' }),
   areaUnit: z.string().default('acres'),
-  soilType: z.string().min(2, { message: 'Soil type must be at least 2 characters' }),
-  soilPH: z.coerce.number().min(0, { message: 'Soil pH must be at least 0' }).max(14, { message: 'Soil pH must be at most 14' }),
+  // Optional when editing: a field saved without soil details must not gain
+  // made-up ones ("Clay", pH 7) just because its name or area was changed.
+  soilType: z.string().optional(),
+  soilPH: z.union([
+    z.literal(''),
+    z.coerce.number().min(0, { message: 'Soil pH must be at least 0' }).max(14, { message: 'Soil pH must be at most 14' }),
+  ]).optional(),
 });
 
 type FieldFormData = z.infer<typeof fieldFormSchema>;
@@ -55,8 +60,8 @@ const EditFieldForm: React.FC<EditFieldFormProps> = ({ field, onClose, onSuccess
       name: field.name,
       area: field.area,
       areaUnit: field.areaUnit,
-      soilType: field.soilType || 'Clay',
-      soilPH: field.soilPH || 7.0,
+      soilType: field.soilType || undefined,
+      soilPH: field.soilPH ?? '',
     },
   });
 
@@ -70,8 +75,8 @@ const EditFieldForm: React.FC<EditFieldFormProps> = ({ field, onClose, onSuccess
           name: data.name,
           area: data.area,
           area_unit: data.areaUnit,
-          soil_type: data.soilType,
-          soil_ph: data.soilPH,
+          soil_type: data.soilType || null,
+          soil_ph: typeof data.soilPH === 'number' ? data.soilPH : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', field.id);

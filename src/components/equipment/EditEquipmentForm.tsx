@@ -37,7 +37,10 @@ const equipmentSchema = z.object({
   manufacturer: z.string().optional(),
   model: z.string().optional(),
   purchase_date: z.date().optional(),
-  purchase_price: z.string().optional(),
+  purchase_price: z.string().optional().refine(
+    (v) => !v || v.trim() === '' || (Number.isFinite(Number(v)) && Number(v) >= 0),
+    "Enter a price of zero or more",
+  ),
   status: z.string().min(1, "Status is required"),
   notes: z.string().optional(),
 });
@@ -52,7 +55,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
   );
 
   // Convert numeric purchase price to string for the form
-  const purchasePriceString = equipment.purchase_price ? 
+  const purchasePriceString = equipment.purchase_price != null ?
     equipment.purchase_price.toString() : '';
 
   const { register, handleSubmit, formState: { errors }, setValue, control } = useForm<EquipmentFormValues>({
@@ -74,8 +77,8 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
     
     try {
       // Convert string purchase price to numeric for storage
-      const purchasePrice = data.purchase_price ? 
-        parseFloat(data.purchase_price) : null;
+      const purchasePrice = data.purchase_price && data.purchase_price.trim() !== '' ?
+        Number(data.purchase_price) : null;
       
       const { error } = await supabase
         .from('equipment')
@@ -199,7 +202,11 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
               placeholder="0.00"
               type="number"
               step="0.01"
+              min="0"
             />
+            {errors.purchase_price && (
+              <p className="text-sm text-destructive">{errors.purchase_price.message}</p>
+            )}
           </div>
           
           <div className="space-y-2">

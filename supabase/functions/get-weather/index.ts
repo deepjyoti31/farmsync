@@ -39,7 +39,8 @@ serve(async (req) => {
 
   try {
     // Parse and validate the request body
-    const place = parseCoordinates(await req.json());
+    // A missing or malformed body is the caller's mistake (400), not a server error.
+    const place = parseCoordinates(await req.json().catch(() => null));
     if (!place) {
       return new Response(
         JSON.stringify({ error: 'Missing or invalid latitude or longitude parameters' }),

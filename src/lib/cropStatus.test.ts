@@ -21,6 +21,7 @@ describe('planCropStatusChange', () => {
       ok: true,
       update: { status: 'harvested', actual_harvest_date: '2026-11-05', yield_amount: 12.5, yield_unit: 'quintal' },
       harvest: { quantity: 12.5, unit: 'quintal', harvest_date: '2026-11-05' },
+      undoHarvest: false,
     });
   });
 
@@ -29,6 +30,7 @@ describe('planCropStatusChange', () => {
       ok: true,
       update: { status: 'harvested', actual_harvest_date: '2026-11-05' },
       harvest: null,
+      undoHarvest: false,
     });
   });
 
@@ -41,12 +43,20 @@ describe('planCropStatusChange', () => {
       ok: true,
       update: { status: 'planted' },
       harvest: null,
+      undoHarvest: false,
     });
   });
 
   it('clears the harvest date when a harvest is undone', () => {
     const plan = planCropStatusChange(input({ currentStatus: 'harvested', status: 'growing' }));
-    expect(plan).toEqual({ ok: true, update: { status: 'growing', actual_harvest_date: null }, harvest: null });
+    // The yield goes too, and the form deletes the harvest records, so the
+    // harvest is not counted twice once the crop is harvested again.
+    expect(plan).toEqual({
+      ok: true,
+      update: { status: 'growing', actual_harvest_date: null, yield_amount: null, yield_unit: null },
+      harvest: null,
+      undoHarvest: true,
+    });
 
     // Before the fix the old date stayed, so the planting still showed as harvested.
     const planting = { planting_date: '2026-09-01', expected_harvest_date: '2027-01-15', status: 'growing', actual_harvest_date: null };

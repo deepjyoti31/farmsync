@@ -16,13 +16,19 @@ export interface CropStatusChangeInput {
 export interface CropStatusUpdate {
   status: string;
   actual_harvest_date?: string | null;
-  yield_amount?: number;
-  yield_unit?: string;
+  yield_amount?: number | null;
+  yield_unit?: string | null;
 }
 
 export type CropStatusChange =
   | { ok: false; reason: 'unchanged' | 'invalid_quantity' }
-  | { ok: true; update: CropStatusUpdate; harvest: { quantity: number; unit: string; harvest_date: string } | null };
+  | {
+      ok: true;
+      update: CropStatusUpdate;
+      harvest: { quantity: number; unit: string; harvest_date: string } | null;
+      /** True when a harvest is being undone: its harvest records must be removed. */
+      undoHarvest: boolean;
+    };
 
 export function planCropStatusChange(input: CropStatusChangeInput): CropStatusChange {
   const { currentStatus, status, harvestQuantity, harvestUnit, today } = input;
@@ -38,7 +44,14 @@ export function planCropStatusChange(input: CropStatusChangeInput): CropStatusCh
   if (harvesting) update.actual_harvest_date = today;
   // A recorded harvest date marks a planting as finished everywhere (dashboard,
   // season timeline, calendar), so undoing a harvest must clear it.
-  else if (currentStatus === 'harvested') update.actual_harvest_date = null;
+  // The recorded yield goes with it, or Analytics keeps counting a harvest
+  // that did not happen and counts it twice once the crop is harvested again.
+  const undoHarvest = !harvesting && currentStatus === 'harvested';
+  if (undoHarvest) {
+    update.actual_harvest_date = null;
+    update.yield_amount = null;
+    update.yield_unit = null;
+  }
   if (recordHarvest) {
     update.yield_amount = quantity;
     update.yield_unit = harvestUnit;
@@ -48,5 +61,6 @@ export function planCropStatusChange(input: CropStatusChangeInput): CropStatusCh
     ok: true,
     update,
     harvest: recordHarvest ? { quantity, unit: harvestUnit, harvest_date: today } : null,
+    undoHarvest,
   };
 }

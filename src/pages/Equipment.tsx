@@ -98,7 +98,11 @@ const EquipmentPage = () => {
   const dueSoon = states.filter((s) => s === 'due_soon').length;
   const value = machines.reduce((s, m) => s + (Number(m.purchase_price) || 0), 0);
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['equipment'] });
+  // Deleting a machine also deletes its service records, so refresh the history too.
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['equipment'] });
+    queryClient.invalidateQueries({ queryKey: ['equipment_maintenance'] });
+  };
 
   const remove = async (m: Equipment) => {
     const problem = await deleteById('equipment', m.id, m.name);

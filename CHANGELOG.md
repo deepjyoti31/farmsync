@@ -23,6 +23,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Signing out, or a different person signing in on the same device, left the previous user's records in the offline cache.
 - Dates picked in forms (crops, inventory, money, equipment, livestock, listings) were saved one day early east of UTC, including India; date-only values displayed a day early west of UTC.
 - New farms were not linked to the current workspace, so team members never saw them.
+- Undoing a harvest left its harvest record and yield behind, so Analytics and the indicative credit score still counted it, and counted it twice once the crop was harvested again.
+- The Profile form lost unsaved edits whenever the tab regained focus, the session refreshed or a new picture finished uploading.
+- Editing a field that had no soil details silently saved "Clay" and pH 7 for it.
+- A harvest expected today was missing from "next harvest" on the Crops page.
+- Deleting a machine left its services in the equipment history and yearly spend until the page was reloaded; forum post counts did not update after posting.
+- Editing equipment dropped a purchase price of 0 and accepted text that is not a price; a health record accepted a negative or non-numeric cost.
+- `ingest-telemetry` answered 400 or 401 for failures on the server side (now 500, so devices retry) and `get-weather` answered 500 for a malformed request body (now 400).
 - Team invitations could never be accepted. Invitees now join when they sign in with the invited (confirmed) email.
 - The crop catalogue was empty, so no crop could be planned on a fresh database.
 - The boundary map rebuilt itself after every edit, and the field boundary dialog centred the map on swapped coordinates.

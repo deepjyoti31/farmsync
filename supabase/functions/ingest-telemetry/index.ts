@@ -33,9 +33,12 @@ serve(async (req) => {
             .from('devices')
             .select('id, farm_id, is_active')
             .eq('api_key', deviceApiKey)
-            .single()
+            .maybeSingle()
 
-        if (deviceError || !device) {
+        // A failed lookup is our problem (500, so the device retries), not a bad key.
+        if (deviceError) throw deviceError
+
+        if (!device) {
             return new Response(
                 JSON.stringify({ error: 'Invalid API key or device not found' }),
                 { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -51,7 +54,16 @@ serve(async (req) => {
         }
 
         // Parse body: readings must be a JSON object of named values.
-        const check = checkPayload(await req.json())
+        let body: unknown
+        try {
+            body = await req.json()
+        } catch {
+            return new Response(
+                JSON.stringify({ error: 'Body must be valid JSON' }),
+                { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            )
+        }
+        const check = checkPayload(body)
         if (!check.ok) {
             return new Response(
                 JSON.stringify({ error: check.error }),
@@ -79,9 +91,12 @@ serve(async (req) => {
         )
 
     } catch (error) {
+        // Anything reaching here is a failure on our side (e.g. the insert), not a
+        // bad request: answer 500 so devices retry instead of dropping the reading.
+        console.error('Error ingesting telemetry:', error)
         return new Response(
-            JSON.stringify({ error: error.message }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            JSON.stringify({ error: 'Internal server error' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
     }
 })

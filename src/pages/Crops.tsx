@@ -81,7 +81,8 @@ const Crops = () => {
       return d >= 0 && d <= 45;
     })
     .slice(0, 6);
-  const nextHarvest = cropEvents(plantings, fieldNames).find((e) => e.kind === 'expected_harvest' && parseISO(e.date) >= now);
+  // Compare calendar days: a harvest expected today is at local midnight, which is already before `now`.
+  const nextHarvest = cropEvents(plantings, fieldNames).find((e) => e.kind === 'expected_harvest' && differenceInCalendarDays(parseISO(e.date), now) >= 0);
 
   const remove = async (id: string) => {
     await deleteEntity({
