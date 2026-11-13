@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -44,6 +44,7 @@ const Community = () => {
 
   // Fetch user data
   const { user: userData } = useAuth();
+  const queryClient = useQueryClient();
 
   // Fetch forums 
   const { data: forums = [] } = useQuery({
@@ -183,6 +184,9 @@ const Community = () => {
         description: "Your post has been published",
       });
       refetchPosts();
+      // The forum tabs and the stats card count posts too.
+      queryClient.invalidateQueries({ queryKey: ['forums'] });
+      queryClient.invalidateQueries({ queryKey: ['community_stats'] });
     } catch (error) {
       console.error('Error creating post:', error);
       toast({

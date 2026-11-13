@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { CalendarIcon } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { useFarmScope } from '@/hooks/useFarmScope';
 import { toast } from '@/hooks/use-toast';
 
 import {
@@ -85,17 +86,22 @@ const AddCropForm: React.FC<AddCropFormProps> = ({ farmId, onSuccess, onCancel }
   });
 
   // Query to get fields for selected farm
+  const scope = useFarmScope();
   const { data: fields = [] } = useQuery({
-    queryKey: ['fields'],
+    queryKey: ['fields', 'crop-form', scope.key],
+    enabled: scope.ready,
     queryFn: async () => {
-      // Get all fields from all farms to group them
+      // Fields of every farm in this workspace, grouped by farm below.
       const { data, error } = await supabase
         .from('fields')
-        .select('*, farm:farm_id(id, name)')
+        .select('*, farm:farm_id(id, name, organization_id)')
         .order('name');
 
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((field) => {
+        const farm = field.farm as { organization_id?: string | null } | null;
+        return !!farm && scope.includes(farm);
+      });
     },
   });
 

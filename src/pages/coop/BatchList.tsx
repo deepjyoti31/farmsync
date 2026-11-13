@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,10 @@ const BatchList = () => {
     const { currentOrganization, userRole } = useAuth();
     const [batches, setBatches] = useState<ProduceBatch[]>([]);
     const [loading, setLoading] = useState(true);
+    // Answers for a workspace the user has since switched away from are dropped,
+    // so a slow reply can never show one team's data under another team's name.
+    const orgIdRef = useRef(currentOrganization?.id);
+    orgIdRef.current = currentOrganization?.id;
 
     useEffect(() => {
         if (currentOrganization) {
@@ -25,6 +29,7 @@ const BatchList = () => {
 
     const loadBatches = async () => {
         if (!currentOrganization) return;
+        const orgId = currentOrganization.id;
         setLoading(true);
         try {
             const { data, error } = await supabase
@@ -34,11 +39,12 @@ const BatchList = () => {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
+            if (orgIdRef.current !== orgId) return;
             setBatches(data as ProduceBatch[]);
         } catch (error) {
             console.error('Error loading batches:', error);
         } finally {
-            setLoading(false);
+            if (orgIdRef.current === orgId) setLoading(false);
         }
     };
 

@@ -1,10 +1,10 @@
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
+import { updateById } from '@/utils/deleteUtils';
 import { toast } from '@/hooks/use-toast';
 import { calculateArea, calculateCenter } from '@/utils/mapUtils';
 import { fromHectares } from '@/lib/yieldAnalytics';
@@ -28,6 +28,16 @@ const FieldBoundaryDialog = ({ open, onOpenChange, field, fallbackCenter }: Fiel
   const [updateArea, setUpdateArea] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Saving and Cancel close the dialog without passing through the Dialog's own
+  // close handler, so the drawn shape used to survive. Opened next for another
+  // field, Save was enabled straight away and wrote the previous field's
+  // boundary and area onto it.
+  const fieldId = field?.id;
+  useEffect(() => {
+    setPolygon(null);
+    setUpdateArea(true);
+  }, [open, fieldId]);
+
   const existing = field ? outerRings(field.boundaries)[0] : undefined;
   const existingPolygon: GeoJSON.Polygon | null = existing ? { type: 'Polygon', coordinates: [existing] } : null;
   // calculateCenter gives [lat, lng]; the map wants [lng, lat].
@@ -43,10 +53,10 @@ const FieldBoundaryDialog = ({ open, onOpenChange, field, fallbackCenter }: Fiel
     const patch: { boundaries: GeoJSON.Polygon; area?: number } = { boundaries: polygon };
     if (updateArea && inUnit !== null) patch.area = Math.round(inUnit * 100) / 100;
     // The generated types describe boundaries as Json; a GeoJSON polygon is valid JSON.
-    const { error } = await supabase.from('fields').update(patch as never).eq('id', field.id);
+    const problem = await updateById('fields', field.id, patch as never, 'This field');
     setSaving(false);
-    if (error) {
-      toast({ title: 'Could not save the boundary', description: error.message, variant: 'destructive' });
+    if (problem) {
+      toast({ title: 'Could not save the boundary', description: problem, variant: 'destructive' });
       return;
     }
     queryClient.invalidateQueries({ queryKey: ['fields'] });

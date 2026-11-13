@@ -15,7 +15,7 @@ vi.mock('@/hooks/use-toast', () => ({ toast }));
 
 mock.current = createSupabaseMock();
 
-import { deleteById, deleteEntity, errorMessage } from './deleteUtils';
+import { deleteById, deleteEntity, errorMessage, NotSavedError, updateById, updateByIdOrThrow } from './deleteUtils';
 
 beforeEach(() => {
   mock.current.reset();
@@ -137,5 +137,33 @@ describe('deleteEntity', () => {
   it('works without callbacks', async () => {
     mock.current.respond({ error: { message: 'nope' } });
     await expect(deleteEntity({ id: 'x', entityType: 'farm' })).resolves.toBeUndefined();
+  });
+});
+
+describe('updateById', () => {
+  it('saves and reads the row back', async () => {
+    mock.current.respond({ data: [{ id: 'f1' }] });
+    await expect(updateById('fields', 'f1', { name: 'North' }, 'This field')).resolves.toBeNull();
+    const [q] = mock.current.queries;
+    expect(q.table).toBe('fields');
+    expect(mock.current.argsOf(q, 'update')).toEqual([{ name: 'North' }]);
+    expect(mock.current.argsOf(q, 'eq')).toEqual(['id', 'f1']);
+    expect(mock.current.argsOf(q, 'select')).toEqual(['id']);
+  });
+
+  it('reports a change that row level security skipped', async () => {
+    // A team viewer: no error, no rows.
+    mock.current.respond({ data: [] });
+    await expect(updateById('fields', 'f1', { name: 'North' }, 'This field')).resolves.toMatch(/^This field was not saved/);
+  });
+
+  it('passes on database errors', async () => {
+    mock.current.respond({ error: { message: 'value too long' } });
+    await expect(updateById('fields', 'f1', { name: 'North' })).resolves.toBe('value too long');
+  });
+
+  it('throws a NotSavedError when asked to', async () => {
+    mock.current.respond({ data: [] });
+    await expect(updateByIdOrThrow('tasks', 't1', { status: 'completed' }, 'This task')).rejects.toBeInstanceOf(NotSavedError);
   });
 });

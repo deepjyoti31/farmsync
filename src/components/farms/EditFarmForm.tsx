@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+import { updateByIdOrThrow } from '@/utils/deleteUtils';
 import type { Json } from '@/integrations/supabase/types';
 import { toast } from '@/hooks/use-toast';
 import { Farm } from '@/types';
@@ -156,9 +156,7 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
       // Use the pre-calculated center coordinates
       const [centerLat, centerLng] = centerCoordinates;
 
-      const { error } = await supabase
-        .from('farms')
-        .update({
+      await updateByIdOrThrow('farms', farm.id, {
           name: data.name,
           village: data.village || null,
           district: data.district || null,
@@ -169,10 +167,7 @@ const EditFarmForm: React.FC<EditFarmFormProps> = ({ farm, onClose, onSuccess })
           gps_longitude: centerLng,
           boundaries: boundaries as unknown as Json,
           updated_at: new Date().toISOString(),
-        })
-        .eq('id', farm.id);
-
-      if (error) throw error;
+        }, 'This farm');
 
       toast({
         title: 'Farm updated',

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Info, Loader2, MapPin, MoreHorizontal, Pencil, Plus, Rows3, Trash2, TriangleAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useFarmScope } from '@/hooks/useFarmScope';
 import { deleteById } from '@/utils/deleteUtils';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -60,10 +61,13 @@ const FarmsList = () => {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [addFieldFor, setAddFieldFor] = useState<string | null>(null);
 
-  const { data: farms = [], isLoading } = useQuery({
-    queryKey: ['farms', 'list'],
+  const scope = useFarmScope();
+  // Pending also covers the wait for the workspaces, before the query starts.
+  const { data: farms = [], isPending: isLoading } = useQuery({
+    queryKey: ['farms', 'list', scope.key],
+    enabled: scope.ready,
     queryFn: async () => {
-      const { data, error } = await supabase.from('farms').select('*').order('created_at', { ascending: false });
+      const { data, error } = await scope.apply(supabase.from('farms').select('*')).order('created_at', { ascending: false });
       if (error) throw error;
       return (data ?? []) as FarmRow[];
     },

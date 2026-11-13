@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { errorMessage, updateByIdOrThrow } from '@/utils/deleteUtils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -37,7 +37,10 @@ const equipmentSchema = z.object({
   manufacturer: z.string().optional(),
   model: z.string().optional(),
   purchase_date: z.date().optional(),
-  purchase_price: z.string().optional(),
+  purchase_price: z.string().optional().refine(
+    (v) => !v || v.trim() === '' || (Number.isFinite(Number(v)) && Number(v) >= 0),
+    "Enter a price of zero or more",
+  ),
   status: z.string().min(1, "Status is required"),
   notes: z.string().optional(),
 });
@@ -52,7 +55,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
   );
 
   // Convert numeric purchase price to string for the form
-  const purchasePriceString = equipment.purchase_price ? 
+  const purchasePriceString = equipment.purchase_price != null ?
     equipment.purchase_price.toString() : '';
 
   const { register, handleSubmit, formState: { errors }, setValue, control } = useForm<EquipmentFormValues>({
@@ -74,12 +77,10 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
     
     try {
       // Convert string purchase price to numeric for storage
-      const purchasePrice = data.purchase_price ? 
-        parseFloat(data.purchase_price) : null;
+      const purchasePrice = data.purchase_price && data.purchase_price.trim() !== '' ?
+        Number(data.purchase_price) : null;
       
-      const { error } = await supabase
-        .from('equipment')
-        .update({
+      await updateByIdOrThrow('equipment', equipment.id, {
           name: data.name,
           equipment_type: data.equipment_type,
           manufacturer: data.manufacturer || null,
@@ -89,10 +90,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
           status: data.status,
           notes: data.notes || null,
           updated_at: new Date().toISOString(),
-        })
-        .eq('id', equipment.id);
-
-      if (error) throw error;
+        }, 'This machine');
 
       toast({
         title: "Equipment Updated",
@@ -104,7 +102,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
       console.error('Error updating equipment:', error);
       toast({
         title: "Error",
-        description: "Failed to update equipment. Please try again.",
+        description: errorMessage(error, "Failed to update equipment. Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -199,7 +197,11 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
               placeholder="0.00"
               type="number"
               step="0.01"
+              min="0"
             />
+            {errors.purchase_price && (
+              <p className="text-sm text-destructive">{errors.purchase_price.message}</p>
+            )}
           </div>
           
           <div className="space-y-2">

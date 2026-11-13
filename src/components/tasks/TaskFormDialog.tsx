@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useFarmMembers } from '@/hooks/useFarmMembers';
 import { supabase } from '@/integrations/supabase/client';
 import { PRIORITIES, PRIORITY_LABELS, RECURRENCES, RECURRENCE_LABELS } from '@/lib/tasks';
+import { errorMessage, updateById } from '@/utils/deleteUtils';
 import type { TaskRow } from './taskApi';
 
 const UNASSIGNED = 'unassigned';
@@ -77,14 +78,20 @@ const TaskFormDialog: React.FC<TaskFormDialogProps> = ({ farmId, open, onOpenCha
       assigned_to: form.assigned_to === UNASSIGNED ? null : form.assigned_to,
     };
 
+    // Changing the date or the rhythm starts the series afresh from the new date.
+    const restartsSeries = !!task && task.recurrence_day != null && (values.due_date !== task.due_date || values.recurrence !== task.recurrence);
+
     setSaving(true);
-    const { error } = task
-      ? await supabase.from('tasks').update(values).eq('id', task.id)
-      : await supabase.from('tasks').insert({ ...values, farm_id: farmId, status: 'pending' });
+    const problem = task
+      ? await updateById('tasks', task.id, restartsSeries ? { ...values, recurrence_day: null } : values, 'This task')
+      : await supabase
+          .from('tasks')
+          .insert({ ...values, farm_id: farmId, status: 'pending' })
+          .then(({ error }) => (error ? errorMessage(error) : null));
     setSaving(false);
 
-    if (error) {
-      toast({ title: 'Could not save task', description: error.message, variant: 'destructive' });
+    if (problem) {
+      toast({ title: 'Could not save task', description: problem, variant: 'destructive' });
       return;
     }
     queryClient.invalidateQueries({ queryKey: ['tasks'] });

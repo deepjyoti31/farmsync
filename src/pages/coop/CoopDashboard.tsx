@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,10 @@ const CoopDashboard = () => {
     const { currentOrganization } = useAuth();
     const [stats, setStats] = useState<CoopStats>({ totalMembers: 0, totalArea: 0, activeBatches: 0, openOrders: 0 });
     const [loading, setLoading] = useState(true);
+    // Answers for a workspace the user has since switched away from are dropped,
+    // so a slow reply can never show one team's data under another team's name.
+    const orgIdRef = useRef(currentOrganization?.id);
+    orgIdRef.current = currentOrganization?.id;
     const [cropDistribution, setCropDistribution] = useState<{ name: string, value: number }[]>([]);
 
     useEffect(() => {
@@ -28,6 +32,7 @@ const CoopDashboard = () => {
 
     const loadStats = async () => {
         if (!currentOrganization) return;
+        const orgId = currentOrganization.id;
         setLoading(true);
         try {
             // 1. Members count
@@ -61,8 +66,11 @@ const CoopDashboard = () => {
                 .from('bulk_orders')
                 .select('*', { count: 'exact', head: true })
                 .eq('organization_id', currentOrganization.id)
-                .eq('status', 'open');
+                .eq('status', 'open')
+                // Orders past their deadline no longer take commitments.
+                .gt('deadline', new Date().toISOString());
 
+            if (orgIdRef.current !== orgId) return;
             setStats({
                 totalMembers: memberCount || 0,
                 totalArea: totalArea,
@@ -77,6 +85,7 @@ const CoopDashboard = () => {
                 .eq('fields.farms.organization_id', currentOrganization.id)
                 .in('status', ['planned', 'planted', 'growing']);
 
+            if (orgIdRef.current !== orgId) return;
             const counts = new Map<string, number>();
             for (const p of plantings || []) {
                 const name = p.crops?.name ?? p.name ?? 'Other';
@@ -89,7 +98,7 @@ const CoopDashboard = () => {
         } catch (error) {
             console.error('Error loading coop stats:', error);
         } finally {
-            setLoading(false);
+            if (orgIdRef.current === orgId) setLoading(false);
         }
     };
 

@@ -10,6 +10,7 @@ import PageHeader from '@/components/common/PageHeader';
 import Segmented from '@/components/common/Segmented';
 import { DeleteButton } from '@/components/common/DeleteButton';
 import FarmSelector from '@/components/farms/FarmSelector';
+import NoFarmState from '@/components/farms/NoFarmState';
 import AddCropForm from '@/components/crops/AddCropForm';
 import CropDetailsDialog from '@/components/crops/CropDetailsDialog';
 import CropCalendar from '@/components/crops/CropCalendar';
@@ -81,7 +82,8 @@ const Crops = () => {
       return d >= 0 && d <= 45;
     })
     .slice(0, 6);
-  const nextHarvest = cropEvents(plantings, fieldNames).find((e) => e.kind === 'expected_harvest' && parseISO(e.date) >= now);
+  // Compare calendar days: a harvest expected today is at local midnight, which is already before `now`.
+  const nextHarvest = cropEvents(plantings, fieldNames).find((e) => e.kind === 'expected_harvest' && differenceInCalendarDays(parseISO(e.date), now) >= 0);
 
   const remove = async (id: string) => {
     await deleteEntity({
@@ -115,7 +117,9 @@ const Crops = () => {
         }
       />
 
-      {!farmId || loading ? (
+      {!farmId ? (
+        <NoFarmState />
+      ) : loading ? (
         <div className="flex justify-center p-12" role="status" aria-label="Loading crops">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

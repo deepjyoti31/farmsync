@@ -70,23 +70,28 @@ const Profile = () => {
     },
   });
 
+  // Supabase hands out a new user object on every token refresh and each time
+  // the tab regains focus, and the profile is refetched after a picture upload.
+  // Keep what the person has typed (keepDirtyValues) so neither wipes the form.
+  const userId = user?.id;
+  const metaFirstName: string = user?.user_metadata?.first_name || '';
+  const metaLastName: string = user?.user_metadata?.last_name || '';
   useEffect(() => {
     if (profile) {
-      form.reset({
-        firstName: profile.first_name || '',
-        lastName: profile.last_name || '',
-        phone: profile.phone_number || '',
-      });
+      form.reset(
+        {
+          firstName: profile.first_name || '',
+          lastName: profile.last_name || '',
+          phone: profile.phone_number || '',
+        },
+        { keepDirtyValues: true },
+      );
       setAvatarUrl(profile.avatar_url);
-    } else if (user) {
+    } else if (userId) {
       // Fallback to user metadata if profile doesn't exist
-      form.reset({
-        firstName: user.user_metadata?.first_name || '',
-        lastName: user.user_metadata?.last_name || '',
-        phone: '',
-      });
+      form.reset({ firstName: metaFirstName, lastName: metaLastName, phone: '' }, { keepDirtyValues: true });
     }
-  }, [profile, user, form]);
+  }, [profile, userId, metaFirstName, metaLastName, form]);
 
   const onSubmit = async (data: ProfileFormData) => {
     if (!user) return;
@@ -143,6 +148,8 @@ const Profile = () => {
       
       if (userUpdateError) throw userUpdateError;
       
+      // What was saved is the new baseline, so the form is no longer "dirty".
+      form.reset(data);
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast({
         title: "Profile updated",

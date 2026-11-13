@@ -82,6 +82,11 @@ const HealthRecordsCard: React.FC<HealthRecordsCardProps> = ({ farmId, animals }
       toast({ title: 'Next due date must be after the record date', variant: 'destructive' });
       return;
     }
+    const cost = form.cost ? Number(form.cost) : null;
+    if (cost !== null && (!Number.isFinite(cost) || cost < 0)) {
+      toast({ title: 'Cost must be zero or more', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     const { error } = await supabase.from('livestock_health_records').insert({
       livestock_id: form.livestock_id,
@@ -91,7 +96,7 @@ const HealthRecordsCard: React.FC<HealthRecordsCardProps> = ({ farmId, animals }
       medicine: form.medicine.trim() || null,
       dosage: form.dosage.trim() || null,
       administered_by: form.administered_by.trim() || null,
-      cost: form.cost ? Number(form.cost) : null,
+      cost,
       next_due_date: form.next_due_date || null,
     });
     setSaving(false);

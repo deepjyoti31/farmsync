@@ -1933,6 +1933,7 @@ export type Database = {
           id: string
           priority: string | null
           recurrence: string
+          recurrence_day: number | null
           related_id: string | null
           status: string | null
           task_type: string | null
@@ -1949,6 +1950,7 @@ export type Database = {
           id?: string
           priority?: string | null
           recurrence?: string
+          recurrence_day?: number | null
           related_id?: string | null
           status?: string | null
           task_type?: string | null
@@ -1965,6 +1967,7 @@ export type Database = {
           id?: string
           priority?: string | null
           recurrence?: string
+          recurrence_day?: number | null
           related_id?: string | null
           status?: string | null
           task_type?: string | null

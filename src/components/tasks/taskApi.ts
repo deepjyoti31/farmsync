@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
-import { nextDueDate } from '@/lib/tasks';
+import { nextDueDate, nextRecurrenceDay } from '@/lib/tasks';
+import { updateByIdOrThrow } from '@/utils/deleteUtils';
 
 export type TaskRow = Tables<'tasks'>;
 
@@ -12,20 +13,20 @@ export type TaskRow = Tables<'tasks'>;
  * @returns the next occurrence's due date when one was created
  */
 export async function setTaskCompleted(task: TaskRow, completed: boolean): Promise<string | null> {
-  const { error } = await supabase
-    .from('tasks')
-    .update({
-      status: completed ? 'completed' : 'pending',
-      completed_at: completed ? new Date().toISOString() : null,
-    })
-    .eq('id', task.id);
-  if (error) throw error;
+  // Throws when the change was not saved (a viewer, or a deleted task), so a
+  // repeating task never moves on without its current occurrence being done.
+  await updateByIdOrThrow(
+    'tasks',
+    task.id,
+    { status: completed ? 'completed' : 'pending', completed_at: completed ? new Date().toISOString() : null },
+    'This task',
+  );
 
   // Only a task that was open moves the series on. Ticking an already-done
   // task again changes nothing.
   if (!completed || task.status === 'completed') return null;
 
-  const next = nextDueDate(task.due_date, task.recurrence);
+  const next = nextDueDate(task.due_date, task.recurrence, task.recurrence_day);
   if (!next) return null;
 
   // Unticking and re-ticking a repeating task must not create the next one twice.
@@ -40,7 +41,7 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
   if (lookupError) throw lookupError;
   if (existing && existing.length > 0) return next;
 
-  const { error: insertError } = await supabase.from('tasks').insert({
+  const occurrence = {
     farm_id: task.farm_id,
     title: task.title,
     description: task.description,
@@ -51,13 +52,21 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
     recurrence: task.recurrence,
     due_date: next,
     status: 'pending',
-  });
+  };
+  // Remember the day the series aims for when a short month moved this
+  // occurrence earlier (31 Jan, 28 Feb, then 31 Mar again, not 28 Mar).
+  const anchor = nextRecurrenceDay(task.due_date, task.recurrence, task.recurrence_day);
+  let { error: insertError } = await supabase.from('tasks').insert(anchor ? { ...occurrence, recurrence_day: anchor } : occurrence);
+  // A database without the recurrence_day column (migration not applied yet)
+  // must still get its next occurrence.
+  if (insertError && anchor && (insertError.code === 'PGRST204' || insertError.code === '42703')) {
+    ({ error: insertError } = await supabase.from('tasks').insert(occurrence));
+  }
   if (insertError) throw insertError;
   return next;
 }
 
 /** Move a task to "To do" or "In progress" on the board (reopening it if it was done). */
 export async function setTaskStatus(task: TaskRow, status: 'pending' | 'in_progress'): Promise<void> {
-  const { error } = await supabase.from('tasks').update({ status, completed_at: null }).eq('id', task.id);
-  if (error) throw error;
+  await updateByIdOrThrow('tasks', task.id, { status, completed_at: null }, 'This task');
 }

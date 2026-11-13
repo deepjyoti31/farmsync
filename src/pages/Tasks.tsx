@@ -10,6 +10,7 @@ import { DeleteButton } from '@/components/common/DeleteButton';
 import PageHeader from '@/components/common/PageHeader';
 import Segmented from '@/components/common/Segmented';
 import FarmSelector from '@/components/farms/FarmSelector';
+import NoFarmState from '@/components/farms/NoFarmState';
 import TaskFormDialog from '@/components/tasks/TaskFormDialog';
 import { setTaskCompleted, setTaskStatus, type TaskRow } from '@/components/tasks/taskApi';
 import { toast } from '@/hooks/use-toast';
@@ -228,7 +229,9 @@ const Tasks = () => {
         />
       </div>
 
-      {!selectedFarmId || isLoading ? (
+      {!selectedFarmId ? (
+        <NoFarmState />
+      ) : isLoading ? (
         <div className="flex justify-center p-12" role="status" aria-label="Loading tasks">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

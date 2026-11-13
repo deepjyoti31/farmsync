@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boardColumn, dueState, groupTasksByDue, nextDueDate, sortTasks, type TaskLike } from './tasks';
+import { boardColumn, dueState, groupTasksByDue, nextDueDate, nextRecurrenceDay, sortTasks, type TaskLike } from './tasks';
 
 describe('nextDueDate', () => {
   it('advances by the recurrence interval', () => {
@@ -16,6 +16,33 @@ describe('nextDueDate', () => {
 
   it('clamps monthly tasks to the end of shorter months', () => {
     expect(nextDueDate('2026-01-31', 'monthly')).toBe('2026-02-28');
+  });
+
+  it('returns to the original day after a short month', () => {
+    // 31 Jan -> 28 Feb (remembering the 31st) -> 31 Mar -> 30 Apr -> 31 May
+    expect(nextRecurrenceDay('2026-01-31', 'monthly')).toBe(31);
+    expect(nextDueDate('2026-02-28', 'monthly', 31)).toBe('2026-03-31');
+    expect(nextRecurrenceDay('2026-02-28', 'monthly', 31)).toBeNull();
+    expect(nextDueDate('2026-03-31', 'monthly')).toBe('2026-04-30');
+    expect(nextRecurrenceDay('2026-03-31', 'monthly')).toBe(31);
+    expect(nextDueDate('2026-04-30', 'monthly', 31)).toBe('2026-05-31');
+    // Without the remembered day the series would stay on the 28th.
+    expect(nextDueDate('2026-02-28', 'monthly')).toBe('2026-03-28');
+  });
+
+  it('brings a yearly 29 February task back in the next leap year', () => {
+    expect(nextDueDate('2028-02-29', 'yearly')).toBe('2029-02-28');
+    expect(nextRecurrenceDay('2028-02-29', 'yearly')).toBe(29);
+    expect(nextDueDate('2029-02-28', 'yearly', 29)).toBe('2030-02-28');
+    expect(nextRecurrenceDay('2029-02-28', 'yearly', 29)).toBe(29);
+    expect(nextDueDate('2031-02-28', 'yearly', 29)).toBe('2032-02-29');
+  });
+
+  it('keeps no remembered day for daily, weekly and ordinary monthly tasks', () => {
+    expect(nextRecurrenceDay('2026-01-31', 'daily')).toBeNull();
+    expect(nextRecurrenceDay('2026-01-31', 'weekly')).toBeNull();
+    expect(nextRecurrenceDay('2026-11-02', 'monthly')).toBeNull();
+    expect(nextDueDate('2026-11-02', 'weekly', 31)).toBe('2026-11-09');
   });
 
   it('returns null when the task does not repeat or has no date', () => {

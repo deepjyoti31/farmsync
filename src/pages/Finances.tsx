@@ -12,6 +12,7 @@ import PageHeader from '@/components/common/PageHeader';
 import Segmented from '@/components/common/Segmented';
 import DeleteButton from '@/components/common/DeleteButton';
 import FarmSelector from '@/components/farms/FarmSelector';
+import NoFarmState from '@/components/farms/NoFarmState';
 import AddTransactionForm from '@/components/finances/AddTransactionForm';
 import MonthlyChart from '@/components/finances/MonthlyChart';
 import { KpiTile } from '@/components/dashboard/SideCards';
@@ -135,7 +136,9 @@ const Finances = () => {
         }
       />
 
-      {!farmId || isLoading ? (
+      {!farmId ? (
+        <NoFarmState />
+      ) : isLoading ? (
         <div className="flex justify-center p-12" role="status" aria-label="Loading finances">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>

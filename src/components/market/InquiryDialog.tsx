@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { MarketplaceListing } from '@/types/marketplace';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { updateById } from '@/utils/deleteUtils';
 import { Loader2 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -60,9 +61,9 @@ const ListingInquiries: React.FC<{ listingId: string }> = ({ listingId }) => {
     });
 
     const respond = async (id: string, status: 'accepted' | 'rejected') => {
-        const { error } = await supabase.from('marketplace_inquiries').update({ status }).eq('id', id);
-        if (error) {
-            toast({ title: 'Could not update', description: error.message, variant: 'destructive' });
+        const problem = await updateById('marketplace_inquiries', id, { status }, 'This inquiry');
+        if (problem) {
+            toast({ title: 'Could not update', description: problem, variant: 'destructive' });
             return;
         }
         queryClient.invalidateQueries({ queryKey: ['marketplace_inquiries', listingId] });
