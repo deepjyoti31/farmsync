@@ -66,7 +66,9 @@ const CoopDashboard = () => {
                 .from('bulk_orders')
                 .select('*', { count: 'exact', head: true })
                 .eq('organization_id', currentOrganization.id)
-                .eq('status', 'open');
+                .eq('status', 'open')
+                // Orders past their deadline no longer take commitments.
+                .gt('deadline', new Date().toISOString());
 
             if (orgIdRef.current !== orgId) return;
             setStats({

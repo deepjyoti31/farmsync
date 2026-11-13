@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { errorMessage, updateByIdOrThrow } from '@/utils/deleteUtils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -80,9 +80,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
       const purchasePrice = data.purchase_price && data.purchase_price.trim() !== '' ?
         Number(data.purchase_price) : null;
       
-      const { error } = await supabase
-        .from('equipment')
-        .update({
+      await updateByIdOrThrow('equipment', equipment.id, {
           name: data.name,
           equipment_type: data.equipment_type,
           manufacturer: data.manufacturer || null,
@@ -92,10 +90,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
           status: data.status,
           notes: data.notes || null,
           updated_at: new Date().toISOString(),
-        })
-        .eq('id', equipment.id);
-
-      if (error) throw error;
+        }, 'This machine');
 
       toast({
         title: "Equipment Updated",
@@ -107,7 +102,7 @@ const EditEquipmentForm: React.FC<EditEquipmentFormProps> = ({ equipment, onSucc
       console.error('Error updating equipment:', error);
       toast({
         title: "Error",
-        description: "Failed to update equipment. Please try again.",
+        description: errorMessage(error, "Failed to update equipment. Please try again."),
         variant: "destructive",
       });
     } finally {

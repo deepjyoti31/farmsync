@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { supabase } from '@/integrations/supabase/client';
+import { updateById } from '@/utils/deleteUtils';
 import { toast } from '@/hooks/use-toast';
 import { calculateArea, calculateCenter } from '@/utils/mapUtils';
 import { fromHectares } from '@/lib/yieldAnalytics';
@@ -53,10 +53,10 @@ const FieldBoundaryDialog = ({ open, onOpenChange, field, fallbackCenter }: Fiel
     const patch: { boundaries: GeoJSON.Polygon; area?: number } = { boundaries: polygon };
     if (updateArea && inUnit !== null) patch.area = Math.round(inUnit * 100) / 100;
     // The generated types describe boundaries as Json; a GeoJSON polygon is valid JSON.
-    const { error } = await supabase.from('fields').update(patch as never).eq('id', field.id);
+    const problem = await updateById('fields', field.id, patch as never, 'This field');
     setSaving(false);
-    if (error) {
-      toast({ title: 'Could not save the boundary', description: error.message, variant: 'destructive' });
+    if (problem) {
+      toast({ title: 'Could not save the boundary', description: problem, variant: 'destructive' });
       return;
     }
     queryClient.invalidateQueries({ queryKey: ['fields'] });

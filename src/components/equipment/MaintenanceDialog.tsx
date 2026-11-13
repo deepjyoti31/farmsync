@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { updateByIdOrThrow } from '@/utils/deleteUtils';
 import { MAINTENANCE_TYPES } from '@/lib/maintenance';
 
 interface EquipmentOption {
@@ -129,23 +130,15 @@ const MaintenanceDialog: React.FC<MaintenanceDialogProps> = ({ farmId, equipment
         if (error) throw error;
 
         const repaired = machine.status === 'needs maintenance' || machine.status === 'in repair';
-        const { error: updateError } = await supabase
-          .from('equipment')
-          .update({
+        await updateByIdOrThrow('equipment', machine.id, {
             last_maintenance_date: form.maintenance_date,
             next_maintenance_date: form.next_due || null,
             ...(repaired ? { status: 'operational' } : {}),
-          })
-          .eq('id', machine.id);
-        if (updateError) throw updateError;
+          }, 'This machine');
 
         if (form.record_expense && cost) await recordExpense(machine.name, cost);
       } else {
-        const { error } = await supabase
-          .from('equipment')
-          .update({ next_maintenance_date: form.next_due })
-          .eq('id', machine.id);
-        if (error) throw error;
+        await updateByIdOrThrow('equipment', machine.id, { next_maintenance_date: form.next_due }, 'This machine');
       }
 
       queryClient.invalidateQueries({ queryKey: ['equipment'] });

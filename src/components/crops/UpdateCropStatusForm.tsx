@@ -1,6 +1,6 @@
 import { toDateValue } from '@/lib/dateRanges';
 import { planCropStatusChange } from '@/lib/cropStatus';
-import { errorMessage } from '@/utils/deleteUtils';
+import { errorMessage, updateByIdOrThrow } from '@/utils/deleteUtils';
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,12 +62,7 @@ const UpdateCropStatusForm: React.FC<UpdateCropStatusFormProps> = ({
     try {
       setIsUpdating(true);
 
-      const { error } = await supabase
-        .from('field_crops')
-        .update({ ...plan.update, updated_at: new Date().toISOString() })
-        .eq('id', cropId);
-
-      if (error) throw error;
+      await updateByIdOrThrow('field_crops', cropId, { ...plan.update, updated_at: new Date().toISOString() }, 'This planting');
 
       // Harvest records feed the yield charts in Analytics.
       if (plan.undoHarvest) {

@@ -19,6 +19,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Fixed
 
+- **Security:** a team admin could make themselves owner of the workspace and then delete it, with all its members, bulk orders and batches. A buyer could mark their own marketplace inquiry "accepted", and either side could rewrite the other's words. Migration `20261113000000_ownership_inquiry_and_coop_order_rules.sql` fixes both, with new RLS tests.
+- Co-op members could commit to, change or withdraw from a bulk order after its deadline, and mark their own commitment paid; owners and admins could not record payments at all.
+- A bulk order past its deadline still showed as "open" and was counted on the co-op dashboard; it now shows as closed.
+- Saving a change the person's role does not allow (for example a team viewer editing a field, farm, machine, planting, task or inquiry) showed "updated" although nothing was saved. Every edit now checks the row was really changed and says so when it was not.
 - **Security:** every member of a farm, viewers included, could read the API keys of its devices and so post readings as those devices. Migration `20261111120000_hide_device_api_keys.sql` makes the key unreadable to app users (it is still shown once at registration), and the Sensors page no longer fetches or caches it.
 - Farm lists and the farm picker showed every farm the person can see, whatever workspace was selected. They now show the selected workspace's farms; farms with no workspace (created before workspaces existed) appear in the personal workspace. Switching workspace moves each page to a farm of that workspace.
 - Farm pages (Tasks, Fields, Crops, Livestock, Equipment, Inventory, Finances, Weather) showed a spinner for ever when there was no farm; they now offer to add one.

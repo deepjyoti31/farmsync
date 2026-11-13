@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Field } from '@/types';
 import { AREA_UNITS, SOIL_TYPE_OPTIONS, withCurrent } from '@/lib/fieldOptions';
-import { supabase } from '@/integrations/supabase/client';
+import { updateByIdOrThrow } from '@/utils/deleteUtils';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -69,19 +69,14 @@ const EditFieldForm: React.FC<EditFieldFormProps> = ({ field, onClose, onSuccess
     try {
       setIsSubmitting(true);
 
-      const { error } = await supabase
-        .from('fields')
-        .update({
+      await updateByIdOrThrow('fields', field.id, {
           name: data.name,
           area: data.area,
           area_unit: data.areaUnit,
           soil_type: data.soilType || null,
           soil_ph: typeof data.soilPH === 'number' ? data.soilPH : null,
           updated_at: new Date().toISOString(),
-        })
-        .eq('id', field.id);
-
-      if (error) throw error;
+        }, 'This field');
 
       toast({
         title: 'Field updated',

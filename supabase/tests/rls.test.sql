@@ -204,6 +204,63 @@ SELECT pg_temp.expect_denied('cannot list produce from another person''s farm',
            'dddddddd-0000-0000-0000-000000000004', 'dddddddd-1111-0000-0000-000000000008', 'x', 'grains', 'kg'));
 SELECT pg_temp.expect('the crop catalog is seeded', (SELECT count(*) FROM public.crops WHERE name IN ('Wheat', 'Rice', 'Tomato')), 3);
 
+-- 6b. Workspace ownership is fixed ----------------------------------------------
+SET LOCAL request.jwt.claim.sub = 'bbbbbbbb-0000-0000-0000-000000000002';
+SELECT pg_temp.expect_denied('admin cannot make himself owner of the workspace',
+    format('UPDATE public.organizations SET owner_id = %L WHERE id = %L',
+           'bbbbbbbb-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000003'));
+SELECT pg_temp.expect_denied('admin cannot turn the team into a personal workspace',
+    format('UPDATE public.organizations SET is_personal = true WHERE id = %L', 'cccccccc-0000-0000-0000-000000000003'));
+WITH renamed AS (UPDATE public.organizations SET name = 'Asha Farmers Co-op' WHERE id = :team RETURNING 1)
+SELECT pg_temp.expect('admin can still rename the workspace', (SELECT count(*) FROM renamed), 1);
+WITH removed AS (DELETE FROM public.organizations WHERE id = :team RETURNING 1)
+SELECT pg_temp.expect('admin cannot delete the workspace', (SELECT count(*) FROM removed), 0);
+
+-- 6c. Bulk orders close at their deadline ---------------------------------------
+\set open_order   '''abababab-0000-0000-0000-000000000011'''
+\set past_order   '''abababab-0000-0000-0000-000000000012'''
+SET LOCAL request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000001';
+INSERT INTO public.bulk_orders (id, organization_id, title, deadline) VALUES
+    (:open_order, :team, 'Rabi seed', now() + interval '7 days'),
+    (:past_order, :team, 'Kharif seed', now() - interval '1 day');
+
+SET LOCAL request.jwt.claim.sub = 'cccccccc-1111-0000-0000-000000000007';
+INSERT INTO public.member_orders (bulk_order_id, user_id, items)
+    VALUES (:open_order, :carl, '[{"product_name": "Wheat seed", "quantity": 40, "unit": "kg"}]');
+SELECT pg_temp.expect('member commits to an open order', (SELECT count(*) FROM public.member_orders WHERE user_id = :carl), 1);
+SELECT pg_temp.expect_denied('member cannot commit after the deadline',
+    format('INSERT INTO public.member_orders (bulk_order_id, user_id, items) VALUES (%L, %L, %L)',
+           'abababab-0000-0000-0000-000000000012', 'cccccccc-1111-0000-0000-000000000007', '[]'));
+SELECT pg_temp.expect_denied('member cannot mark their own commitment paid',
+    format('UPDATE public.member_orders SET status = %L WHERE user_id = %L', 'paid', 'cccccccc-1111-0000-0000-000000000007'));
+
+SET LOCAL request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000001';
+WITH paid AS (UPDATE public.member_orders SET status = 'paid' WHERE user_id = :carl RETURNING 1)
+SELECT pg_temp.expect('owner records the payment', (SELECT count(*) FROM paid), 1);
+
+-- 6d. Only the seller answers a marketplace inquiry -----------------------------
+\set listing '''abababab-0000-0000-0000-000000000021'''
+INSERT INTO public.marketplace_listings (id, farm_id, seller_id, title, category, price_per_unit, unit, quantity_available)
+    VALUES (:listing, :farm, :asha, 'Basmati rice', 'grains', 60, 'kg', 500);
+
+SET LOCAL request.jwt.claim.sub = 'dddddddd-1111-0000-0000-000000000008';
+INSERT INTO public.marketplace_inquiries (listing_id, buyer_id, message, offer_price)
+    VALUES (:listing, :dave, 'Can you deliver 100 kg?', 55);
+SELECT pg_temp.expect_denied('buyer cannot accept their own inquiry',
+    format('UPDATE public.marketplace_inquiries SET status = %L WHERE buyer_id = %L', 'accepted', 'dddddddd-1111-0000-0000-000000000008'));
+WITH edited AS (UPDATE public.marketplace_inquiries SET offer_price = 57 WHERE buyer_id = :dave RETURNING 1)
+SELECT pg_temp.expect('buyer can revise a pending offer', (SELECT count(*) FROM edited), 1);
+
+SET LOCAL request.jwt.claim.sub = 'aaaaaaaa-0000-0000-0000-000000000001';
+SELECT pg_temp.expect_denied('seller cannot rewrite the buyer''s offer',
+    format('UPDATE public.marketplace_inquiries SET offer_price = 1 WHERE buyer_id = %L', 'dddddddd-1111-0000-0000-000000000008'));
+WITH answered AS (UPDATE public.marketplace_inquiries SET status = 'accepted' WHERE buyer_id = :dave RETURNING 1)
+SELECT pg_temp.expect('seller accepts the inquiry', (SELECT count(*) FROM answered), 1);
+
+SET LOCAL request.jwt.claim.sub = 'dddddddd-1111-0000-0000-000000000008';
+SELECT pg_temp.expect_denied('buyer cannot change an answered offer',
+    format('UPDATE public.marketplace_inquiries SET offer_price = 10 WHERE buyer_id = %L', 'dddddddd-1111-0000-0000-000000000008'));
+
 -- 7. Every public table has RLS enabled and at least one policy -----------------
 RESET ROLE;
 SELECT pg_temp.expect('all public tables have RLS enabled',

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { updateById } from '@/utils/deleteUtils';
 import { OrganizationMember } from '@/types/rbac';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -51,10 +52,10 @@ const OrgSettings = () => {
         const name = orgName.trim();
         if (!currentOrganization || !name || name === currentOrganization.name) return;
         setSavingName(true);
-        const { error } = await supabase.from('organizations').update({ name }).eq('id', currentOrganization.id);
+        const problem = await updateById('organizations', currentOrganization.id, { name }, 'The organization');
         setSavingName(false);
-        if (error) {
-            toast({ title: 'Could not rename', description: error.message, variant: 'destructive' });
+        if (problem) {
+            toast({ title: 'Could not rename', description: problem, variant: 'destructive' });
             return;
         }
         await refreshOrganizations();

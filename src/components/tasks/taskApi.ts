@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { nextDueDate, nextRecurrenceDay } from '@/lib/tasks';
+import { updateByIdOrThrow } from '@/utils/deleteUtils';
 
 export type TaskRow = Tables<'tasks'>;
 
@@ -12,14 +13,14 @@ export type TaskRow = Tables<'tasks'>;
  * @returns the next occurrence's due date when one was created
  */
 export async function setTaskCompleted(task: TaskRow, completed: boolean): Promise<string | null> {
-  const { error } = await supabase
-    .from('tasks')
-    .update({
-      status: completed ? 'completed' : 'pending',
-      completed_at: completed ? new Date().toISOString() : null,
-    })
-    .eq('id', task.id);
-  if (error) throw error;
+  // Throws when the change was not saved (a viewer, or a deleted task), so a
+  // repeating task never moves on without its current occurrence being done.
+  await updateByIdOrThrow(
+    'tasks',
+    task.id,
+    { status: completed ? 'completed' : 'pending', completed_at: completed ? new Date().toISOString() : null },
+    'This task',
+  );
 
   // Only a task that was open moves the series on. Ticking an already-done
   // task again changes nothing.
@@ -67,6 +68,5 @@ export async function setTaskCompleted(task: TaskRow, completed: boolean): Promi
 
 /** Move a task to "To do" or "In progress" on the board (reopening it if it was done). */
 export async function setTaskStatus(task: TaskRow, status: 'pending' | 'in_progress'): Promise<void> {
-  const { error } = await supabase.from('tasks').update({ status, completed_at: null }).eq('id', task.id);
-  if (error) throw error;
+  await updateByIdOrThrow('tasks', task.id, { status, completed_at: null }, 'This task');
 }
